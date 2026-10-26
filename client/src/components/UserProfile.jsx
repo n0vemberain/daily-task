@@ -34,8 +34,6 @@ export default function UserProfile({
   const { theme } = useTheme();
   const [name, setName] = useState(userProfile?.name || 'Fatin Ishraque');
   const [username, setUsername] = useState(userProfile?.username || 'n0vemberain');
-  const [password, setPassword] = useState(userProfile?.password || 'Password123!');
-  const [showPassword, setShowPassword] = useState(false);
   const [fieldOfStudy, setFieldOfStudy] = useState(
     userProfile?.fieldOfStudy || 'Computer Science & Engineering'
   );
@@ -43,6 +41,14 @@ export default function UserProfile({
   const [newSkillInput, setNewSkillInput] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(userProfile?.avatarUrl || '');
   const [savedAlert, setSavedAlert] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+
+  // Password Management: never expose raw password in input on load
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const suggestedSkills = [
     'React.js',
@@ -93,10 +99,34 @@ export default function UserProfile({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setPasswordError('');
+
+    let finalPassword = userProfile?.password || 'Password123!';
+
+    if (isChangingPassword) {
+      if (!currentPasswordInput) {
+        setPasswordError('Please enter your current password to authorize change.');
+        return;
+      }
+      if (currentPasswordInput !== (userProfile?.password || 'Password123!')) {
+        setPasswordError('Current password does not match.');
+        return;
+      }
+      if (!newPasswordInput || newPasswordInput.length < 6) {
+        setPasswordError('New password must be at least 6 characters.');
+        return;
+      }
+      if (newPasswordInput !== confirmPasswordInput) {
+        setPasswordError('New password and confirm password do not match.');
+        return;
+      }
+      finalPassword = newPasswordInput;
+    }
+
     const updated = {
       name: name.trim(),
       username: username.trim(),
-      password,
+      password: finalPassword,
       fieldOfStudy: fieldOfStudy.trim(),
       skills,
       avatarUrl
@@ -104,6 +134,12 @@ export default function UserProfile({
 
     onSaveProfile(updated);
     setSavedAlert(true);
+    if (isChangingPassword) {
+      setIsChangingPassword(false);
+      setCurrentPasswordInput('');
+      setNewPasswordInput('');
+      setConfirmPasswordInput('');
+    }
     setTimeout(() => setSavedAlert(false), 3500);
   };
 
@@ -322,30 +358,109 @@ export default function UserProfile({
               </div>
             </div>
 
-            {/* Password */}
+            {/* Password Credentials - Hidden & Protected */}
             <div>
               <label className="block text-xs font-semibold text-github-text uppercase tracking-wider mb-1.5">
-                Password *
+                Account Password
               </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-github-muted absolute left-3.5 top-3" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter strong password"
-                  className="w-full pl-10 pr-10 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white outline-none font-mono focus:border-olive-500"
-                />
+              <div className="bg-[#0d1117] border border-github-border rounded-lg p-2.5 sm:p-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="p-1.5 rounded-md bg-[#161b22] border border-github-border text-github-muted flex-shrink-0">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-mono text-sm tracking-widest text-github-muted select-none truncate">
+                      ••••••••••••
+                    </div>
+                    <div className="text-[10px] text-github-muted flex items-center gap-1 mt-0.5 whitespace-nowrap">
+                      <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                      <span>Password secured and hidden</span>
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3 text-github-muted hover:text-white transition-colors"
-                  title={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => {
+                    setIsChangingPassword(!isChangingPassword);
+                    setPasswordError('');
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-white border border-github-border transition-colors whitespace-nowrap flex-shrink-0"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {isChangingPassword ? 'Cancel Change' : 'Change Password'}
                 </button>
               </div>
+
+              {/* Expandable Change Password Section */}
+              {isChangingPassword && (
+                <div className="mt-3 p-3.5 rounded-xl bg-[#0d1117] border border-github-border space-y-3 animate-in fade-in">
+                  <div className="text-xs font-semibold text-white flex items-center justify-between">
+                    <span>Change Account Password</span>
+                    <span className="text-[10px] text-github-muted font-mono">Protected</span>
+                  </div>
+
+                  {passwordError && (
+                    <div className="p-2 rounded-lg bg-red-950/60 border border-red-800/60 text-red-300 text-xs flex items-center gap-1.5">
+                      <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>{passwordError}</span>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-[11px] text-github-muted mb-1">
+                      Current Password (Required)
+                    </label>
+                    <input
+                      type="password"
+                      value={currentPasswordInput}
+                      onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                      placeholder="Enter current password"
+                      className="w-full px-3 py-2 bg-[#161b22] border border-github-border rounded-lg text-xs text-white outline-none focus:border-olive-500 font-mono"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] text-github-muted mb-1">
+                        New Password
+                      </label>
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={newPasswordInput}
+                        onChange={(e) => setNewPasswordInput(e.target.value)}
+                        placeholder="New password (min 6 chars)"
+                        className="w-full px-3 py-2 bg-[#161b22] border border-github-border rounded-lg text-xs text-white outline-none focus:border-olive-500 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-github-muted mb-1">
+                        Confirm New Password
+                      </label>
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={confirmPasswordInput}
+                        onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                        placeholder="Confirm new password"
+                        className="w-full px-3 py-2 bg-[#161b22] border border-github-border rounded-lg text-xs text-white outline-none focus:border-olive-500 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="text-[11px] text-github-muted hover:text-white flex items-center gap-1 transition-colors"
+                    >
+                      {showNewPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                      <span>{showNewPassword ? 'Hide inputs' : 'Show new password'}</span>
+                    </button>
+                    <span className="text-[10px] text-github-muted">
+                      Save profile to apply
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Field of Study */}

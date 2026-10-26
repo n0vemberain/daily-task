@@ -11,7 +11,7 @@ import {
   Filter,
   Search,
   Edit3,
-  ShieldAlert,
+  ArrowUpDown,
   Tag
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -56,6 +56,8 @@ export default function TaskManager({
 
   const [filter, setFilter] = useState(selectedDate ? 'selectedDate' : 'today');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [priorityFilter, setPriorityFilter] = useState('All');
+  const [prioritySort, setPrioritySort] = useState('none');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -119,34 +121,67 @@ export default function TaskManager({
     setIsAddFormOpen(false);
   };
 
-  // Filter tasks
-  const filteredTasks = tasks.filter((t) => {
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchTitle = t.title?.toLowerCase().includes(q);
-      const matchCategory = t.category?.toLowerCase().includes(q);
-      if (!matchTitle && !matchCategory) return false;
+  // Priority Weights for sorting
+  const priorityWeights = {
+    High: 3,
+    Medium: 2,
+    Low: 1
+  };
+
+  // Filter and sort tasks dynamically
+  const filteredTasks = useMemo(() => {
+    let result = tasks.filter((t) => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchTitle = t.title?.toLowerCase().includes(q);
+        const matchCategory = t.category?.toLowerCase().includes(q);
+        if (!matchTitle && !matchCategory) return false;
+      }
+
+      if (categoryFilter !== 'All' && t.category !== categoryFilter) {
+        return false;
+      }
+
+      if (priorityFilter !== 'All' && t.priority !== priorityFilter) {
+        return false;
+      }
+
+      if (selectedDate) {
+        return t.date === selectedDate;
+      }
+
+      if (filter === 'today') {
+        return t.date === todayStr;
+      }
+      if (filter === 'pending') {
+        return !t.completed;
+      }
+      if (filter === 'completed') {
+        return t.completed;
+      }
+      return true;
+    });
+
+    if (prioritySort === 'high-first') {
+      result = [...result].sort((a, b) => {
+        const weightA = priorityWeights[a.priority] || 0;
+        const weightB = priorityWeights[b.priority] || 0;
+        return weightB - weightA;
+      });
+    } else if (prioritySort === 'low-first') {
+      result = [...result].sort((a, b) => {
+        const weightA = priorityWeights[a.priority] || 0;
+        const weightB = priorityWeights[b.priority] || 0;
+        return weightA - weightB;
+      });
+    } else if (prioritySort === 'due-date') {
+      result = [...result].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    } else if (prioritySort === 'duration') {
+      result = [...result].sort((a, b) => (a.estimatedMinutes || 0) - (b.estimatedMinutes || 0));
     }
 
-    if (categoryFilter !== 'All' && t.category !== categoryFilter) {
-      return false;
-    }
-
-    if (selectedDate) {
-      return t.date === selectedDate;
-    }
-
-    if (filter === 'today') {
-      return t.date === todayStr;
-    }
-    if (filter === 'pending') {
-      return !t.completed;
-    }
-    if (filter === 'completed') {
-      return t.completed;
-    }
-    return true;
-  });
+    return result;
+  }, [tasks, searchQuery, categoryFilter, priorityFilter, prioritySort, selectedDate, filter, todayStr]);
 
   const todayTasks = tasks.filter((t) => t.date === todayStr);
   const todayDone = todayTasks.filter((t) => t.completed).length;
@@ -198,17 +233,6 @@ export default function TaskManager({
               style={{ color: theme.accent }}
             >
               Clear Date Filter
-            </button>
-          )}
-
-          {onOpenDataClean && (
-            <button
-              onClick={onOpenDataClean}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-github-text border border-github-border transition-colors whitespace-nowrap"
-              title="Clean or reset data"
-            >
-              <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
-              <span>Clean Data</span>
             </button>
           )}
 
@@ -370,128 +394,185 @@ export default function TaskManager({
         </form>
       )}
 
-      {/* Filters & Search Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-[#161b22] p-3 rounded-xl border border-github-border">
-        {/* Main Status Filters */}
-        {!selectedDate && (
-          <div className="flex items-center gap-1 bg-[#0d1117] p-1 rounded-lg border border-github-border text-xs overflow-x-auto scrollbar-none">
-            <button
-              onClick={() => setFilter('today')}
-              className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
-                filter === 'today'
-                  ? 'text-white border shadow-sm'
-                  : 'text-github-muted hover:text-white'
-              }`}
-              style={
-                filter === 'today'
-                  ? {
-                      backgroundColor: theme.accentDark,
-                      color: theme.accent,
-                      borderColor: theme.accent + '40'
-                    }
-                  : {}
-              }
-            >
-              Today ({todayTasks.length})
-            </button>
-            <button
-              onClick={() => setFilter('pending')}
-              className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
-                filter === 'pending'
-                  ? 'text-white border shadow-sm'
-                  : 'text-github-muted hover:text-white'
-              }`}
-              style={
-                filter === 'pending'
-                  ? {
-                      backgroundColor: theme.accentDark,
-                      color: theme.accent,
-                      borderColor: theme.accent + '40'
-                    }
-                  : {}
-              }
-            >
-              Pending ({tasks.filter((t) => !t.completed).length})
-            </button>
-            <button
-              onClick={() => setFilter('completed')}
-              className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
-                filter === 'completed'
-                  ? 'text-white border shadow-sm'
-                  : 'text-github-muted hover:text-white'
-              }`}
-              style={
-                filter === 'completed'
-                  ? {
-                      backgroundColor: theme.accentDark,
-                      color: theme.accent,
-                      borderColor: theme.accent + '40'
-                    }
-                  : {}
-              }
-            >
-              Completed ({tasks.filter((t) => t.completed).length})
-            </button>
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
-                filter === 'all'
-                  ? 'text-white border shadow-sm'
-                  : 'text-github-muted hover:text-white'
-              }`}
-              style={
-                filter === 'all'
-                  ? {
-                      backgroundColor: theme.accentDark,
-                      color: theme.accent,
-                      borderColor: theme.accent + '40'
-                    }
-                  : {}
-              }
-            >
-              All ({tasks.length})
-            </button>
-          </div>
-        )}
-
-        {/* Search input & Category Pills */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          {/* Quick Search */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-github-muted absolute left-2.5 top-2.5" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tasks..."
-              className="w-full sm:w-44 pl-8 pr-2.5 py-1.5 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted focus:outline-none"
-            />
-          </div>
-
-          {/* Category Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-            {categories.map((cat) => (
+      {/* Filters, Priority & Search Bar */}
+      <div className="space-y-2.5 bg-[#161b22] p-3 sm:p-3.5 rounded-xl border border-github-border">
+        {/* Top Filter Bar: Status, Search, and Categories */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          {/* Main Status Filters */}
+          {!selectedDate && (
+            <div className="flex items-center gap-1 bg-[#0d1117] p-1 rounded-lg border border-github-border text-xs overflow-x-auto scrollbar-none">
               <button
-                key={cat}
-                onClick={() => setCategoryFilter(cat)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
-                  categoryFilter === cat
-                    ? 'border'
-                    : 'text-github-muted hover:text-white bg-[#0d1117] border border-github-border'
+                onClick={() => setFilter('today')}
+                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
+                  filter === 'today'
+                    ? 'text-white border shadow-sm'
+                    : 'text-github-muted hover:text-white'
                 }`}
                 style={
-                  categoryFilter === cat
+                  filter === 'today'
                     ? {
                         backgroundColor: theme.accentDark,
                         color: theme.accent,
-                        borderColor: theme.accent + '50'
+                        borderColor: theme.accent + '40'
                       }
                     : {}
                 }
               >
-                {cat}
+                Today ({todayTasks.length})
               </button>
-            ))}
+              <button
+                onClick={() => setFilter('pending')}
+                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
+                  filter === 'pending'
+                    ? 'text-white border shadow-sm'
+                    : 'text-github-muted hover:text-white'
+                }`}
+                style={
+                  filter === 'pending'
+                    ? {
+                        backgroundColor: theme.accentDark,
+                        color: theme.accent,
+                        borderColor: theme.accent + '40'
+                      }
+                    : {}
+                }
+              >
+                Pending ({tasks.filter((t) => !t.completed).length})
+              </button>
+              <button
+                onClick={() => setFilter('completed')}
+                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
+                  filter === 'completed'
+                    ? 'text-white border shadow-sm'
+                    : 'text-github-muted hover:text-white'
+                }`}
+                style={
+                  filter === 'completed'
+                    ? {
+                        backgroundColor: theme.accentDark,
+                        color: theme.accent,
+                        borderColor: theme.accent + '40'
+                      }
+                    : {}
+                }
+              >
+                Completed ({tasks.filter((t) => t.completed).length})
+              </button>
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
+                  filter === 'all'
+                    ? 'text-white border shadow-sm'
+                    : 'text-github-muted hover:text-white'
+                }`}
+                style={
+                  filter === 'all'
+                    ? {
+                        backgroundColor: theme.accentDark,
+                        color: theme.accent,
+                        borderColor: theme.accent + '40'
+                      }
+                    : {}
+                }
+              >
+                All ({tasks.length})
+              </button>
+            </div>
+          )}
+
+          {/* Search input & Category Pills */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            {/* Quick Search */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-github-muted absolute left-2.5 top-2.5" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tasks..."
+                className="w-full sm:w-44 pl-8 pr-2.5 py-1.5 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted focus:outline-none"
+              />
+            </div>
+
+            {/* Category Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
+                    categoryFilter === cat
+                      ? 'border'
+                      : 'text-github-muted hover:text-white bg-[#0d1117] border border-github-border'
+                  }`}
+                  style={
+                    categoryFilter === cat
+                      ? {
+                          backgroundColor: theme.accentDark,
+                          color: theme.accent,
+                          borderColor: theme.accent + '50'
+                        }
+                      : {}
+                  }
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Filter Bar: Priority Filter & Priority Sort */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-github-border/60 text-xs">
+          {/* Priority Filter Buttons */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] font-semibold text-github-muted uppercase tracking-wider mr-1">
+              Priority:
+            </span>
+            {['All', 'High', 'Medium', 'Low'].map((p) => {
+              const isSelected = priorityFilter === p;
+              let activeStyle = '';
+              if (isSelected) {
+                if (p === 'High') activeStyle = 'bg-red-950/70 text-red-300 border-red-700/80 shadow-sm';
+                else if (p === 'Medium') activeStyle = 'bg-amber-950/70 text-amber-300 border-amber-700/80 shadow-sm';
+                else if (p === 'Low') activeStyle = 'bg-blue-950/70 text-blue-300 border-blue-700/80 shadow-sm';
+                else activeStyle = 'bg-[#21262d] text-white border-github-borderLight shadow-sm';
+              } else {
+                activeStyle = 'bg-[#0d1117] text-github-muted hover:text-white border-github-border';
+              }
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPriorityFilter(p)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-all ${activeStyle}`}
+                >
+                  {p === 'All' ? 'All Priorities' : `${p} Priority`}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Priority & Field Sorting */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-github-muted uppercase tracking-wider hidden sm:inline">
+              Sort:
+            </span>
+            <div className="flex items-center gap-1.5 bg-[#0d1117] border border-github-border rounded-lg px-2.5 py-1">
+              <ArrowUpDown className="w-3.5 h-3.5 text-github-muted" />
+              <select
+                value={prioritySort}
+                onChange={(e) => setPrioritySort(e.target.value)}
+                className="bg-transparent text-xs text-white outline-none cursor-pointer font-medium"
+                aria-label="Sort tasks by priority or date"
+              >
+                <option value="none" className="bg-[#161b22] text-white">Default Order</option>
+                <option value="high-first" className="bg-[#161b22] text-white">High Priority First</option>
+                <option value="low-first" className="bg-[#161b22] text-white">Low Priority First</option>
+                <option value="due-date" className="bg-[#161b22] text-white">Date / Due First</option>
+                <option value="duration" className="bg-[#161b22] text-white">Estimated Duration</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>

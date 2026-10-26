@@ -487,41 +487,42 @@ export default function ContributionHeatmap({
           </div>
         </div>
       ) : (
-        /* Multi-week Horizontal Matrix View (Year / 6 Months - Full Box Width) */
+        /* Multi-week Horizontal Matrix View (Year / 6 Months - Full Box Width & Fully Responsive) */
         <div
           ref={scrollContainerRef}
           className="w-full overflow-x-auto pb-2 scrollbar-thin -webkit-overflow-scrolling-touch"
         >
-          <div className="w-full min-w-[560px] md:min-w-full flex flex-col">
+          <div
+            className={`w-full flex flex-col ${
+              timeRange === 'year' ? 'min-w-[540px] sm:min-w-0' : 'min-w-0'
+            }`}
+          >
             {/* Month labels header matching fractional week positions */}
-            <div className="flex text-[11px] text-github-muted font-mono mb-1.5 pl-7 sm:pl-8 h-4 relative w-full">
+            <div className="flex text-[10px] sm:text-[11px] text-github-muted font-mono mb-1.5 pl-6 sm:pl-7 h-4 relative w-full select-none">
               {monthLabels.map((m, idx) => (
                 <span
                   key={idx}
-                  className="absolute transform -translate-x-1"
-                  style={{ left: `calc(1.75rem + ${(m.colIndex / weeks.length) * 100}%)` }}
+                  className="absolute transform -translate-x-1 whitespace-nowrap"
+                  style={{ left: `calc(1.5rem + ${(m.colIndex / weeks.length) * 100}%)` }}
                 >
                   {m.name}
                 </span>
               ))}
             </div>
 
-            <div className="w-full flex items-start gap-1.5 sm:gap-2">
-              {/* Day of Week labels (Sun, Mon, Tue, Wed, Thu, Fri, Sat) */}
+            <div className="w-full flex items-stretch gap-1 sm:gap-2">
+              {/* Day of Week labels (Sun, Mon, Tue, Wed, Thu, Fri, Sat) aligned 1:1 with cell rows */}
               <div
-                className="flex flex-col justify-between text-[10px] text-github-muted font-mono w-6 sm:w-7 select-none flex-shrink-0"
-                style={{
-                  height: timeRange === 'half' ? 'calc(7 * 28px + 6 * 4px)' : 'calc(7 * 20px + 6 * 2px)',
-                  maxHeight: '180px'
-                }}
+                className="grid grid-rows-7 text-[10px] text-github-muted font-mono w-5 sm:w-6 select-none flex-shrink-0"
+                style={{ rowGap: timeRange === 'year' ? '2.5px' : '3.5px' }}
               >
-                <span className="leading-none text-transparent">S</span>
-                <span className="leading-none">Mon</span>
-                <span className="leading-none text-transparent">T</span>
-                <span className="leading-none">Wed</span>
-                <span className="leading-none text-transparent">T</span>
-                <span className="leading-none">Fri</span>
-                <span className="leading-none text-transparent">S</span>
+                <div className="flex items-center justify-center invisible select-none">S</div>
+                <div className="flex items-center justify-center leading-none">Mon</div>
+                <div className="flex items-center justify-center invisible select-none">T</div>
+                <div className="flex items-center justify-center leading-none">Wed</div>
+                <div className="flex items-center justify-center invisible select-none">T</div>
+                <div className="flex items-center justify-center leading-none">Fri</div>
+                <div className="flex items-center justify-center invisible select-none">S</div>
               </div>
 
               {/* Weeks Columns: Stretches to fill 100% of the box */}
@@ -529,14 +530,14 @@ export default function ContributionHeatmap({
                 className="flex-1 w-full grid items-stretch"
                 style={{
                   gridTemplateColumns: `repeat(${weeks.length}, minmax(0, 1fr))`,
-                  columnGap: timeRange === 'year' ? '2.5px' : '4px'
+                  columnGap: timeRange === 'year' ? '2.5px' : '3.5px'
                 }}
               >
                 {weeks.map((week, wIdx) => (
                   <div
                     key={wIdx}
-                    className="flex flex-col justify-between w-full"
-                    style={{ rowGap: timeRange === 'year' ? '2.5px' : '4px' }}
+                    className="grid grid-rows-7 w-full"
+                    style={{ rowGap: timeRange === 'year' ? '2.5px' : '3.5px' }}
                   >
                     {week.map((day, dIdx) => {
                       const isSelected = selectedDate === day.date || mobileSelectedDay?.date === day.date;
@@ -550,9 +551,6 @@ export default function ContributionHeatmap({
                           onMouseLeave={handleCellLeave}
                           disabled={day.isFuture}
                           className={`w-full aspect-square rounded-[2px] sm:rounded-[3px] border heatmap-cell ${levelClass} focus:outline-none transition-transform hover:scale-110 hover:z-10`}
-                          style={{
-                            maxHeight: timeRange === 'half' ? '28px' : '20px'
-                          }}
                           aria-label={`${day.formattedDate}: ${day.count} tasks completed`}
                         />
                       );

@@ -30,17 +30,11 @@ export default function SettingsModal({
   onManualSync,
   data,
   onRestoreData,
-  onResetData,
-  onClearAllData,
-  onClearCompletedTasks,
-  onClearChallenges,
-  tasksCount = 0,
-  challengesCount = 0
+  onOpenCleanCenter
 }) {
   const { theme, themeId, setThemeId, availableThemes } = useTheme();
   const [isMuted, setIsMuted] = useState(soundEffects.isMuted());
-  const [activeTab, setActiveTab] = useState('general'); // 'general', 'data', 'cleaning'
-  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [activeTab, setActiveTab] = useState('general'); // 'general', 'sync'
   const [statusMessage, setStatusMessage] = useState(null);
 
   if (!isOpen) return null;
@@ -184,16 +178,6 @@ export default function SettingsModal({
             }}
           >
             Sync &amp; Backup
-          </button>
-          <button
-            onClick={() => setActiveTab('cleaning')}
-            className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all ${
-              activeTab === 'cleaning'
-                ? 'border-red-500 text-red-300'
-                : 'border-transparent text-github-muted hover:text-red-400'
-            }`}
-          >
-            Data Clean Center
           </button>
         </div>
 
@@ -451,127 +435,30 @@ export default function SettingsModal({
                   </label>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* TAB 3: Data Clean Center */}
-          {activeTab === 'cleaning' && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-red-400" />
-                <span className="font-bold text-white text-sm">Data Cleaning &amp; Reset Management</span>
-              </div>
-              <p className="text-github-muted text-xs">
-                Selectively clear completed tasks, reset challenges, restore sample data, or wipe database.
-              </p>
-
-              {/* Option 1: Clean Completed Tasks Only */}
-              <div className="p-3.5 rounded-xl bg-[#0d1117] border border-github-border flex items-center justify-between gap-3">
-                <div>
-                  <div className="font-semibold text-white">Clean Completed Tasks Only</div>
-                  <div className="text-[11px] text-github-muted mt-0.5">
-                    Remove all finished tasks while preserving pending tasks and challenges.
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClearCompletedTasks();
-                    showNotification('Completed tasks cleared successfully.');
-                  }}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-white border border-github-border transition-colors whitespace-nowrap"
-                >
-                  Clear Completed
-                </button>
-              </div>
-
-              {/* Option 2: Clean All Challenges */}
-              <div className="p-3.5 rounded-xl bg-[#0d1117] border border-github-border flex items-center justify-between gap-3">
-                <div>
-                  <div className="font-semibold text-white">Clean All Habit Challenges</div>
-                  <div className="text-[11px] text-github-muted mt-0.5">
-                    Remove all active and completed challenges ({challengesCount} total).
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClearChallenges();
-                    showNotification('All habit challenges cleared.');
-                  }}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-white border border-github-border transition-colors whitespace-nowrap"
-                >
-                  Clear Challenges
-                </button>
-              </div>
-
-              {/* Option 3: Restore Default Demo Data */}
-              <div className="p-3.5 rounded-xl bg-[#0d1117] border border-github-border flex items-center justify-between gap-3">
-                <div>
-                  <div className="font-semibold text-white">Restore Standard Demo Data</div>
-                  <div className="text-[11px] text-github-muted mt-0.5">
-                    Reloads initial demonstration tasks, habit challenges, and multi-month heatmap records.
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onResetData();
-                    showNotification('Default sample demo data restored.');
-                  }}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-white border border-github-border transition-colors whitespace-nowrap"
-                >
-                  Restore Demo
-                </button>
-              </div>
-
-              {/* Option 4: Full Factory Reset */}
-              <div className="p-3.5 rounded-xl bg-red-950/20 border border-red-900/40 space-y-2">
-                <div className="flex items-center justify-between gap-3">
+              {/* Clean Center Launcher (Danger Zone) */}
+              <div className="pt-4 border-t border-github-border">
+                <div className="p-4 rounded-xl bg-red-950/20 border border-red-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div>
-                    <div className="font-semibold text-red-300">Factory Reset: Clear All Data</div>
-                    <div className="text-[11px] text-github-muted mt-0.5">
-                      Permanently wipes all tasks ({tasksCount}), challenges ({challengesCount}), and heatmap activity.
+                    <div className="font-semibold text-red-300 flex items-center gap-1.5">
+                      <ShieldAlert className="w-4 h-4 text-red-400" />
+                      <span>Data Clean Center</span>
+                    </div>
+                    <div className="text-[11px] text-github-muted mt-1">
+                      Protected zone to clean finished tasks, clear challenges, or factory reset data. Requires password.
                     </div>
                   </div>
-                  {!confirmDeleteAll && (
-                    <button
-                      type="button"
-                      onClick={() => setConfirmDeleteAll(true)}
-                      className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-red-950 hover:bg-red-900 text-red-200 border border-red-800/50 transition-colors whitespace-nowrap"
-                    >
-                      Wipe Everything
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      if (onOpenCleanCenter) onOpenCleanCenter();
+                    }}
+                    className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-red-950 hover:bg-red-900 text-red-200 border border-red-800/60 transition-colors whitespace-nowrap shadow-sm"
+                  >
+                    Open Clean Center
+                  </button>
                 </div>
-
-                {confirmDeleteAll && (
-                  <div className="pt-2 border-t border-red-900/40 flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-red-400 font-medium">
-                      Are you certain? This cannot be undone.
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setConfirmDeleteAll(false)}
-                        className="px-2.5 py-1 text-xs text-github-muted hover:text-white"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onClearAllData();
-                          setConfirmDeleteAll(false);
-                          showNotification('All application data cleared.');
-                        }}
-                        className="px-3 py-1 rounded-md text-xs font-semibold bg-red-600 hover:bg-red-700 text-white shadow transition-colors"
-                      >
-                        Confirm Wipe
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           )}

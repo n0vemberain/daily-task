@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
-import { X, Trash2, AlertTriangle, RotateCcw, CheckSquare, Flame, CheckCircle2, ShieldAlert } from 'lucide-react';
+import {
+  X,
+  Trash2,
+  AlertTriangle,
+  RotateCcw,
+  CheckCircle2,
+  ShieldAlert,
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldCheck
+} from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 export default function DataCleanModal({
@@ -9,10 +20,14 @@ export default function DataCleanModal({
   onClearCompletedTasks,
   onClearChallenges,
   onResetDemoData,
-  tasksCount,
-  challengesCount
+  tasksCount = 0,
+  challengesCount = 0,
+  userProfile
 }) {
   const { theme } = useTheme();
+  const [authPassword, setAuthPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const [notification, setNotification] = useState('');
 
@@ -23,33 +38,55 @@ export default function DataCleanModal({
     setTimeout(() => {
       setNotification('');
       onClose();
-    }, 1500);
+    }, 1800);
+  };
+
+  const verifyPassword = () => {
+    const expected = userProfile?.password || 'Password123!';
+    if (!authPassword.trim()) {
+      setAuthError('Account password is required to authorize data cleaning.');
+      return false;
+    }
+    if (authPassword !== expected) {
+      setAuthError('Incorrect password! Data cleaning was blocked.');
+      return false;
+    }
+    setAuthError('');
+    return true;
   };
 
   const handleClearAll = () => {
+    if (!verifyPassword()) return;
     onClearAllData();
     showNotification('All application data cleared successfully.');
     setConfirmDeleteAll(false);
+    setAuthPassword('');
   };
 
   const handleClearCompleted = () => {
+    if (!verifyPassword()) return;
     onClearCompletedTasks();
     showNotification('Completed tasks cleared.');
+    setAuthPassword('');
   };
 
   const handleClearChallenges = () => {
+    if (!verifyPassword()) return;
     onClearChallenges();
     showNotification('All challenges cleared.');
+    setAuthPassword('');
   };
 
   const handleResetDemo = () => {
+    if (!verifyPassword()) return;
     onResetDemoData();
     showNotification('Demo data re-seeded.');
+    setAuthPassword('');
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+      <div className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-github-border bg-[#0d1117]">
           <div className="flex items-center gap-2.5">
@@ -57,8 +94,8 @@ export default function DataCleanModal({
               <ShieldAlert className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Data Cleaning &amp; Reset Management</h3>
-              <p className="text-[11px] text-github-muted">Selective cleaning and factory data reset</p>
+              <h3 className="text-sm font-bold text-white">Data Cleaning Center</h3>
+              <p className="text-[11px] text-github-muted">Password-protected data cleaning and reset operations</p>
             </div>
           </div>
           <button
@@ -70,7 +107,7 @@ export default function DataCleanModal({
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-4 text-xs">
+        <div className="p-5 space-y-4 text-xs overflow-y-auto">
           {notification && (
             <div
               className="p-2.5 rounded-lg border flex items-center gap-2"
@@ -84,6 +121,47 @@ export default function DataCleanModal({
               <span>{notification}</span>
             </div>
           )}
+
+          {/* Mandatory Password Authorization Gate */}
+          <div className="p-3.5 rounded-xl bg-[#0d1117] border border-amber-900/40 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-amber-200 flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                <span>Password Required to Authorize Clean *</span>
+              </label>
+              <span className="text-[10px] text-amber-400/80 font-mono">Protected</span>
+            </div>
+            <p className="text-[11px] text-github-muted">
+              Enter your account password below before clicking any clean or reset option:
+            </p>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={authPassword}
+                onChange={(e) => {
+                  setAuthPassword(e.target.value);
+                  if (authError) setAuthError('');
+                }}
+                placeholder="Enter account password..."
+                className="w-full pl-3 pr-10 py-2 bg-[#161b22] border border-github-border rounded-lg text-xs text-white placeholder-github-muted outline-none font-mono focus:border-red-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-2 text-github-muted hover:text-white transition-colors"
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+
+            {authError && (
+              <div className="p-2 rounded-lg bg-red-950/70 border border-red-800/70 text-red-300 text-[11px] flex items-center gap-1.5 animate-in fade-in">
+                <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0 text-red-400" />
+                <span>{authError}</span>
+              </div>
+            )}
+          </div>
 
           {/* Option 1: Clear Completed Tasks */}
           <div className="p-3.5 rounded-lg bg-[#0d1117] border border-github-border flex items-center justify-between gap-3">

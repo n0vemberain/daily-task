@@ -6,12 +6,14 @@ import ChallengeTracker from './components/ChallengeTracker';
 import TaskManager from './components/TaskManager';
 import UserProfile from './components/UserProfile';
 import SettingsModal from './components/SettingsModal';
+import DataCleanModal from './components/DataCleanModal';
+import FocusTimer from './components/FocusTimer';
 import LoginView from './components/LoginView';
 import MobileBottomNav from './components/MobileBottomNav';
 import { storageService } from './services/storageService';
 import { apiService } from './services/apiService';
-import { formatDateStr, initialUserProfile, initialTasks, initialChallenges } from './data/initialData';
-import { Calendar, Flame, CheckSquare, Database, Quote } from 'lucide-react';
+import { formatDateStr, initialUserProfile, initialTasks, initialChallenges, initialTimerSessions } from './data/initialData';
+import { Calendar, Flame, CheckSquare, Database, Quote, Timer } from 'lucide-react';
 import GithubIcon from './components/GithubIcon';
 import { useTheme } from './context/ThemeContext';
 
@@ -20,13 +22,15 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedDate, setSelectedDate] = useState(null);
 
-  // Settings Modal State
+  // Modals State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isCleanCenterOpen, setIsCleanCenterOpen] = useState(false);
 
   // Core State initialized from LocalStorage
   const [userProfile, setUserProfile] = useState(() => storageService.getUserProfile());
   const [tasks, setTasks] = useState(() => storageService.getTasks());
   const [challenges, setChallenges] = useState(() => storageService.getChallenges());
+  const [timerSessions, setTimerSessions] = useState(() => storageService.getTimerSessions());
 
   // Authentication State: MUST be explicitly true to access the dashboard
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -262,12 +266,27 @@ export default function App() {
     performSync({ user: userProfile, tasks, challenges: updated });
   };
 
+  // Focus Timer Session Handlers
+  const handleAddTimerSession = (session) => {
+    const updated = [session, ...timerSessions];
+    setTimerSessions(updated);
+    storageService.saveTimerSessions(updated);
+  };
+
+  const handleDeleteTimerSession = (sessionId) => {
+    const updated = timerSessions.filter((s) => s.id !== sessionId);
+    setTimerSessions(updated);
+    storageService.saveTimerSessions(updated);
+  };
+
   // Data Clean Handlers
   const handleClearAllData = async () => {
     setTasks([]);
     setChallenges([]);
+    setTimerSessions([]);
     storageService.saveTasks([]);
     storageService.saveChallenges([]);
+    storageService.saveTimerSessions([]);
     await performSync({ user: userProfile, tasks: [], challenges: [] });
   };
 
@@ -288,9 +307,11 @@ export default function App() {
     setUserProfile(initialUserProfile);
     setTasks(initialTasks);
     setChallenges(initialChallenges);
+    setTimerSessions(initialTimerSessions);
     storageService.saveUserProfile(initialUserProfile);
     storageService.saveTasks(initialTasks);
     storageService.saveChallenges(initialChallenges);
+    storageService.saveTimerSessions(initialTimerSessions);
     performSync({
       user: initialUserProfile,
       tasks: initialTasks,
@@ -400,7 +421,6 @@ export default function App() {
                 onEditTask={handleEditTask}
                 selectedDate={selectedDate}
                 onClearDateFilter={() => setSelectedDate(null)}
-                onOpenDataClean={() => setIsSettingsOpen(true)}
               />
             </div>
           </div>
@@ -425,7 +445,14 @@ export default function App() {
             onEditTask={handleEditTask}
             selectedDate={selectedDate}
             onClearDateFilter={() => setSelectedDate(null)}
-            onOpenDataClean={() => setIsSettingsOpen(true)}
+          />
+        )}
+
+        {activeTab === 'timer' && (
+          <FocusTimer
+            sessions={timerSessions}
+            onAddSession={handleAddTimerSession}
+            onDeleteSession={handleDeleteTimerSession}
           />
         )}
 
@@ -438,7 +465,7 @@ export default function App() {
             isAuthenticated={isAuthenticated}
             onOpenLogin={() => {}}
             onSignOut={handleSignOut}
-            onOpenCleanModal={() => setIsSettingsOpen(true)}
+            onOpenCleanModal={() => setIsCleanCenterOpen(true)}
           />
         )}
       </main>
@@ -453,12 +480,20 @@ export default function App() {
         onManualSync={() => performSync()}
         data={{ user: userProfile, tasks, challenges }}
         onRestoreData={handleRestoreData}
-        onResetData={handleResetDemoData}
+        onOpenCleanCenter={() => setIsCleanCenterOpen(true)}
+      />
+
+      {/* Standalone Password-Protected Data Clean Center Modal */}
+      <DataCleanModal
+        isOpen={isCleanCenterOpen}
+        onClose={() => setIsCleanCenterOpen(false)}
         onClearAllData={handleClearAllData}
         onClearCompletedTasks={handleClearCompletedTasks}
         onClearChallenges={handleClearChallenges}
+        onResetDemoData={handleResetDemoData}
         tasksCount={tasks.length}
         challengesCount={challenges.length}
+        userProfile={userProfile}
       />
 
       {/* Mobile Sticky Bottom Navigation (Screens < 768px) */}

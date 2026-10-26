@@ -1,9 +1,10 @@
-import { initialUserProfile, initialTasks, initialChallenges } from '../data/initialData';
+import { initialUserProfile, initialTasks, initialChallenges, initialTimerSessions } from '../data/initialData';
 
 const KEYS = {
   USER: 'daily_task_user_v1',
   TASKS: 'daily_task_tasks_v1',
   CHALLENGES: 'daily_task_challenges_v1',
+  TIMER_SESSIONS: 'daily_task_timer_sessions_v1',
   LAST_SYNC: 'daily_task_last_sync_v1'
 };
 
@@ -64,6 +65,26 @@ export const storageService = {
       return true;
     } catch (e) {
       console.error('Error saving challenges to localStorage', e);
+      return false;
+    }
+  },
+
+  getTimerSessions: () => {
+    try {
+      const data = localStorage.getItem(KEYS.TIMER_SESSIONS);
+      return data ? JSON.parse(data) : initialTimerSessions;
+    } catch (e) {
+      console.error('Error reading timer sessions from localStorage', e);
+      return initialTimerSessions;
+    }
+  },
+
+  saveTimerSessions: (sessions) => {
+    try {
+      localStorage.setItem(KEYS.TIMER_SESSIONS, JSON.stringify(sessions));
+      return true;
+    } catch (e) {
+      console.error('Error saving timer sessions to localStorage', e);
       return false;
     }
   },

@@ -59,4 +59,19 @@ describe('storageService', () => {
     expect(retrieved.length).toBe(1);
     expect(retrieved[0].title).toBe('7-Day Sprint');
   });
+
+  it('should save and load timer sessions', () => {
+    const customSession = {
+      id: 'ts-test-1',
+      durationMinutes: 45,
+      date: '2026-10-27',
+      category: 'Study',
+      label: 'Deep Learning'
+    };
+    storageService.saveTimerSessions([customSession]);
+    const retrieved = storageService.getTimerSessions();
+    expect(retrieved.length).toBe(1);
+    expect(retrieved[0].durationMinutes).toBe(45);
+    expect(retrieved[0].label).toBe('Deep Learning');
+  });
 });

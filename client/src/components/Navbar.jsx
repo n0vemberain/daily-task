@@ -6,7 +6,8 @@ import {
   User,
   Settings,
   LogOut,
-  Sparkles
+  Sparkles,
+  Timer
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -27,6 +28,7 @@ export default function Navbar({
     { id: 'dashboard', label: 'Heatmap & Overview', icon: CalendarDays },
     { id: 'challenges', label: 'Goal Challenges', icon: Flame },
     { id: 'tasks', label: 'Daily Tasks', icon: CheckSquare },
+    { id: 'timer', label: 'Focus Timer', icon: Timer },
     { id: 'profile', label: 'Profile & Skills', icon: User }
   ];
 

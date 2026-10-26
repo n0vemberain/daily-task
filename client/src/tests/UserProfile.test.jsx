@@ -71,4 +71,19 @@ describe('UserProfile Component', () => {
       })
     );
   });
+
+  it('keeps account password masked on load and does not expose plain text', () => {
+    render(
+      <UserProfile
+        userProfile={mockProfile}
+        onSaveProfile={vi.fn()}
+        mongoStatus={{ isMongoConnected: true }}
+      />
+    );
+
+    // The raw password string 'Password123!' should NOT be displayed in any input value
+    expect(screen.queryByDisplayValue('Password123!')).not.toBeInTheDocument();
+    expect(screen.getByText(/Password secured and hidden/i)).toBeInTheDocument();
+    expect(screen.getByText('Change Password')).toBeInTheDocument();
+  });
 });

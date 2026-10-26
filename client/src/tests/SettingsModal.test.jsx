@@ -14,12 +14,7 @@ describe('SettingsModal Component', () => {
     onManualSync: vi.fn(),
     data: { user: {}, tasks: [], challenges: [] },
     onRestoreData: vi.fn(),
-    onResetData: vi.fn(),
-    onClearAllData: vi.fn(),
-    onClearCompletedTasks: vi.fn(),
-    onClearChallenges: vi.fn(),
-    tasksCount: 10,
-    challengesCount: 2
+    onOpenCleanCenter: vi.fn()
   };
 
   it('does not render when closed', () => {
@@ -41,7 +36,6 @@ describe('SettingsModal Component', () => {
     expect(screen.getByText('Application Settings')).toBeInTheDocument();
     expect(screen.getByText('Theme & Preferences')).toBeInTheDocument();
     expect(screen.getByText('Sync & Backup')).toBeInTheDocument();
-    expect(screen.getByText('Data Clean Center')).toBeInTheDocument();
   });
 
   it('switches to Sync & Backup tab and displays sync status', () => {
@@ -62,19 +56,21 @@ describe('SettingsModal Component', () => {
     expect(mockProps.onManualSync).toHaveBeenCalled();
   });
 
-  it('switches to Data Clean Center tab and shows wipe options', () => {
+  it('provides button to launch password-protected Clean Center from Sync & Backup', () => {
     render(
       <ThemeProvider>
         <SettingsModal {...mockProps} />
       </ThemeProvider>
     );
 
-    const cleanTab = screen.getByText('Data Clean Center');
-    fireEvent.click(cleanTab);
+    const syncTab = screen.getByText('Sync & Backup');
+    fireEvent.click(syncTab);
 
-    expect(screen.getByText('Clean Completed Tasks Only')).toBeInTheDocument();
-    expect(screen.getByText('Clean All Habit Challenges')).toBeInTheDocument();
-    expect(screen.getByText('Restore Standard Demo Data')).toBeInTheDocument();
-    expect(screen.getByText('Factory Reset: Clear All Data')).toBeInTheDocument();
+    const openCleanBtn = screen.getByText('Open Clean Center');
+    expect(openCleanBtn).toBeInTheDocument();
+    fireEvent.click(openCleanBtn);
+
+    expect(mockProps.onClose).toHaveBeenCalled();
+    expect(mockProps.onOpenCleanCenter).toHaveBeenCalled();
   });
 });

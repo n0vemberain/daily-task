@@ -228,3 +228,62 @@ export const initialChallenges = [
     })
   }
 ];
+
+export const initialTimerSessions = [
+  {
+    id: 'ts-1',
+    durationMinutes: 25,
+    date: todayStr,
+    timestamp: new Date().toISOString(),
+    category: 'Study',
+    label: 'Algorithms & Data Structures'
+  },
+  {
+    id: 'ts-2',
+    durationMinutes: 20,
+    date: todayStr,
+    timestamp: new Date().toISOString(),
+    category: 'Coding',
+    label: 'React Component Optimization'
+  },
+  {
+    id: 'ts-3',
+    durationMinutes: 45,
+    date: getPastDateStr(1),
+    timestamp: new Date(Date.now() - 86400000).toISOString(),
+    category: 'Study',
+    label: 'Database Systems Architecture'
+  },
+  {
+    id: 'ts-4',
+    durationMinutes: 30,
+    date: getPastDateStr(2),
+    timestamp: new Date(Date.now() - 172800000).toISOString(),
+    category: 'Coding',
+    label: 'Tailwind UI Polish'
+  },
+  {
+    id: 'ts-5',
+    durationMinutes: 60,
+    date: getPastDateStr(5),
+    timestamp: new Date(Date.now() - 432000000).toISOString(),
+    category: 'Study',
+    label: 'Computer Networks'
+  },
+  {
+    id: 'ts-6',
+    durationMinutes: 45,
+    date: getPastDateStr(15),
+    timestamp: new Date(Date.now() - 1296000000).toISOString(),
+    category: 'Study',
+    label: 'Operating Systems Virtual Memory'
+  },
+  {
+    id: 'ts-7',
+    durationMinutes: 50,
+    date: getPastDateStr(40),
+    timestamp: new Date(Date.now() - 3456000000).toISOString(),
+    category: 'Study',
+    label: 'Software Engineering Concepts'
+  }
+];
