@@ -20,7 +20,7 @@ describe('ContributionHeatmap Component', () => {
     }
   ];
 
-  it('renders heatmap title and olive shades indicator', () => {
+  it('renders heatmap title and default olive shades indicator', () => {
     render(<ContributionHeatmap tasks={sampleTasks} />);
     expect(screen.getByText(/Activity Contribution Heatmap/i)).toBeInTheDocument();
     expect(screen.getByText(/Olive Green Shades/i)).toBeInTheDocument();
@@ -38,10 +38,33 @@ describe('ContributionHeatmap Component', () => {
     expect(screen.getByText(/completed tasks in/i)).toBeInTheDocument();
   });
 
-  it('toggles time range from year to 6 months', () => {
+  it('toggles time range across 1 Year, Last 6 Months, and 1 Month', () => {
     render(<ContributionHeatmap tasks={sampleTasks} />);
+
+    // 6 Months button
     const halfYearBtn = screen.getByText('Last 6 Months');
     fireEvent.click(halfYearBtn);
     expect(halfYearBtn).toHaveClass('bg-olive-800');
+
+    // 1 Month button
+    const monthBtn = screen.getByText('1 Month');
+    fireEvent.click(monthBtn);
+    expect(monthBtn).toHaveClass('bg-olive-800');
+    expect(screen.getByText(/Focused 30-Day Activity Grid/i)).toBeInTheDocument();
+  });
+
+  it('allows switching color theme', () => {
+    render(<ContributionHeatmap tasks={sampleTasks} />);
+
+    // Open theme picker
+    const themeBtn = screen.getByTitle('Select Heatmap Color Theme');
+    fireEvent.click(themeBtn);
+
+    // Select Emerald Mint
+    const emeraldOption = screen.getByText('Emerald Mint');
+    fireEvent.click(emeraldOption);
+
+    // Verify theme badge updated
+    expect(screen.getByText(/Emerald Mint Shades/i)).toBeInTheDocument();
   });
 });

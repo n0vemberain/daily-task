@@ -6,14 +6,17 @@ A web-based personal daily activity dashboard developed with React 18, Vite, Tai
 
 ## Key Features
 
-### 1. GitHub Contribution-Style Heatmap (Dark and Olive Green Shades)
-- **52-Week Contribution Matrix:** Visualizes daily task completions across 365 days or 6-month historical timeframes.
-- **Olive Green Color Scale:**
-  - **Level 0 (No activity):** #161b22 (GitHub Dark Slate)
-  - **Level 1 (1 task):** #263b19 (Dark Olive)
-  - **Level 2 (2 tasks):** #3d5c24 (Medium Olive)
-  - **Level 3 (3–4 tasks):** #5a8533 (Rich Olive Green)
-  - **Level 4 (5+ tasks):** #7eb644 (Vibrant Olive Green)
+### 1. GitHub Contribution-Style Heatmap (Multi-Timeframe and Theme Options)
+- **Selectable Timeframes (1 Year, 6 Months, 1 Month):**
+  - **1 Year (52 Weeks):** Comprehensive annual activity matrix showing all 365 days.
+  - **6 Months (26 Weeks):** Mid-term view highlighting recent consistency and momentum.
+  - **1 Month (5 Weeks):** Dedicated responsive mobile-optimized monthly calendar with enlarged touch-friendly squares and day-of-month indicators that fit any phone screen without horizontal scrolling.
+- **5 Selectable Color Themes:**
+  - **Olive Green (Default):** GitHub dark slate with dark to vibrant olive green shades (#161b22, #263b19, #3d5c24, #5a8533, #7eb644).
+  - **Emerald Mint:** Deep forest to vivid emerald green (#161b22, #0e4429, #006d32, #26a641, #39d353).
+  - **Ocean Cyan:** Deep marine to neon cyber cyan (#161b22, #0b3c49, #0e6075, #189cb5, #38d8f5).
+  - **Sunset Amber:** Dark espresso to golden sunrise amber (#161b22, #452607, #783c07, #b86209, #f59e0b).
+  - **Amethyst Purple:** Obsidian to bright lavender purple (#161b22, #341948, #58207c, #8736bf, #b366f5).
 - **Interactive Tooltips:** Dynamic cursor-following tooltips display exact calendar dates, total tasks completed, and individual task titles.
 - **Mobile Tap Drawer:** On touch devices, tapping any cell opens a dedicated date inspection card with a one-tap action to filter and manage tasks for that day.
 - **Filter by Date:** Clicking a day cell immediately filters the daily task manager to show tasks scheduled or completed on that date.
