@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Download, Upload, RotateCcw, AlertTriangle, CheckCircle2, HardDrive } from 'lucide-react';
 import { initialUserProfile, initialTasks, initialChallenges } from '../data/initialData';
+import { useTheme } from '../context/ThemeContext';
 
 export default function BackupModal({
   isOpen,
@@ -9,6 +10,7 @@ export default function BackupModal({
   onRestoreData,
   onResetData
 }) {
+  const { theme } = useTheme();
   const [statusMessage, setStatusMessage] = useState(null);
 
   if (!isOpen) return null;
@@ -91,7 +93,14 @@ export default function BackupModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-github-border bg-[#0d1117]">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-olive-950 border border-olive-700/40 text-olive-400">
+            <div
+              className="p-2 rounded-lg border flex items-center justify-center"
+              style={{
+                backgroundColor: theme.accentDark,
+                borderColor: theme.accent + '40',
+                color: theme.accent
+              }}
+            >
               <HardDrive className="w-5 h-5" />
             </div>
             <div>
@@ -113,7 +122,7 @@ export default function BackupModal({
             <div
               className={`p-3 rounded-lg border flex items-center gap-2 ${
                 statusMessage.type === 'success'
-                  ? 'bg-olive-950/70 border-olive-600/50 text-olive-300'
+                  ? 'bg-emerald-950/70 border-emerald-600/50 text-emerald-300'
                   : 'bg-red-950/70 border-red-700/50 text-red-300'
               }`}
             >
@@ -132,7 +141,7 @@ export default function BackupModal({
             </div>
             <button
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-olive-700 hover:bg-olive-600 text-white border border-olive-500/40 shadow-sm transition-all whitespace-nowrap"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold ${theme.primaryBtn} shadow-sm transition-all whitespace-nowrap`}
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export</span>
@@ -148,7 +157,7 @@ export default function BackupModal({
               </div>
             </div>
             <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-white border border-github-border cursor-pointer transition-colors whitespace-nowrap">
-              <Upload className="w-3.5 h-3.5 text-olive-400" />
+              <Upload className="w-3.5 h-3.5" style={{ color: theme.accent }} />
               <span>Import</span>
               <input
                 type="file"

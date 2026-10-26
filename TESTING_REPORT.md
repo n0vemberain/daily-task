@@ -58,34 +58,51 @@ Evaluated across modern desktop and mobile browser engines:
 
 ## 4. Automated Test Suite Execution (Vitest and React Testing Library)
 
-Executed four test suites verifying application state, component rendering, and storage persistence:
+Executed seven test suites verifying application state, component rendering, storage persistence, theme switching, login authentication, and data wiping:
 
 ```text
- ✓ src/tests/storageService.test.js (5 tests)
-   ✓ should return initialUserProfile when localStorage is empty
-   ✓ should persist and retrieve modified user profile
-   ✓ should return initialTasks when localStorage is empty
-   ✓ should persist new tasks correctly
-   ✓ should save and load challenges
+ [PASS] src/tests/storageService.test.js (5 tests)
+   [PASS] should return initialUserProfile when localStorage is empty
+   [PASS] should persist and retrieve modified user profile
+   [PASS] should return initialTasks when localStorage is empty
+   [PASS] should persist new tasks correctly
+   [PASS] should save and load challenges
 
- ✓ src/tests/ContributionHeatmap.test.jsx (4 tests)
-   ✓ renders heatmap title and olive shades indicator
-   ✓ renders month labels and day of week labels
-   ✓ displays correct summary count of completed tasks
-   ✓ toggles time range from year to 6 months
+ [PASS] src/tests/ContributionHeatmap.test.jsx (5 tests)
+   [PASS] renders heatmap title and default olive shades indicator
+   [PASS] renders month labels and day of week labels
+   [PASS] displays correct summary count of completed tasks
+   [PASS] toggles time range across 1 Year, Last 6 Months, and 1 Month
+   [PASS] allows switching color theme
 
- ✓ src/tests/ChallengeTracker.test.jsx (2 tests)
-   ✓ renders challenge title, category, and day count
-   ✓ renders Day-by-Day check-in buttons
+ [PASS] src/tests/ChallengeTracker.test.jsx (2 tests)
+   [PASS] renders challenge title, category, and day count
+   [PASS] renders Day-by-Day check-in buttons
 
- ✓ src/tests/UserProfile.test.jsx (3 tests)
-   ✓ renders initial profile fields
-   ✓ renders current skills and allows adding new skill
-   ✓ calls onSaveProfile when form is submitted
+ [PASS] src/tests/UserProfile.test.jsx (3 tests)
+   [PASS] renders initial profile fields
+   [PASS] renders current skills and allows adding new skill
+   [PASS] calls onSaveProfile when form is submitted
 
- Test Files  4 passed (4)
-      Tests  14 passed (14)
-   Duration  3.56s
+ [PASS] src/tests/LoginModal.test.jsx (4 tests)
+   [PASS] does not render when isOpen is false
+   [PASS] renders modal elements when open
+   [PASS] displays error on incorrect credentials
+   [PASS] calls onLoginSuccess on valid credentials
+
+ [PASS] src/tests/DataCleanModal.test.jsx (4 tests)
+   [PASS] does not render when closed
+   [PASS] renders all cleaning options when open
+   [PASS] handles clean completed tasks action
+   [PASS] handles factory wipe with double confirmation
+
+ [PASS] src/tests/ThemeContext.test.jsx (3 tests)
+   [PASS] provides default olive theme
+   [PASS] updates theme and persists to localStorage
+   [PASS] supports all 5 defined theme palettes
+
+ Test Files  7 passed (7)
+      Tests  26 passed (26)
 ```
 
 ---

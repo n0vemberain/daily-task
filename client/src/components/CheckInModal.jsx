@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, XCircle, RotateCcw, Calendar, FileText, Sparkles } from 'lucide-react';
+import { X, CheckCircle2, XCircle, RotateCcw, Calendar, FileText } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundEffects } from '../utils/audioFeedback';
+import { useTheme } from '../context/ThemeContext';
 
 export default function CheckInModal({
   isOpen,
@@ -10,6 +11,7 @@ export default function CheckInModal({
   dayItem,
   onSaveCheckIn
 }) {
+  const { theme } = useTheme();
   const [status, setStatus] = useState(dayItem?.status || 'completed');
   const [note, setNote] = useState(dayItem?.note || '');
 
@@ -25,7 +27,7 @@ export default function CheckInModal({
           particleCount: 60,
           spread: 60,
           origin: { y: 0.7 },
-          colors: ['#7eb644', '#5a8533', '#94af54', '#ffffff']
+          colors: [theme.accent, theme.accentLight, '#ffffff']
         });
       } catch (err) {
         // ignore if canvas not supported
@@ -53,12 +55,19 @@ export default function CheckInModal({
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-github-border bg-[#0d1117]">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-olive-950 border border-olive-700/40 text-olive-400 flex items-center justify-center font-bold text-xs font-mono">
+            <div
+              className="w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-xs font-mono"
+              style={{
+                backgroundColor: theme.accentDark,
+                borderColor: theme.accent + '40',
+                color: theme.accentLight
+              }}
+            >
               D{dayItem.dayNumber}
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Day {dayItem.dayNumber} Check-in</h3>
-              <p className="text-xs text-github-muted">{challenge.title}</p>
+              <h3 className="text-sm font-bold text-white">Day {dayItem.dayNumber} Check-in &amp; Reflection</h3>
+              <p className="text-xs text-github-muted truncate max-w-[220px]">{challenge.title}</p>
             </div>
           </div>
           <button
@@ -72,7 +81,7 @@ export default function CheckInModal({
         {/* Content */}
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-2 text-xs text-github-muted bg-[#0d1117] p-2.5 rounded-lg border border-github-border">
-            <Calendar className="w-4 h-4 text-olive-400" />
+            <Calendar className="w-4 h-4" style={{ color: theme.accent }} />
             <span>Target Date: <strong className="text-white">{formattedDate}</strong></span>
           </div>
 
@@ -87,11 +96,23 @@ export default function CheckInModal({
                 onClick={() => setStatus('completed')}
                 className={`p-3 rounded-lg border flex flex-col items-center gap-1.5 transition-all text-xs font-medium ${
                   status === 'completed'
-                    ? 'bg-olive-900/60 border-olive-500 text-white shadow-sm'
-                    : 'bg-[#0d1117] border-github-border text-github-muted hover:text-white hover:border-olive-800'
+                    ? 'shadow-sm font-semibold'
+                    : 'bg-[#0d1117] border-github-border text-github-muted hover:text-white'
                 }`}
+                style={
+                  status === 'completed'
+                    ? {
+                        backgroundColor: theme.accentDark,
+                        borderColor: theme.accent,
+                        color: '#ffffff'
+                      }
+                    : {}
+                }
               >
-                <CheckCircle2 className={`w-5 h-5 ${status === 'completed' ? 'text-olive-400' : 'text-github-muted'}`} />
+                <CheckCircle2
+                  className="w-5 h-5"
+                  style={{ color: status === 'completed' ? theme.accentLight : undefined }}
+                />
                 <span>Completed</span>
               </button>
 
@@ -100,7 +121,7 @@ export default function CheckInModal({
                 onClick={() => setStatus('skipped')}
                 className={`p-3 rounded-lg border flex flex-col items-center gap-1.5 transition-all text-xs font-medium ${
                   status === 'skipped'
-                    ? 'bg-amber-950/60 border-amber-500 text-white shadow-sm'
+                    ? 'bg-amber-950/60 border-amber-500 text-white shadow-sm font-semibold'
                     : 'bg-[#0d1117] border-github-border text-github-muted hover:text-white hover:border-amber-800'
                 }`}
               >
@@ -113,7 +134,7 @@ export default function CheckInModal({
                 onClick={() => setStatus('pending')}
                 className={`p-3 rounded-lg border flex flex-col items-center gap-1.5 transition-all text-xs font-medium ${
                   status === 'pending'
-                    ? 'bg-[#21262d] border-github-borderLight text-white shadow-sm'
+                    ? 'bg-[#21262d] border-github-borderLight text-white shadow-sm font-semibold'
                     : 'bg-[#0d1117] border-github-border text-github-muted hover:text-white'
                 }`}
               >
@@ -126,7 +147,7 @@ export default function CheckInModal({
           {/* Reflection / Daily Note */}
           <div>
             <label className="block text-xs font-semibold text-github-text uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>Daily Reflection & Accomplishments</span>
+              <span>Individual Day Note &amp; Accomplishment</span>
               <span className="text-[10px] text-github-muted font-normal">Optional</span>
             </label>
             <textarea
@@ -134,7 +155,7 @@ export default function CheckInModal({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="What did you accomplish today? Any lessons or reflections?"
-              className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted focus:border-olive-500 outline-none resize-none"
+              className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted outline-none resize-none focus:border-white/40"
             />
           </div>
 
@@ -150,10 +171,10 @@ export default function CheckInModal({
             <button
               type="button"
               onClick={() => handleSave()}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-olive-700 hover:bg-olive-600 text-white shadow-md border border-olive-500/40 transition-all"
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold ${theme.primaryBtn} shadow-md transition-all`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Save Check-in
+              <span>Save Check-in</span>
             </button>
           </div>
         </div>

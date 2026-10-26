@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { X, Flame, Calendar, Tag, FileText, CheckCircle2 } from 'lucide-react';
 import { formatDateStr } from '../data/initialData';
+import { useTheme } from '../context/ThemeContext';
 
 export default function ChallengeModal({ isOpen, onClose, onCreateChallenge }) {
+  const { theme } = useTheme();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Coding');
@@ -39,11 +41,18 @@ export default function ChallengeModal({ isOpen, onClose, onCreateChallenge }) {
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-github-border bg-[#0d1117]">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-olive-950 border border-olive-700/40 text-olive-400">
+            <div
+              className="p-2 rounded-lg border flex items-center justify-center"
+              style={{
+                backgroundColor: theme.accentDark,
+                borderColor: theme.accent + '40',
+                color: theme.accent
+              }}
+            >
               <Flame className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">Create Custom Goal Challenge</h3>
+              <h3 className="text-base font-bold text-white">Create Goal Challenge</h3>
               <p className="text-xs text-github-muted">Design a custom duration streak challenge</p>
             </div>
           </div>
@@ -68,7 +77,7 @@ export default function ChallengeModal({ isOpen, onClose, onCreateChallenge }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. 30-Day LeetCode & React Mastery, 75 Hard, etc."
-              className="w-full px-3.5 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white placeholder-github-muted focus:border-olive-500 focus:ring-1 focus:ring-olive-500 outline-none"
+              className="w-full px-3.5 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white placeholder-github-muted focus:border-white/40 outline-none"
             />
           </div>
 
@@ -85,9 +94,14 @@ export default function ChallengeModal({ isOpen, onClose, onCreateChallenge }) {
                   onClick={() => setCategory(cat)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                     category === cat
-                      ? 'bg-olive-800 text-white border-olive-600 shadow-sm'
+                      ? 'text-white border-white/50 shadow-sm'
                       : 'bg-[#0d1117] text-github-muted border-github-border hover:text-white hover:border-github-borderLight'
                   }`}
+                  style={{
+                    backgroundColor: category === cat ? theme.accent : undefined,
+                    color: category === cat ? '#0d1117' : undefined,
+                    fontWeight: category === cat ? 'bold' : 'normal'
+                  }}
                 >
                   {cat}
                 </button>
@@ -108,9 +122,14 @@ export default function ChallengeModal({ isOpen, onClose, onCreateChallenge }) {
                   onClick={() => setCustomDays(days)}
                   className={`px-3 py-1 rounded-md text-xs font-mono font-medium border transition-all ${
                     parseInt(customDays, 10) === days
-                      ? 'bg-olive-700 text-white border-olive-500'
+                      ? 'border-white/50 shadow-sm'
                       : 'bg-[#0d1117] text-github-muted border-github-border hover:text-white'
                   }`}
+                  style={{
+                    backgroundColor: parseInt(customDays, 10) === days ? theme.accent : undefined,
+                    color: parseInt(customDays, 10) === days ? '#0d1117' : undefined,
+                    fontWeight: parseInt(customDays, 10) === days ? 'bold' : 'normal'
+                  }}
                 >
                   {days} Days
                 </button>
@@ -124,7 +143,7 @@ export default function ChallengeModal({ isOpen, onClose, onCreateChallenge }) {
                 max="365"
                 value={customDays}
                 onChange={(e) => setCustomDays(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                className="w-24 px-3 py-1.5 bg-[#0d1117] border border-github-border rounded-md text-xs font-mono text-white text-center focus:border-olive-500 outline-none"
+                className="w-24 px-3 py-1.5 bg-[#0d1117] border border-github-border rounded-md text-xs font-mono text-white text-center outline-none focus:border-white/40"
               />
               <span className="text-xs text-github-muted">days total</span>
             </div>
@@ -139,21 +158,21 @@ export default function ChallengeModal({ isOpen, onClose, onCreateChallenge }) {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white focus:border-olive-500 outline-none"
+              className="w-full px-3.5 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white outline-none focus:border-white/40"
             />
           </div>
 
           {/* Description */}
           <div>
             <label className="block text-xs font-semibold text-github-text uppercase tracking-wider mb-1.5">
-              Description & Rules (Optional)
+              Description &amp; Goals (Optional)
             </label>
             <textarea
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="What are your non-negotiable daily goals for this challenge?"
-              className="w-full px-3.5 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white placeholder-github-muted focus:border-olive-500 focus:ring-1 focus:ring-olive-500 outline-none resize-none"
+              placeholder="What are your daily goals for this challenge?"
+              className="w-full px-3.5 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white placeholder-github-muted outline-none resize-none focus:border-white/40"
             />
           </div>
 
@@ -168,10 +187,10 @@ export default function ChallengeModal({ isOpen, onClose, onCreateChallenge }) {
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-semibold bg-olive-700 hover:bg-olive-600 text-white shadow-md border border-olive-500/40 transition-all"
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-semibold ${theme.primaryBtn} shadow-md transition-all`}
             >
               <CheckCircle2 className="w-4 h-4" />
-              Launch Challenge Grid
+              <span>Launch Challenge</span>
             </button>
           </div>
         </form>

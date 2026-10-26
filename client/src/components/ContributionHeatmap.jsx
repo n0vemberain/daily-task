@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Calendar, ChevronRight, Info, Filter, Palette, CheckSquare, Sparkles } from 'lucide-react';
 import { formatDateStr } from '../data/initialData';
+import { useTheme } from '../context/ThemeContext';
 
 // Color themes with high-contrast, accessible scales
 export const HEATMAP_THEMES = {
@@ -100,10 +101,19 @@ export default function ContributionHeatmap({
   // Timeframe: 'year' (52 weeks), 'half' (26 weeks), 'month' (5 weeks / 35 days)
   const [timeRange, setTimeRange] = useState('year');
 
-  // Theme state persisted in localStorage
-  const [currentThemeId, setCurrentThemeId] = useState(() => {
-    return localStorage.getItem('daily_task_heatmap_theme') || 'olive';
+  // Global theme synchronized with App (with reactive local state)
+  const themeContext = useTheme();
+  const [themeIdState, setThemeIdState] = useState(() => {
+    return localStorage.getItem('daily_task_heatmap_theme') || themeContext?.themeId || 'olive';
   });
+
+  useEffect(() => {
+    if (themeContext?.themeId) {
+      setThemeIdState(themeContext.themeId);
+    }
+  }, [themeContext?.themeId]);
+
+  const activeThemeId = themeIdState;
 
   const [hoveredDay, setHoveredDay] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -112,11 +122,14 @@ export default function ContributionHeatmap({
 
   const scrollContainerRef = useRef(null);
 
-  const currentTheme = HEATMAP_THEMES[currentThemeId] || HEATMAP_THEMES.olive;
+  const currentTheme = HEATMAP_THEMES[activeThemeId] || HEATMAP_THEMES.olive;
 
-  const handleSelectTheme = (themeId) => {
-    setCurrentThemeId(themeId);
-    localStorage.setItem('daily_task_heatmap_theme', themeId);
+  const handleSelectTheme = (newId) => {
+    setThemeIdState(newId);
+    if (themeContext?.setThemeId) {
+      themeContext.setThemeId(newId);
+    }
+    localStorage.setItem('daily_task_heatmap_theme', newId);
     setShowThemePicker(false);
   };
 
@@ -331,7 +344,7 @@ export default function ContributionHeatmap({
                       key={theme.id}
                       onClick={() => handleSelectTheme(theme.id)}
                       className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        currentThemeId === theme.id
+                        activeThemeId === theme.id
                           ? 'bg-[#161b22] text-white border border-github-border'
                           : 'text-github-muted hover:text-white hover:bg-[#161b22]'
                       }`}
@@ -456,7 +469,7 @@ export default function ContributionHeatmap({
                         </span>
                         {day.count > 0 && !day.isFuture && (
                           <span className="text-[9px] font-bold font-mono mt-0.5 opacity-90">
-                            {day.count}✓
+                            +{day.count}
                           </span>
                         )}
                         {day.isToday && (

@@ -6,17 +6,31 @@ import ChallengeTracker from './components/ChallengeTracker';
 import TaskManager from './components/TaskManager';
 import UserProfile from './components/UserProfile';
 import BackupModal from './components/BackupModal';
+import LoginModal from './components/LoginModal';
+import DataCleanModal from './components/DataCleanModal';
 import MobileBottomNav from './components/MobileBottomNav';
 import { storageService } from './services/storageService';
 import { apiService } from './services/apiService';
 import { formatDateStr, initialUserProfile, initialTasks, initialChallenges } from './data/initialData';
-import { Calendar, Flame, CheckSquare, Database, Sparkles, Quote } from 'lucide-react';
+import { Calendar, Flame, CheckSquare, Database, Quote } from 'lucide-react';
 import GithubIcon from './components/GithubIcon';
+import { useTheme } from './context/ThemeContext';
 
 export default function App() {
+  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedDate, setSelectedDate] = useState(null);
+
+  // Modals state
   const [isBackupOpen, setIsBackupOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isCleanOpen, setIsCleanOpen] = useState(false);
+
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    const saved = localStorage.getItem('daily_task_auth_session');
+    return saved !== 'false';
+  });
 
   // Core State initialized from LocalStorage
   const [userProfile, setUserProfile] = useState(() => storageService.getUserProfile());
@@ -95,6 +109,17 @@ export default function App() {
     return () => clearInterval(interval);
   }, [checkServerStatus, performSync]);
 
+  // Handlers for Authentication
+  const handleLoginSuccess = ({ rememberMe, username }) => {
+    setIsAuthenticated(true);
+    localStorage.setItem('daily_task_auth_session', 'true');
+  };
+
+  const handleSignOut = () => {
+    setIsAuthenticated(false);
+    localStorage.setItem('daily_task_auth_session', 'false');
+  };
+
   // Handlers for User Profile
   const handleSaveProfile = async (updated) => {
     setUserProfile(updated);
@@ -137,6 +162,21 @@ export default function App() {
     setTasks(updated);
     storageService.saveTasks(updated);
     await apiService.deleteTask(taskId);
+  };
+
+  // Individual Task Edit Handler
+  const handleEditTask = async (taskId, updatedFields) => {
+    const updated = tasks.map((t) => {
+      if (t.id === taskId || t._id === taskId) {
+        const patched = { ...t, ...updatedFields };
+        apiService.updateTask(taskId, patched);
+        return patched;
+      }
+      return t;
+    });
+
+    setTasks(updated);
+    storageService.saveTasks(updated);
   };
 
   // Handlers for Challenges
@@ -212,7 +252,57 @@ export default function App() {
     await apiService.deleteChallenge(challengeId);
   };
 
-  // Data Restore & Reset Handlers
+  // Individual Challenge Edit Handler
+  const handleEditChallenge = async (challengeId, updatedFields) => {
+    const updated = challenges.map((ch) => {
+      if (ch.id === challengeId || ch._id === challengeId) {
+        return { ...ch, ...updatedFields };
+      }
+      return ch;
+    });
+
+    setChallenges(updated);
+    storageService.saveChallenges(updated);
+    performSync({ user: userProfile, tasks, challenges: updated });
+  };
+
+  // Data Clean Handlers
+  const handleClearAllData = async () => {
+    setTasks([]);
+    setChallenges([]);
+    storageService.saveTasks([]);
+    storageService.saveChallenges([]);
+    await performSync({ user: userProfile, tasks: [], challenges: [] });
+  };
+
+  const handleClearCompletedTasks = async () => {
+    const remaining = tasks.filter((t) => !t.completed);
+    setTasks(remaining);
+    storageService.saveTasks(remaining);
+    await performSync({ user: userProfile, tasks: remaining, challenges });
+  };
+
+  const handleClearChallenges = async () => {
+    setChallenges([]);
+    storageService.saveChallenges([]);
+    await performSync({ user: userProfile, tasks, challenges: [] });
+  };
+
+  const handleResetDemoData = () => {
+    setUserProfile(initialUserProfile);
+    setTasks(initialTasks);
+    setChallenges(initialChallenges);
+    storageService.saveUserProfile(initialUserProfile);
+    storageService.saveTasks(initialTasks);
+    storageService.saveChallenges(initialChallenges);
+    performSync({
+      user: initialUserProfile,
+      tasks: initialTasks,
+      challenges: initialChallenges
+    });
+  };
+
+  // Data Restore
   const handleRestoreData = (restored) => {
     if (restored.user) {
       setUserProfile(restored.user);
@@ -229,20 +319,6 @@ export default function App() {
     performSync(restored);
   };
 
-  const handleResetData = () => {
-    setUserProfile(initialUserProfile);
-    setTasks(initialTasks);
-    setChallenges(initialChallenges);
-    storageService.saveUserProfile(initialUserProfile);
-    storageService.saveTasks(initialTasks);
-    storageService.saveChallenges(initialChallenges);
-    performSync({
-      user: initialUserProfile,
-      tasks: initialTasks,
-      challenges: initialChallenges
-    });
-  };
-
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#c9d1d9] flex flex-col font-sans pb-16 md:pb-0">
       {/* Top Navigation */}
@@ -255,25 +331,47 @@ export default function App() {
         lastSyncTime={lastSyncTime}
         onManualSync={() => performSync()}
         onOpenBackup={() => setIsBackupOpen(true)}
+        onOpenClean={() => setIsCleanOpen(true)}
+        isAuthenticated={isAuthenticated}
+        onOpenLogin={() => setIsLoginOpen(true)}
+        onSignOut={handleSignOut}
       />
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Daily Motivation Banner */}
-        <div className="mb-5 bg-gradient-to-r from-olive-950/60 via-[#161b22] to-[#161b22] border border-olive-700/30 rounded-xl p-3 sm:p-4 flex items-center justify-between gap-3 shadow-sm">
+        <div
+          className="mb-5 border rounded-xl p-3 sm:p-4 flex items-center justify-between gap-3 shadow-sm transition-all"
+          style={{
+            background: `linear-gradient(to right, ${theme.accentDark} 0%, #161b22 60%, #161b22 100%)`,
+            borderColor: theme.accent + '35'
+          }}
+        >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-olive-900/60 text-olive-300 border border-olive-600/40 hidden sm:flex">
+            <div
+              className="p-2 rounded-lg border hidden sm:flex items-center justify-center"
+              style={{
+                backgroundColor: theme.accentDark,
+                borderColor: theme.accent + '40',
+                color: theme.accentLight
+              }}
+            >
               <Quote className="w-4 h-4" />
             </div>
             <div>
               <p className="text-xs sm:text-sm text-white font-medium italic">
                 "{todayQuote.text}"
               </p>
-              <span className="text-[10px] text-olive-400 font-mono">— {todayQuote.author}</span>
+              <span className="text-[10px] font-mono" style={{ color: theme.accentLight }}>
+                — {todayQuote.author}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#0d1117] border border-github-border text-[11px] font-mono text-github-muted whitespace-nowrap">
-            <span className="w-2 h-2 rounded-full bg-olive-400"></span>
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: theme.accent }}
+            />
             <span>{formatDateStr(new Date())}</span>
           </div>
         </div>
@@ -284,7 +382,7 @@ export default function App() {
             {/* Quick Metrics */}
             <StatsOverview tasks={tasks} challenges={challenges} />
 
-            {/* Olive Green Contribution Heatmap */}
+            {/* Dynamic Color Heatmap */}
             <ContributionHeatmap
               tasks={tasks}
               selectedDate={selectedDate}
@@ -299,8 +397,10 @@ export default function App() {
                 onAddTask={handleAddTask}
                 onToggleTask={handleToggleTask}
                 onDeleteTask={handleDeleteTask}
+                onEditTask={handleEditTask}
                 selectedDate={selectedDate}
                 onClearDateFilter={() => setSelectedDate(null)}
+                onOpenDataClean={() => setIsCleanOpen(true)}
               />
             </div>
           </div>
@@ -312,6 +412,7 @@ export default function App() {
             onCreateChallenge={handleCreateChallenge}
             onCheckIn={handleCheckIn}
             onDeleteChallenge={handleDeleteChallenge}
+            onEditChallenge={handleEditChallenge}
           />
         )}
 
@@ -321,8 +422,10 @@ export default function App() {
             onAddTask={handleAddTask}
             onToggleTask={handleToggleTask}
             onDeleteTask={handleDeleteTask}
+            onEditTask={handleEditTask}
             selectedDate={selectedDate}
             onClearDateFilter={() => setSelectedDate(null)}
+            onOpenDataClean={() => setIsCleanOpen(true)}
           />
         )}
 
@@ -332,9 +435,33 @@ export default function App() {
             onSaveProfile={handleSaveProfile}
             mongoStatus={mongoStatus}
             lastSyncTime={lastSyncTime}
+            isAuthenticated={isAuthenticated}
+            onOpenLogin={() => setIsLoginOpen(true)}
+            onSignOut={handleSignOut}
+            onOpenCleanModal={() => setIsCleanOpen(true)}
           />
         )}
       </main>
+
+      {/* Authentication Modal */}
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        userProfile={userProfile}
+        onLoginSuccess={handleLoginSuccess}
+      />
+
+      {/* Selective & Global Data Cleaning Center */}
+      <DataCleanModal
+        isOpen={isCleanOpen}
+        onClose={() => setIsCleanOpen(false)}
+        onClearAllData={handleClearAllData}
+        onClearCompletedTasks={handleClearCompletedTasks}
+        onClearChallenges={handleClearChallenges}
+        onResetDemoData={handleResetDemoData}
+        tasksCount={tasks.length}
+        challengesCount={challenges.length}
+      />
 
       {/* Backup & Portability Modal */}
       <BackupModal
@@ -342,7 +469,7 @@ export default function App() {
         onClose={() => setIsBackupOpen(false)}
         data={{ user: userProfile, tasks, challenges }}
         onRestoreData={handleRestoreData}
-        onResetData={handleResetData}
+        onResetData={handleResetDemoData}
       />
 
       {/* Mobile Sticky Bottom Navigation (Screens < 768px) */}
@@ -359,8 +486,11 @@ export default function App() {
       <footer className="border-t border-github-border bg-[#0d1117] py-6 text-center text-xs text-github-muted hidden md:block">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-olive-500"></span>
-            <span>Personal Daily Activity Dashboard • GitHub Olive Green Heatmap</span>
+            <span
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: theme.accent }}
+            />
+            <span>Personal Daily Activity Dashboard • {theme.name} Palette</span>
           </div>
           <div className="flex items-center gap-4">
             <a
@@ -369,11 +499,13 @@ export default function App() {
               rel="noreferrer"
               className="hover:text-white flex items-center gap-1.5 transition-colors"
             >
-              <GithubIcon className="w-3.5 h-3.5 text-olive-400" />
+              <GithubIcon className="w-3.5 h-3.5" style={{ color: theme.accent }} />
               <span>n0vemberain/daily-task</span>
             </a>
             <span>•</span>
-            <span className="text-olive-400 font-mono">Dual-Store: LocalStorage + MongoDB</span>
+            <span className="font-mono" style={{ color: theme.accentLight }}>
+              Dual-Store: LocalStorage + MongoDB
+            </span>
           </div>
         </div>
       </footer>

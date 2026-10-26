@@ -10,24 +10,31 @@ import {
   AlertCircle,
   Filter,
   Search,
-  Sparkles
+  Edit3,
+  ShieldAlert
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatDateStr } from '../data/initialData';
 import { soundEffects } from '../utils/audioFeedback';
+import { useTheme } from '../context/ThemeContext';
+import EditTaskModal from './EditTaskModal';
 
 export default function TaskManager({
   tasks,
   onAddTask,
   onToggleTask,
   onDeleteTask,
+  onEditTask,
   selectedDate,
-  onClearDateFilter
+  onClearDateFilter,
+  onOpenDataClean
 }) {
+  const { theme } = useTheme();
   const [filter, setFilter] = useState(selectedDate ? 'selectedDate' : 'today');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
 
   // Form State
   const [newTitle, setNewTitle] = useState('');
@@ -51,7 +58,7 @@ export default function TaskManager({
           particleCount: 40,
           spread: 50,
           origin: { y: 0.8 },
-          colors: ['#7eb644', '#5a8533', '#94af54']
+          colors: [theme.accent, theme.accentLight, '#ffffff']
         });
       } catch (e) {}
     }
@@ -80,7 +87,6 @@ export default function TaskManager({
 
   // Filter tasks
   const filteredTasks = tasks.filter((t) => {
-    // Search query match
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = t.title?.toLowerCase().includes(q);
@@ -88,12 +94,10 @@ export default function TaskManager({
       if (!matchTitle && !matchCategory) return false;
     }
 
-    // Category match
     if (categoryFilter !== 'All' && t.category !== categoryFilter) {
       return false;
     }
 
-    // Date / completion status match
     if (selectedDate) {
       return t.date === selectedDate;
     }
@@ -107,49 +111,77 @@ export default function TaskManager({
     if (filter === 'completed') {
       return t.completed;
     }
-    return true; // 'all'
+    return true;
   });
 
   const todayTasks = tasks.filter((t) => t.date === todayStr);
   const todayDone = todayTasks.filter((t) => t.completed).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Top Banner */}
-      <div className="bg-[#161b22] border border-github-border rounded-xl p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-[#161b22] border border-github-border rounded-xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <CheckSquare className="w-5 h-5 text-olive-400" />
+              <CheckSquare className="w-5 h-5" style={{ color: theme.accent }} />
               Daily Task Activity Manager
             </h2>
             {selectedDate ? (
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-olive-950 text-olive-300 border border-olive-700/40 font-mono">
+              <span
+                className="text-xs px-2.5 py-0.5 rounded-full font-mono border"
+                style={{
+                  backgroundColor: theme.accentDark,
+                  color: theme.accent,
+                  borderColor: theme.accent + '40'
+                }}
+              >
                 Filtered: {selectedDate}
               </span>
             ) : (
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-olive-950 text-olive-300 border border-olive-700/40">
+              <span
+                className="text-xs px-2.5 py-0.5 rounded-full font-medium border"
+                style={{
+                  backgroundColor: theme.accentDark,
+                  color: theme.accent,
+                  borderColor: theme.accent + '40'
+                }}
+              >
                 Today: {todayDone}/{todayTasks.length} Completed
               </span>
             )}
           </div>
           <p className="text-xs text-github-muted mt-1">
-            Complete daily tasks to light up the GitHub contribution heatmap in olive green
+            Complete daily tasks to illuminate the activity matrix and build consistency
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap justify-end">
           {selectedDate && (
             <button
               onClick={onClearDateFilter}
-              className="text-xs text-olive-400 hover:text-olive-300 underline font-medium mr-1"
+              className="text-xs underline font-medium mr-1"
+              style={{ color: theme.accent }}
             >
               Clear Date Filter
             </button>
           )}
+
+          {onOpenDataClean && (
+            <button
+              onClick={onOpenDataClean}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-github-text border border-github-border transition-colors whitespace-nowrap"
+              title="Clean or reset data"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+              <span>Clean Data</span>
+            </button>
+          )}
+
           <button
             onClick={() => setIsAddFormOpen(!isAddFormOpen)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-olive-700 hover:bg-olive-600 text-white shadow-md border border-olive-500/40 transition-all whitespace-nowrap ml-auto sm:ml-0"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white shadow-md transition-all whitespace-nowrap"
+            style={{ backgroundColor: theme.accent, color: '#0d1117' }}
           >
             <Plus className="w-4 h-4" />
             <span>{isAddFormOpen ? 'Close Form' : 'Add New Task'}</span>
@@ -161,11 +193,12 @@ export default function TaskManager({
       {isAddFormOpen && (
         <form
           onSubmit={handleCreateTask}
-          className="bg-[#161b22] border border-olive-600/40 rounded-xl p-5 shadow-lg space-y-4 animate-in fade-in"
+          className="bg-[#161b22] border rounded-xl p-4 sm:p-5 shadow-lg space-y-4 animate-in fade-in"
+          style={{ borderColor: theme.accent + '60' }}
         >
           <div className="flex items-center justify-between border-b border-github-border pb-3">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Plus className="w-4 h-4 text-olive-400" />
+              <Plus className="w-4 h-4" style={{ color: theme.accent }} />
               Create New Daily Task
             </h3>
             <span className="text-xs text-github-muted">Linked to Activity Heatmap</span>
@@ -183,7 +216,7 @@ export default function TaskManager({
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 placeholder="e.g. Implement dynamic heat map tooltip..."
-                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted focus:border-olive-500 outline-none"
+                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted focus:outline-none"
               />
             </div>
 
@@ -195,7 +228,7 @@ export default function TaskManager({
               <select
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
-                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:border-olive-500 outline-none"
+                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none"
               >
                 {categories
                   .filter((c) => c !== 'All')
@@ -215,7 +248,7 @@ export default function TaskManager({
               <select
                 value={newPriority}
                 onChange={(e) => setNewPriority(e.target.value)}
-                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:border-olive-500 outline-none"
+                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none"
               >
                 <option value="High">High</option>
                 <option value="Medium">Medium</option>
@@ -232,7 +265,7 @@ export default function TaskManager({
                 type="date"
                 value={newDate}
                 onChange={(e) => setNewDate(e.target.value)}
-                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:border-olive-500 outline-none"
+                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none"
               />
             </div>
 
@@ -247,7 +280,7 @@ export default function TaskManager({
                 step="5"
                 value={newEstimatedMinutes}
                 onChange={(e) => setNewEstimatedMinutes(e.target.value)}
-                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:border-olive-500 outline-none"
+                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none"
               />
             </div>
           </div>
@@ -262,9 +295,10 @@ export default function TaskManager({
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-olive-700 hover:bg-olive-600 text-white shadow border border-olive-500/40"
+              className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white shadow"
+              style={{ backgroundColor: theme.accent, color: '#0d1117' }}
             >
-              Save &amp; Add to Today
+              Save &amp; Add Task
             </button>
           </div>
         </form>
@@ -279,9 +313,18 @@ export default function TaskManager({
               onClick={() => setFilter('today')}
               className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
                 filter === 'today'
-                  ? 'bg-olive-800 text-white shadow-sm border border-olive-600/40'
+                  ? 'text-white border shadow-sm'
                   : 'text-github-muted hover:text-white'
               }`}
+              style={
+                filter === 'today'
+                  ? {
+                      backgroundColor: theme.accentDark,
+                      color: theme.accent,
+                      borderColor: theme.accent + '40'
+                    }
+                  : {}
+              }
             >
               Today ({todayTasks.length})
             </button>
@@ -289,9 +332,18 @@ export default function TaskManager({
               onClick={() => setFilter('pending')}
               className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
                 filter === 'pending'
-                  ? 'bg-olive-800 text-white shadow-sm border border-olive-600/40'
+                  ? 'text-white border shadow-sm'
                   : 'text-github-muted hover:text-white'
               }`}
+              style={
+                filter === 'pending'
+                  ? {
+                      backgroundColor: theme.accentDark,
+                      color: theme.accent,
+                      borderColor: theme.accent + '40'
+                    }
+                  : {}
+              }
             >
               Pending ({tasks.filter((t) => !t.completed).length})
             </button>
@@ -299,9 +351,18 @@ export default function TaskManager({
               onClick={() => setFilter('completed')}
               className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
                 filter === 'completed'
-                  ? 'bg-olive-800 text-white shadow-sm border border-olive-600/40'
+                  ? 'text-white border shadow-sm'
                   : 'text-github-muted hover:text-white'
               }`}
+              style={
+                filter === 'completed'
+                  ? {
+                      backgroundColor: theme.accentDark,
+                      color: theme.accent,
+                      borderColor: theme.accent + '40'
+                    }
+                  : {}
+              }
             >
               Completed ({tasks.filter((t) => t.completed).length})
             </button>
@@ -309,9 +370,18 @@ export default function TaskManager({
               onClick={() => setFilter('all')}
               className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
                 filter === 'all'
-                  ? 'bg-olive-800 text-white shadow-sm border border-olive-600/40'
+                  ? 'text-white border shadow-sm'
                   : 'text-github-muted hover:text-white'
               }`}
+              style={
+                filter === 'all'
+                  ? {
+                      backgroundColor: theme.accentDark,
+                      color: theme.accent,
+                      borderColor: theme.accent + '40'
+                    }
+                  : {}
+              }
             >
               All ({tasks.length})
             </button>
@@ -328,7 +398,7 @@ export default function TaskManager({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search tasks..."
-              className="w-full sm:w-44 pl-8 pr-2.5 py-1.5 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted focus:border-olive-500 outline-none"
+              className="w-full sm:w-44 pl-8 pr-2.5 py-1.5 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted focus:outline-none"
             />
           </div>
 
@@ -340,9 +410,18 @@ export default function TaskManager({
                 onClick={() => setCategoryFilter(cat)}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
                   categoryFilter === cat
-                    ? 'bg-olive-950 text-olive-300 border border-olive-700/60'
+                    ? 'border'
                     : 'text-github-muted hover:text-white bg-[#0d1117] border border-github-border'
                 }`}
+                style={
+                  categoryFilter === cat
+                    ? {
+                        backgroundColor: theme.accentDark,
+                        color: theme.accent,
+                        borderColor: theme.accent + '50'
+                      }
+                    : {}
+                }
               >
                 {cat}
               </button>
@@ -371,8 +450,8 @@ export default function TaskManager({
                 key={taskId}
                 className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
                   task.completed
-                    ? 'bg-[#161b22]/70 border-olive-900/30 text-github-muted'
-                    : 'bg-[#161b22] border-github-border hover:border-olive-600/40 text-white shadow-sm'
+                    ? 'bg-[#161b22]/70 border-github-border/50 text-github-muted'
+                    : 'bg-[#161b22] border-github-border hover:border-white/30 text-white shadow-sm'
                 }`}
               >
                 {/* Left: Checkbox + Title */}
@@ -383,9 +462,12 @@ export default function TaskManager({
                     title={task.completed ? 'Mark incomplete' : 'Mark completed'}
                   >
                     {task.completed ? (
-                      <CheckCircle2 className="w-5 h-5 text-olive-400 hover:text-olive-300 transition-colors" />
+                      <CheckCircle2
+                        className="w-5 h-5 transition-colors"
+                        style={{ color: theme.accent }}
+                      />
                     ) : (
-                      <Circle className="w-5 h-5 text-github-muted hover:text-olive-400 transition-colors" />
+                      <Circle className="w-5 h-5 text-github-muted hover:text-white transition-colors" />
                     )}
                   </button>
 
@@ -408,8 +490,8 @@ export default function TaskManager({
                   </div>
                 </div>
 
-                {/* Right: Badges & Delete */}
-                <div className="flex items-center gap-2 flex-shrink-0">
+                {/* Right: Badges, Edit & Delete */}
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                   {/* Category Pill */}
                   <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#0d1117] text-github-text border border-github-border hidden sm:inline">
                     {task.category}
@@ -428,6 +510,15 @@ export default function TaskManager({
                     {task.priority}
                   </span>
 
+                  {/* Individual Edit Task Button */}
+                  <button
+                    onClick={() => setEditingTask(task)}
+                    className="p-1 rounded-md text-github-muted hover:text-white hover:bg-[#21262d] transition-colors"
+                    title="Edit individual task"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+
                   {/* Delete button */}
                   <button
                     onClick={() => onDeleteTask(taskId)}
@@ -442,6 +533,14 @@ export default function TaskManager({
           })
         )}
       </div>
+
+      {/* Edit Task Modal */}
+      <EditTaskModal
+        isOpen={Boolean(editingTask)}
+        onClose={() => setEditingTask(null)}
+        task={editingTask}
+        onSaveTask={onEditTask}
+      />
     </div>
   );
 }

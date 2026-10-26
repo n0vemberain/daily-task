@@ -1,11 +1,14 @@
 import React from 'react';
 import { CalendarDays, Flame, CheckSquare, User, Plus } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 export default function MobileBottomNav({
   activeTab,
   setActiveTab,
   onQuickAdd
 }) {
+  const { theme } = useTheme();
+
   const tabs = [
     { id: 'dashboard', label: 'Heatmap', icon: CalendarDays },
     { id: 'challenges', label: 'Goals', icon: Flame },
@@ -24,8 +27,9 @@ export default function MobileBottomNav({
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex flex-col items-center justify-center min-w-[54px] min-h-[44px] rounded-lg transition-colors ${
-                isActive ? 'text-olive-400 font-bold' : 'text-github-muted hover:text-white'
+                isActive ? 'font-bold' : 'text-github-muted hover:text-white'
               }`}
+              style={{ color: isActive ? theme.accent : undefined }}
             >
               <Icon className="w-5 h-5" />
               <span className="text-[10px] mt-1">{tab.label}</span>
@@ -36,7 +40,11 @@ export default function MobileBottomNav({
         {/* Center Quick Add Action Button */}
         <button
           onClick={onQuickAdd}
-          className="w-12 h-12 -mt-5 rounded-full bg-gradient-to-tr from-olive-700 to-olive-500 text-white flex items-center justify-center shadow-lg shadow-olive-900/60 border-2 border-[#0d1117] active:scale-95 transition-transform"
+          className="w-12 h-12 -mt-5 rounded-full text-white flex items-center justify-center shadow-lg border-2 border-[#0d1117] active:scale-95 transition-transform"
+          style={{
+            backgroundColor: theme.accent,
+            boxShadow: `0 8px 16px ${theme.accent}40`
+          }}
           title="Quick Add Task"
         >
           <Plus className="w-6 h-6" />
@@ -50,8 +58,9 @@ export default function MobileBottomNav({
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex flex-col items-center justify-center min-w-[54px] min-h-[44px] rounded-lg transition-colors ${
-                isActive ? 'text-olive-400 font-bold' : 'text-github-muted hover:text-white'
+                isActive ? 'font-bold' : 'text-github-muted hover:text-white'
               }`}
+              style={{ color: isActive ? theme.accent : undefined }}
             >
               <Icon className="w-5 h-5" />
               <span className="text-[10px] mt-1">{tab.label}</span>

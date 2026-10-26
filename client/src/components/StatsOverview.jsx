@@ -1,8 +1,10 @@
 import React from 'react';
 import { Flame, Trophy, CheckCircle2, Target, Calendar } from 'lucide-react';
 import { formatDateStr } from '../data/initialData';
+import { useTheme } from '../context/ThemeContext';
 
 export default function StatsOverview({ tasks, challenges }) {
+  const { theme } = useTheme();
   const todayStr = formatDateStr(new Date());
 
   // Calculate tasks completed today
@@ -35,10 +37,8 @@ export default function StatsOverview({ tasks, challenges }) {
   let currentStreak = 0;
   let tempDate = new Date();
 
-  // If today is completed or yesterday is completed, start counting
   const todayIsDone = completedDatesSet.has(formatDateStr(tempDate));
   if (!todayIsDone) {
-    // Check if yesterday was completed
     tempDate.setDate(tempDate.getDate() - 1);
   }
 
@@ -79,23 +79,34 @@ export default function StatsOverview({ tasks, challenges }) {
       sub: currentStreak > 0 ? 'Consistent momentum' : 'Start your streak today',
       icon: Flame,
       color: 'text-amber-400',
-      bgColor: 'bg-amber-950/30 border-amber-800/30'
+      boxStyle: {
+        backgroundColor: '#161b22',
+        borderColor: '#30363d'
+      }
     },
     {
       title: 'Longest Streak',
       value: `${longestStreak} Days`,
       sub: 'All-time personal record',
       icon: Trophy,
-      color: 'text-olive-400',
-      bgColor: 'bg-olive-950/40 border-olive-700/30'
+      color: 'text-white',
+      boxStyle: {
+        backgroundColor: theme.accentDark,
+        borderColor: theme.accent + '40'
+      },
+      iconColor: theme.accent
     },
     {
       title: 'Tasks Completed',
       value: totalCompleted,
       sub: `${todayCompleted} completed today`,
       icon: CheckCircle2,
-      color: 'text-olive-300',
-      bgColor: 'bg-olive-950/40 border-olive-700/30'
+      color: 'text-white',
+      boxStyle: {
+        backgroundColor: theme.accentDark,
+        borderColor: theme.accent + '40'
+      },
+      iconColor: theme.accent
     },
     {
       title: 'Challenge Goals',
@@ -103,28 +114,39 @@ export default function StatsOverview({ tasks, challenges }) {
       sub: `${challengeProgress}% total completed`,
       icon: Target,
       color: 'text-emerald-400',
-      bgColor: 'bg-emerald-950/30 border-emerald-800/30'
+      boxStyle: {
+        backgroundColor: '#161b22',
+        borderColor: '#30363d'
+      }
     }
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-6">
       {stats.map((stat, idx) => {
         const Icon = stat.icon;
         return (
           <div
             key={idx}
-            className={`p-4 rounded-xl border bg-[#161b22] ${stat.bgColor} backdrop-blur-sm transition-all hover:border-olive-500/40 flex flex-col justify-between`}
+            className="p-3 sm:p-4 rounded-xl border backdrop-blur-sm transition-all hover:border-white/30 flex flex-col justify-between"
+            style={stat.boxStyle}
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-github-muted">{stat.title}</span>
-              <div className={`p-1.5 rounded-lg bg-[#21262d] ${stat.color}`}>
-                <Icon className="w-4 h-4" />
+              <div
+                className="p-1.5 rounded-lg bg-[#21262d]"
+                style={stat.iconColor ? { color: stat.iconColor } : {}}
+              >
+                <Icon className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${stat.color || ''}`} />
               </div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-white tracking-tight">{stat.value}</div>
-              <div className="text-[11px] text-github-muted mt-0.5 truncate">{stat.sub}</div>
+              <div className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                {stat.value}
+              </div>
+              <div className="text-[10px] sm:text-[11px] text-github-muted mt-0.5 truncate">
+                {stat.sub}
+              </div>
             </div>
           </div>
         );

@@ -7,25 +7,34 @@ import {
   Eye,
   EyeOff,
   GraduationCap,
-  Sparkles,
   Plus,
   X,
   CheckCircle2,
   HardDrive,
   Database,
   Lock,
-  AtSign
+  AtSign,
+  LogOut,
+  LogIn,
+  ShieldCheck,
+  ShieldAlert
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 export default function UserProfile({
   userProfile,
   onSaveProfile,
   mongoStatus,
-  lastSyncTime
+  lastSyncTime,
+  isAuthenticated = true,
+  onOpenLogin,
+  onSignOut,
+  onOpenCleanModal
 }) {
+  const { theme } = useTheme();
   const [name, setName] = useState(userProfile?.name || 'Fatin Ishraque');
   const [username, setUsername] = useState(userProfile?.username || 'n0vemberain');
-  const [password, setPassword] = useState(userProfile?.password || '••••••••');
+  const [password, setPassword] = useState(userProfile?.password || 'Password123!');
   const [showPassword, setShowPassword] = useState(false);
   const [fieldOfStudy, setFieldOfStudy] = useState(
     userProfile?.fieldOfStudy || 'Computer Science & Engineering'
@@ -101,23 +110,100 @@ export default function UserProfile({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-[#161b22] border border-github-border rounded-xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-[#161b22] border border-github-border rounded-xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-olive-950 border border-olive-700/40 text-olive-400">
+          <div
+            className="p-2.5 rounded-xl border flex items-center justify-center"
+            style={{
+              backgroundColor: theme.accentDark,
+              borderColor: theme.accent + '40',
+              color: theme.accent
+            }}
+          >
             <User className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">User Profile & Academic Credentials</h2>
+            <h2 className="text-lg font-bold text-white">User Profile &amp; Settings</h2>
             <p className="text-xs text-github-muted">
-              Configure personal details, study field, and skill tags with dual MongoDB & LocalStorage persistence
+              Configure personal credentials, field of study, and individual profile options
             </p>
           </div>
         </div>
 
-        {/* Persistence Status Badge */}
-        <div className="flex items-center gap-2 text-xs text-github-muted bg-[#0d1117] px-3 py-1.5 rounded-lg border border-github-border">
-          <Database className="w-3.5 h-3.5 text-olive-400" />
-          <span>MongoDB & LocalStorage Sync</span>
+        {/* Persistence & Active Theme Pill */}
+        <div className="flex flex-wrap items-center gap-2 text-xs text-github-muted">
+          <div className="flex items-center gap-2 bg-[#0d1117] px-3 py-1.5 rounded-lg border border-github-border">
+            <Database className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+            <span>MongoDB &amp; LocalStorage</span>
+          </div>
+          <div
+            className="px-2.5 py-1 rounded-md text-[11px] font-semibold border"
+            style={{
+              backgroundColor: theme.accentDark,
+              borderColor: theme.accent + '50',
+              color: theme.accentLight
+            }}
+          >
+            Theme: {theme.name}
+          </div>
+        </div>
+      </div>
+
+      {/* Authentication & Session Management Card */}
+      <div className="bg-[#161b22] border border-github-border rounded-xl p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`p-2 rounded-lg border ${
+              isAuthenticated
+                ? 'bg-emerald-950/60 border-emerald-700/50 text-emerald-400'
+                : 'bg-amber-950/60 border-amber-700/50 text-amber-400'
+            }`}
+          >
+            {isAuthenticated ? <ShieldCheck className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white">
+                {isAuthenticated ? 'Authenticated Account Session' : 'Guest / Locked Session'}
+              </span>
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-semibold ${
+                  isAuthenticated
+                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/50'
+                    : 'bg-amber-950 text-amber-300 border border-amber-700/50'
+                }`}
+              >
+                {isAuthenticated ? 'Active' : 'Locked'}
+              </span>
+            </div>
+            <p className="text-xs text-github-muted mt-0.5">
+              {isAuthenticated
+                ? `Signed in as @${username || 'user'}. Data modifications are synced to your account.`
+                : 'Session is currently in guest read-only view. Sign in to edit or clean data.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          {isAuthenticated ? (
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-[#21262d] hover:bg-red-950/40 text-red-300 border border-github-border hover:border-red-800/50 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Lock / Sign Out</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenLogin}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold ${theme.primaryBtn} transition-all`}
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In Now</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -127,7 +213,7 @@ export default function UserProfile({
           {/* Profile Photo Section */}
           <div className="pb-6 border-b border-github-border">
             <label className="block text-xs font-semibold text-github-text uppercase tracking-wider mb-3">
-              Profile Photo
+              Profile Photo &amp; Avatar
             </label>
             <div className="flex flex-col sm:flex-row items-center gap-5">
               {/* Avatar Preview */}
@@ -136,17 +222,26 @@ export default function UserProfile({
                   <img
                     src={avatarUrl}
                     alt={name}
-                    className="w-24 h-24 rounded-full object-cover border-2 border-olive-500 shadow-lg"
+                    className="w-24 h-24 rounded-full object-cover border-2 shadow-lg"
+                    style={{ borderColor: theme.accent }}
                   />
                 ) : (
-                  <div className="w-24 h-24 rounded-full bg-olive-950 border-2 border-dashed border-olive-700/60 text-olive-300 flex flex-col items-center justify-center font-bold text-2xl shadow-inner">
+                  <div
+                    className="w-24 h-24 rounded-full flex flex-col items-center justify-center font-bold text-2xl shadow-inner border-2 border-dashed"
+                    style={{
+                      backgroundColor: theme.accentDark,
+                      borderColor: theme.accent + '70',
+                      color: theme.accentLight
+                    }}
+                  >
                     {name ? name.charAt(0).toUpperCase() : 'U'}
                   </div>
                 )}
 
                 <label
                   htmlFor="photo-upload"
-                  className="absolute bottom-0 right-0 p-2 rounded-full bg-olive-700 text-white hover:bg-olive-600 cursor-pointer shadow-md border border-white/20 transition-all"
+                  className="absolute bottom-0 right-0 p-2 rounded-full text-white cursor-pointer shadow-md border border-white/20 transition-all hover:scale-105"
+                  style={{ backgroundColor: theme.accent }}
                   title="Upload New Photo"
                 >
                   <Camera className="w-4 h-4" />
@@ -167,7 +262,7 @@ export default function UserProfile({
                     htmlFor="photo-upload"
                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-white border border-github-border cursor-pointer transition-colors"
                   >
-                    <Upload className="w-3.5 h-3.5 text-olive-400" />
+                    <Upload className="w-3.5 h-3.5" style={{ color: theme.accent }} />
                     <span>Upload New Photo</span>
                   </label>
                   {avatarUrl && (
@@ -204,6 +299,7 @@ export default function UserProfile({
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Fatin Ishraque"
                   className="w-full pl-10 pr-3.5 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white placeholder-github-muted focus:border-olive-500 focus:ring-1 focus:ring-olive-500 outline-none"
+                  style={{ '--tw-ring-color': theme.accent }}
                 />
               </div>
             </div>
@@ -211,7 +307,7 @@ export default function UserProfile({
             {/* Username */}
             <div>
               <label className="block text-xs font-semibold text-github-text uppercase tracking-wider mb-1.5">
-                GitHub / App Username *
+                Username / Login ID *
               </label>
               <div className="relative">
                 <AtSign className="w-4 h-4 text-github-muted absolute left-3.5 top-3" />
@@ -221,7 +317,7 @@ export default function UserProfile({
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="e.g. n0vemberain"
-                  className="w-full pl-10 pr-3.5 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white placeholder-github-muted focus:border-olive-500 focus:ring-1 focus:ring-olive-500 outline-none font-mono"
+                  className="w-full pl-10 pr-3.5 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white placeholder-github-muted outline-none font-mono focus:border-olive-500"
                 />
               </div>
             </div>
@@ -229,7 +325,7 @@ export default function UserProfile({
             {/* Password */}
             <div>
               <label className="block text-xs font-semibold text-github-text uppercase tracking-wider mb-1.5">
-                Account Password *
+                Password *
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-github-muted absolute left-3.5 top-3" />
@@ -239,7 +335,7 @@ export default function UserProfile({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter strong password"
-                  className="w-full pl-10 pr-10 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white focus:border-olive-500 focus:ring-1 focus:ring-olive-500 outline-none font-mono"
+                  className="w-full pl-10 pr-10 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white outline-none font-mono focus:border-olive-500"
                 />
                 <button
                   type="button"
@@ -264,8 +360,8 @@ export default function UserProfile({
                   required
                   value={fieldOfStudy}
                   onChange={(e) => setFieldOfStudy(e.target.value)}
-                  placeholder="e.g. Computer Science & Engineering, Software Engineering"
-                  className="w-full pl-10 pr-3.5 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white placeholder-github-muted focus:border-olive-500 focus:ring-1 focus:ring-olive-500 outline-none"
+                  placeholder="e.g. Computer Science & Engineering"
+                  className="w-full pl-10 pr-3.5 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white placeholder-github-muted outline-none focus:border-olive-500"
                 />
               </div>
             </div>
@@ -275,7 +371,7 @@ export default function UserProfile({
           <div className="pt-4 border-t border-github-border space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold text-github-text uppercase tracking-wider">
-                Extra Skills & Competencies ({skills.length})
+                Individual Skills &amp; Competencies ({skills.length})
               </label>
               <span className="text-[11px] text-github-muted">
                 Press Enter or click Add to append
@@ -286,13 +382,18 @@ export default function UserProfile({
             <div className="flex flex-wrap gap-2 min-h-10 p-3 bg-[#0d1117] border border-github-border rounded-lg">
               {skills.length === 0 ? (
                 <span className="text-xs text-github-muted italic">
-                  No extra skills listed yet. Add some below!
+                  No skills listed yet. Add some below.
                 </span>
               ) : (
                 skills.map((skill) => (
                   <span
                     key={skill}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-olive-950 text-olive-300 border border-olive-700/50 shadow-sm"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border shadow-sm"
+                    style={{
+                      backgroundColor: theme.accentDark,
+                      borderColor: theme.accent + '40',
+                      color: theme.accentLight
+                    }}
                   >
                     <span>{skill}</span>
                     <button
@@ -321,12 +422,12 @@ export default function UserProfile({
                   }
                 }}
                 placeholder="Type a skill (e.g. Next.js, Redis, Docker) and press Enter..."
-                className="flex-1 px-3.5 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted focus:border-olive-500 outline-none"
+                className="flex-1 px-3.5 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted outline-none focus:border-olive-500"
               />
               <button
                 type="button"
                 onClick={() => handleAddSkill()}
-                className="flex items-center gap-1 px-4 py-2 rounded-lg text-xs font-semibold bg-olive-800 hover:bg-olive-700 text-white border border-olive-600/40 transition-colors"
+                className={`flex items-center gap-1 px-4 py-2 rounded-lg text-xs font-semibold ${theme.primaryBtn} transition-colors`}
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Skill</span>
@@ -345,7 +446,7 @@ export default function UserProfile({
                       key={s}
                       type="button"
                       onClick={() => handleAddSkill(s)}
-                      className="text-[11px] px-2 py-0.5 rounded-md bg-[#21262d] hover:bg-[#30363d] text-github-muted hover:text-olive-300 border border-github-border transition-colors flex items-center gap-1"
+                      className="text-[11px] px-2 py-0.5 rounded-md bg-[#21262d] hover:bg-[#30363d] text-github-muted hover:text-white border border-github-border transition-colors flex items-center gap-1"
                     >
                       <Plus className="w-2.5 h-2.5" />
                       <span>{s}</span>
@@ -359,7 +460,7 @@ export default function UserProfile({
         {/* Save Bar & Alerts */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#161b22] border border-github-border rounded-xl p-4">
           <div className="text-xs text-github-muted flex items-center gap-2">
-            <HardDrive className="w-4 h-4 text-olive-400" />
+            <HardDrive className="w-4 h-4" style={{ color: theme.accent }} />
             <span>
               Instant LocalStorage auto-save &amp; background MongoDB sync
             </span>
@@ -367,21 +468,46 @@ export default function UserProfile({
 
           <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
             {savedAlert && (
-              <span className="flex items-center gap-1 text-xs text-olive-300 font-medium animate-in fade-in">
-                <CheckCircle2 className="w-4 h-4 text-olive-400" />
-                Saved to LocalStorage &amp; MongoDB!
+              <span className="flex items-center gap-1 text-xs text-emerald-300 font-medium animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                Saved successfully!
               </span>
             )}
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-xs font-semibold bg-olive-700 hover:bg-olive-600 text-white shadow-md border border-olive-500/40 transition-all"
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-xs font-semibold ${theme.primaryBtn} shadow-md transition-all`}
             >
               <CheckCircle2 className="w-4 h-4" />
-              Save Profile Changes
+              <span>Save Profile Changes</span>
             </button>
           </div>
         </div>
       </form>
+
+      {/* Advanced Data Clean & Factory Reset Section */}
+      <div className="bg-[#161b22] border border-red-900/40 rounded-xl p-5 shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-red-950/60 border border-red-800/40 text-red-400">
+              <ShieldAlert className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white">Data Management &amp; Cleanup Center</h3>
+              <p className="text-xs text-github-muted">
+                Clean completed tasks, wipe all challenges, or perform full factory database wipe
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenCleanModal}
+            className="px-4 py-2 rounded-lg text-xs font-semibold bg-red-950/60 hover:bg-red-900/60 text-red-300 border border-red-800/50 transition-colors flex items-center gap-1.5"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Open Clean Center</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
