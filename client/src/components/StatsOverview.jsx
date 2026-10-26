@@ -76,7 +76,7 @@ export default function StatsOverview({ tasks, challenges }) {
     {
       title: 'Current Streak',
       value: `${currentStreak} Days`,
-      sub: currentStreak > 0 ? 'Consistent momentum! 🔥' : 'Start your streak today',
+      sub: currentStreak > 0 ? 'Consistent momentum' : 'Start your streak today',
       icon: Flame,
       color: 'text-amber-400',
       bgColor: 'bg-amber-950/30 border-amber-800/30'
