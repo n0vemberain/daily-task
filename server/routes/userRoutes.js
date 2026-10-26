@@ -1,15 +1,16 @@
 import express from 'express';
+import mongoose from 'mongoose';
+import { fileStore } from '../storage/fileStore.js';
 import User from '../models/User.js';
 
 const router = express.Router();
 
+const isMongoActive = () => mongoose.connection && mongoose.connection.readyState === 1;
+
 // Get profile
 router.get('/profile', async (req, res) => {
   try {
-    let user = await User.findOne();
-    if (!user) {
-      user = await User.create({});
-    }
+    const user = fileStore.getUser();
     res.json({ success: true, data: user });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -19,22 +20,22 @@ router.get('/profile', async (req, res) => {
 // Update profile
 router.put('/profile', async (req, res) => {
   try {
-    const { name, username, password, fieldOfStudy, skills, avatarUrl } = req.body;
-    let user = await User.findOne();
+    const updated = fileStore.updateUser(req.body);
 
-    if (!user) {
-      user = new User({ name, username, password, fieldOfStudy, skills, avatarUrl });
-    } else {
-      if (name !== undefined) user.name = name;
-      if (username !== undefined) user.username = username;
-      if (password !== undefined) user.password = password;
-      if (fieldOfStudy !== undefined) user.fieldOfStudy = fieldOfStudy;
-      if (skills !== undefined) user.skills = skills;
-      if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+    // Mirror to MongoDB if actively connected
+    if (isMongoActive()) {
+      try {
+        if (User?.findOne) {
+          let u = await User.findOne();
+          if (u) {
+            Object.assign(u, req.body);
+            await u.save();
+          }
+        }
+      } catch (e) {}
     }
 
-    await user.save();
-    res.json({ success: true, data: user, message: 'Profile updated in MongoDB' });
+    res.json({ success: true, data: updated, message: 'Profile updated' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -59,14 +59,15 @@ export default function App() {
     return status;
   }, []);
 
-  // Bi-directional full sync
+  // Bi-directional full sync across devices
   const performSync = useCallback(
     async (currentData = null) => {
       setIsSyncing(true);
       const dataToSync = currentData || {
         user: storageService.getUserProfile(),
         tasks: storageService.getTasks(),
-        challenges: storageService.getChallenges()
+        challenges: storageService.getChallenges(),
+        timerSessions: storageService.getTimerSessions()
       };
 
       const result = await apiService.syncAll(dataToSync);
@@ -77,15 +78,19 @@ export default function App() {
           setUserProfile(result.data.user);
           storageService.saveUserProfile(result.data.user);
         }
-        if (result.data.tasks && result.data.tasks.length > 0) {
+        if (Array.isArray(result.data.tasks) && result.data.tasks.length > 0) {
           setTasks(result.data.tasks);
           storageService.saveTasks(result.data.tasks);
         }
-        if (result.data.challenges && result.data.challenges.length > 0) {
+        if (Array.isArray(result.data.challenges) && result.data.challenges.length > 0) {
           setChallenges(result.data.challenges);
           storageService.saveChallenges(result.data.challenges);
         }
-        setMongoStatus((prev) => ({ ...prev, isMongoConnected: true }));
+        if (Array.isArray(result.data.timerSessions) && result.data.timerSessions.length > 0) {
+          setTimerSessions(result.data.timerSessions);
+          storageService.saveTimerSessions(result.data.timerSessions);
+        }
+        setMongoStatus({ connected: true, isMongoConnected: !!result.data.isMongoConnected });
       }
 
       setLastSyncTime(now);
@@ -96,15 +101,35 @@ export default function App() {
   );
 
   useEffect(() => {
-    checkServerStatus().then((status) => {
-      if (status.connected) {
-        performSync();
+    // Initial fetch from central server on mount so new devices immediately get server data
+    apiService.getFullData().then((res) => {
+      if (res && res.success && res.data) {
+        if (res.data.user) {
+          setUserProfile(res.data.user);
+          storageService.saveUserProfile(res.data.user);
+        }
+        if (Array.isArray(res.data.tasks) && res.data.tasks.length > 0) {
+          setTasks(res.data.tasks);
+          storageService.saveTasks(res.data.tasks);
+        }
+        if (Array.isArray(res.data.challenges) && res.data.challenges.length > 0) {
+          setChallenges(res.data.challenges);
+          storageService.saveChallenges(res.data.challenges);
+        }
+        if (Array.isArray(res.data.timerSessions) && res.data.timerSessions.length > 0) {
+          setTimerSessions(res.data.timerSessions);
+          storageService.saveTimerSessions(res.data.timerSessions);
+        }
       }
+      checkServerStatus();
+    }).catch(() => {
+      checkServerStatus();
     });
 
+    // Periodic background sync every 20 seconds to keep all open devices in sync
     const interval = setInterval(() => {
-      checkServerStatus();
-    }, 45000);
+      performSync();
+    }, 20000);
 
     return () => clearInterval(interval);
   }, [checkServerStatus, performSync]);

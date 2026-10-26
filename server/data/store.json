@@ -1,0 +1,497 @@
+{
+  "user": {
+    "name": "Fatin Ishraque",
+    "username": "n0vemberain",
+    "password": "Password123!",
+    "fieldOfStudy": "Computer Science & Engineering",
+    "skills": [
+      "React.js",
+      "JavaScript (ES6+)",
+      "Node.js & Express",
+      "MongoDB & Mongoose",
+      "Tailwind CSS",
+      "Git & GitHub",
+      "REST APIs",
+      "Data Structures & Algorithms"
+    ],
+    "avatarUrl": ""
+  },
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "Solve LeetCode Daily Challenge (Binary Tree Level Order)",
+      "category": "Coding",
+      "priority": "High",
+      "completed": true,
+      "completedAt": "2026-10-26T18:38:45.614Z",
+      "date": "2026-10-27",
+      "estimatedMinutes": 45
+    },
+    {
+      "id": "task-2",
+      "title": "Build GitHub contribution heatmap in React",
+      "category": "Coding",
+      "priority": "High",
+      "completed": true,
+      "completedAt": "2026-10-26T18:38:45.614Z",
+      "date": "2026-10-27",
+      "estimatedMinutes": 90
+    },
+    {
+      "id": "task-3",
+      "title": "Review MongoDB schema indexing and connection pooling",
+      "category": "Study",
+      "priority": "Medium",
+      "completed": false,
+      "completedAt": null,
+      "date": "2026-10-27",
+      "estimatedMinutes": 30
+    },
+    {
+      "id": "task-4",
+      "title": "Workout: 30 mins cardio & core training",
+      "category": "Fitness",
+      "priority": "Low",
+      "completed": true,
+      "completedAt": "2026-10-26T18:38:45.614Z",
+      "date": "2026-10-27",
+      "estimatedMinutes": 30
+    },
+    {
+      "id": "task-5",
+      "title": "Read System Design Primer chapter on Caching & CDNs",
+      "category": "Study",
+      "priority": "Medium",
+      "completed": false,
+      "completedAt": null,
+      "date": "2026-10-27",
+      "estimatedMinutes": 40
+    }
+  ],
+  "challenges": [
+    {
+      "id": "ch-1",
+      "title": "30 Days of Code & Data Structures",
+      "description": "Solve at least one medium DSA problem every single day and document time complexity.",
+      "category": "Coding",
+      "durationDays": 30,
+      "startDate": "2026-10-20",
+      "endDate": "2026-11-18",
+      "status": "active",
+      "checkIns": [
+        {
+          "dayNumber": 1,
+          "date": "2026-10-20",
+          "status": "completed",
+          "note": "Day 1 completed: solved daily challenge.",
+          "completedAt": "2026-10-26T18:38:45.614Z"
+        },
+        {
+          "dayNumber": 2,
+          "date": "2026-10-21",
+          "status": "completed",
+          "note": "Day 2 completed: solved daily challenge.",
+          "completedAt": "2026-10-26T18:38:45.614Z"
+        },
+        {
+          "dayNumber": 3,
+          "date": "2026-10-22",
+          "status": "completed",
+          "note": "Day 3 completed: solved daily challenge.",
+          "completedAt": "2026-10-26T18:38:45.614Z"
+        },
+        {
+          "dayNumber": 4,
+          "date": "2026-10-23",
+          "status": "skipped",
+          "note": "Day 4 completed: solved daily challenge.",
+          "completedAt": "2026-10-26T18:38:45.614Z"
+        },
+        {
+          "dayNumber": 5,
+          "date": "2026-10-24",
+          "status": "completed",
+          "note": "Day 5 completed: solved daily challenge.",
+          "completedAt": "2026-10-26T18:38:45.614Z"
+        },
+        {
+          "dayNumber": 6,
+          "date": "2026-10-25",
+          "status": "completed",
+          "note": "Day 6 completed: solved daily challenge.",
+          "completedAt": "2026-10-26T18:38:45.614Z"
+        },
+        {
+          "dayNumber": 7,
+          "date": "2026-10-26",
+          "status": "completed",
+          "note": "Day 7 completed: solved daily challenge.",
+          "completedAt": "2026-10-26T18:38:45.614Z"
+        },
+        {
+          "dayNumber": 8,
+          "date": "2026-10-27",
+          "status": "completed",
+          "note": "Completed daily goals & pushed updates.",
+          "completedAt": "2026-10-26T18:38:45.614Z"
+        },
+        {
+          "dayNumber": 9,
+          "date": "2026-10-28",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 10,
+          "date": "2026-10-29",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 11,
+          "date": "2026-10-30",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 12,
+          "date": "2026-10-31",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 13,
+          "date": "2026-11-01",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 14,
+          "date": "2026-11-02",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 15,
+          "date": "2026-11-03",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 16,
+          "date": "2026-11-04",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 17,
+          "date": "2026-11-05",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 18,
+          "date": "2026-11-06",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 19,
+          "date": "2026-11-07",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 20,
+          "date": "2026-11-08",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 21,
+          "date": "2026-11-09",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 22,
+          "date": "2026-11-10",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 23,
+          "date": "2026-11-11",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 24,
+          "date": "2026-11-12",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 25,
+          "date": "2026-11-13",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 26,
+          "date": "2026-11-14",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 27,
+          "date": "2026-11-15",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 28,
+          "date": "2026-11-16",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 29,
+          "date": "2026-11-17",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 30,
+          "date": "2026-11-18",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        }
+      ]
+    },
+    {
+      "id": "ch-2",
+      "title": "21-Day Focus & Morning Routine",
+      "description": "Wake up early, read 20 pages of tech book, and complete daily priority tasks.",
+      "category": "Habit",
+      "durationDays": 21,
+      "startDate": "2026-10-23",
+      "endDate": "2026-11-12",
+      "status": "active",
+      "checkIns": [
+        {
+          "dayNumber": 1,
+          "date": "2026-10-23",
+          "status": "completed",
+          "note": "Finished morning study routine on day 1.",
+          "completedAt": "2026-10-26T18:38:45.614Z"
+        },
+        {
+          "dayNumber": 2,
+          "date": "2026-10-24",
+          "status": "completed",
+          "note": "Finished morning study routine on day 2.",
+          "completedAt": "2026-10-26T18:38:45.614Z"
+        },
+        {
+          "dayNumber": 3,
+          "date": "2026-10-25",
+          "status": "completed",
+          "note": "Finished morning study routine on day 3.",
+          "completedAt": "2026-10-26T18:38:45.614Z"
+        },
+        {
+          "dayNumber": 4,
+          "date": "2026-10-26",
+          "status": "completed",
+          "note": "Finished morning study routine on day 4.",
+          "completedAt": "2026-10-26T18:38:45.614Z"
+        },
+        {
+          "dayNumber": 5,
+          "date": "2026-10-27",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 6,
+          "date": "2026-10-28",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 7,
+          "date": "2026-10-29",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 8,
+          "date": "2026-10-30",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 9,
+          "date": "2026-10-31",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 10,
+          "date": "2026-11-01",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 11,
+          "date": "2026-11-02",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 12,
+          "date": "2026-11-03",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 13,
+          "date": "2026-11-04",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 14,
+          "date": "2026-11-05",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 15,
+          "date": "2026-11-06",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 16,
+          "date": "2026-11-07",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 17,
+          "date": "2026-11-08",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 18,
+          "date": "2026-11-09",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 19,
+          "date": "2026-11-10",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 20,
+          "date": "2026-11-11",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 21,
+          "date": "2026-11-12",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        }
+      ]
+    }
+  ],
+  "timerSessions": [
+    {
+      "id": "ts-1",
+      "durationMinutes": 25,
+      "date": "2026-10-27",
+      "timestamp": "2026-10-26T18:38:45.614Z",
+      "category": "Study",
+      "label": "Algorithms & Data Structures"
+    },
+    {
+      "id": "ts-2",
+      "durationMinutes": 20,
+      "date": "2026-10-27",
+      "timestamp": "2026-10-26T18:38:45.614Z",
+      "category": "Coding",
+      "label": "React Component Optimization"
+    },
+    {
+      "id": "ts-3",
+      "durationMinutes": 45,
+      "date": "2026-10-26",
+      "timestamp": "2026-10-25T18:38:45.614Z",
+      "category": "Study",
+      "label": "Database Systems Architecture"
+    },
+    {
+      "id": "ts-4",
+      "durationMinutes": 30,
+      "date": "2026-10-25",
+      "timestamp": "2026-10-24T18:38:45.614Z",
+      "category": "Coding",
+      "label": "Tailwind UI Polish"
+    },
+    {
+      "id": "ts-5",
+      "durationMinutes": 60,
+      "date": "2026-10-22",
+      "timestamp": "2026-10-21T18:38:45.614Z",
+      "category": "Study",
+      "label": "Computer Networks"
+    }
+  ],
+  "lastUpdated": "2026-10-26T18:41:33.375Z"
+}

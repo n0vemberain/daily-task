@@ -1,14 +1,17 @@
 import express from 'express';
+import mongoose from 'mongoose';
+import { fileStore } from '../storage/fileStore.js';
 import Task from '../models/Task.js';
 
 const router = express.Router();
+
+const isMongoActive = () => mongoose.connection && mongoose.connection.readyState === 1;
 
 // Get all tasks or by date
 router.get('/', async (req, res) => {
   try {
     const { date } = req.query;
-    const query = date ? { date } : {};
-    const tasks = await Task.find(query).sort({ createdAt: -1 });
+    const tasks = fileStore.getTasks(date);
     res.json({ success: true, data: tasks });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -18,24 +21,15 @@ router.get('/', async (req, res) => {
 // Heatmap statistics (grouped by date)
 router.get('/heatmap', async (req, res) => {
   try {
-    const aggregation = await Task.aggregate([
-      { $match: { completed: true } },
-      {
-        $group: {
-          _id: '$date',
-          count: { $sum: 1 },
-          tasks: { $push: '$title' }
-        }
-      },
-      { $sort: { _id: 1 } }
-    ]);
-
+    const tasks = fileStore.getTasks();
     const heatmapData = {};
-    aggregation.forEach(item => {
-      heatmapData[item._id] = {
-        count: item.count,
-        tasks: item.tasks
-      };
+
+    tasks.filter(t => t.completed && t.date).forEach(t => {
+      if (!heatmapData[t.date]) {
+        heatmapData[t.date] = { count: 0, tasks: [] };
+      }
+      heatmapData[t.date].count += 1;
+      heatmapData[t.date].tasks.push(t.title);
     });
 
     res.json({ success: true, data: heatmapData });
@@ -47,19 +41,26 @@ router.get('/heatmap', async (req, res) => {
 // Create task
 router.post('/', async (req, res) => {
   try {
-    const { title, category, priority, date, estimatedMinutes } = req.body;
-    if (!title || !date) {
-      return res.status(400).json({ success: false, message: 'Title and date are required' });
+    const { title, category, priority, date, estimatedMinutes, id } = req.body;
+    if (!title) {
+      return res.status(400).json({ success: false, message: 'Title is required' });
     }
 
-    const task = await Task.create({
+    const task = fileStore.createTask({
+      id,
       title,
-      category: category || 'General',
-      priority: priority || 'Medium',
+      category,
+      priority,
       date,
-      estimatedMinutes: estimatedMinutes || 30,
-      completed: false
+      estimatedMinutes
     });
+
+    // Mirror to MongoDB if actively connected
+    if (isMongoActive()) {
+      try {
+        if (Task?.create) await Task.create(task);
+      } catch (e) {}
+    }
 
     res.status(201).json({ success: true, data: task });
   } catch (error) {
@@ -70,24 +71,20 @@ router.post('/', async (req, res) => {
 // Update task
 router.put('/:id', async (req, res) => {
   try {
-    const { title, category, priority, completed, date, estimatedMinutes } = req.body;
-    const task = await Task.findById(req.params.id);
+    const taskId = req.params.id;
+    const task = fileStore.updateTask(taskId, req.body);
 
     if (!task) {
       return res.status(404).json({ success: false, message: 'Task not found' });
     }
 
-    if (title !== undefined) task.title = title;
-    if (category !== undefined) task.category = category;
-    if (priority !== undefined) task.priority = priority;
-    if (date !== undefined) task.date = date;
-    if (estimatedMinutes !== undefined) task.estimatedMinutes = estimatedMinutes;
-    if (completed !== undefined) {
-      task.completed = completed;
-      task.completedAt = completed ? new Date() : null;
+    // Mirror to MongoDB if actively connected
+    if (isMongoActive()) {
+      try {
+        if (Task?.findByIdAndUpdate) await Task.findByIdAndUpdate(taskId, req.body);
+      } catch (e) {}
     }
 
-    await task.save();
     res.json({ success: true, data: task });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -97,10 +94,16 @@ router.put('/:id', async (req, res) => {
 // Delete task
 router.delete('/:id', async (req, res) => {
   try {
-    const task = await Task.findByIdAndDelete(req.params.id);
-    if (!task) {
-      return res.status(404).json({ success: false, message: 'Task not found' });
+    const taskId = req.params.id;
+    fileStore.deleteTask(taskId);
+
+    // Mirror to MongoDB if actively connected
+    if (isMongoActive()) {
+      try {
+        if (Task?.findByIdAndDelete) await Task.findByIdAndDelete(taskId);
+      } catch (e) {}
     }
+
     res.json({ success: true, message: 'Task deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

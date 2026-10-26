@@ -12,13 +12,26 @@ export const apiService = {
     }
   },
 
-  syncAll: async ({ user, tasks, challenges }) => {
+  getFullData: async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/sync`, {
+        signal: AbortSignal.timeout(6000)
+      });
+      if (!res.ok) throw new Error('Failed to fetch full data');
+      const data = await res.json();
+      return data;
+    } catch (e) {
+      return { success: false, error: e.message, offline: true };
+    }
+  },
+
+  syncAll: async ({ user, tasks, challenges, timerSessions }) => {
     try {
       const res = await fetch(`${BASE_URL}/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user, tasks, challenges }),
-        signal: AbortSignal.timeout(6000)
+        body: JSON.stringify({ user, tasks, challenges, timerSessions }),
+        signal: AbortSignal.timeout(8000)
       });
       const data = await res.json();
       return data;

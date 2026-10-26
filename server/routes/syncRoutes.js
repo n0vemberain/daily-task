@@ -1,78 +1,64 @@
 import express from 'express';
+import mongoose from 'mongoose';
+import { fileStore } from '../storage/fileStore.js';
 import User from '../models/User.js';
 import Task from '../models/Task.js';
 import Challenge from '../models/Challenge.js';
 
 const router = express.Router();
 
-// Bi-directional full sync
-router.post('/', async (req, res) => {
+// GET /api/sync - Fetch full server state
+router.get('/', async (req, res) => {
   try {
-    const { user, tasks, challenges } = req.body;
-
-    // 1. Sync User Profile
-    let syncedUser = null;
-    if (user) {
-      syncedUser = await User.findOne();
-      if (!syncedUser) {
-        syncedUser = new User(user);
-      } else {
-        if (user.name) syncedUser.name = user.name;
-        if (user.username) syncedUser.username = user.username;
-        if (user.password) syncedUser.password = user.password;
-        if (user.fieldOfStudy) syncedUser.fieldOfStudy = user.fieldOfStudy;
-        if (user.skills) syncedUser.skills = user.skills;
-        if (user.avatarUrl) syncedUser.avatarUrl = user.avatarUrl;
-      }
-      await syncedUser.save();
-    } else {
-      syncedUser = await User.findOne();
-    }
-
-    // 2. Sync Tasks
-    if (Array.isArray(tasks) && tasks.length > 0) {
-      for (const t of tasks) {
-        if (t._id && t._id.length === 24) {
-          await Task.findByIdAndUpdate(t._id, t, { upsert: true, new: true });
-        } else {
-          // create if doesn't exist by title and date
-          const existing = await Task.findOne({ title: t.title, date: t.date });
-          if (!existing) {
-            await Task.create(t);
-          }
-        }
-      }
-    }
-
-    // 3. Sync Challenges
-    if (Array.isArray(challenges) && challenges.length > 0) {
-      for (const c of challenges) {
-        if (c._id && c._id.length === 24) {
-          await Challenge.findByIdAndUpdate(c._id, c, { upsert: true, new: true });
-        } else {
-          const existing = await Challenge.findOne({ title: c.title, startDate: c.startDate });
-          if (!existing) {
-            await Challenge.create(c);
-          }
-        }
-      }
-    }
-
-    // Fetch the freshest unified database state
-    const allUsers = await User.find();
-    const allTasks = await Task.find().sort({ createdAt: -1 });
-    const allChallenges = await Challenge.find().sort({ createdAt: -1 });
-
+    const data = fileStore.readStore();
     res.json({
       success: true,
-      message: 'MongoDB synchronized successfully',
+      message: 'Server data retrieved successfully',
       data: {
-        user: allUsers[0] || syncedUser,
-        tasks: allTasks,
-        challenges: allChallenges
+        user: data.user,
+        tasks: data.tasks || [],
+        challenges: data.challenges || [],
+        timerSessions: data.timerSessions || [],
+        lastUpdated: data.lastUpdated
       }
     });
   } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/sync - Bi-directional intelligent full sync
+router.post('/', async (req, res) => {
+  try {
+    const { user, tasks, challenges, timerSessions } = req.body;
+
+    // 1. Sync into persistent file store (Guarantees cross-device data persistence)
+    const syncedData = fileStore.syncAll({ user, tasks, challenges, timerSessions });
+
+    // 2. If MongoDB is actively connected (readyState === 1), mirror to Mongo
+    if (mongoose.connection && mongoose.connection.readyState === 1) {
+      try {
+        if (user && User?.findOne) {
+          let u = await User.findOne();
+          if (!u) {
+            await User.create(syncedData.user);
+          } else {
+            Object.assign(u, syncedData.user);
+            await u.save();
+          }
+        }
+      } catch (mErr) {
+        // Ignore Mongo mirror error
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Data synchronized across all devices successfully',
+      data: syncedData
+    });
+  } catch (error) {
+    console.error('[Sync Error]:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });

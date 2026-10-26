@@ -215,8 +215,11 @@ export default function ContributionHeatmap({
         const weekMonth = cur.getMonth();
         if (weekMonth !== lastMonth) {
           const monthName = cur.toLocaleDateString('en-US', { month: 'short' });
-          months.push({ colIndex: weekCols.length, name: monthName });
-          lastMonth = weekMonth;
+          const lastRecorded = months[months.length - 1];
+          if (!lastRecorded || (weekCols.length - lastRecorded.colIndex >= 3)) {
+            months.push({ colIndex: weekCols.length, name: monthName });
+            lastMonth = weekMonth;
+          }
         }
       }
 
@@ -415,10 +418,12 @@ export default function ContributionHeatmap({
 
       {/* Swipe Hint for mobile (when year or 6 months view is active) */}
       {timeRange !== 'month' && (
-        <div className="sm:hidden flex items-center justify-between text-[11px] text-github-muted mb-2 px-1">
-          <span>Swipe horizontally to navigate heatmap</span>
+        <div className="md:hidden flex items-center justify-between text-[11px] text-github-muted mb-2 px-2.5 py-1.5 rounded-lg bg-[#0d1117] border border-github-border/70 select-none">
+          <span className="flex items-center gap-1 font-medium">
+            <span>Swipe left to explore earlier weeks</span>
+          </span>
           <span className="font-mono font-semibold" style={{ color: currentTheme.accent }}>
-            {weeks.length} weeks
+            {timeRange === 'year' ? '52 Weeks' : '26 Weeks'}
           </span>
         </div>
       )}
@@ -487,22 +492,24 @@ export default function ContributionHeatmap({
           </div>
         </div>
       ) : (
-        /* Multi-week Horizontal Matrix View (Year / 6 Months - Full Box Width & Fully Responsive) */
+        /* Multi-week Horizontal Matrix View (Year / 6 Months - Full Box Width on Desktop, Spacious & Touch-Friendly on Mobile) */
         <div
           ref={scrollContainerRef}
-          className="w-full overflow-x-auto pb-2 scrollbar-thin -webkit-overflow-scrolling-touch"
+          className="w-full overflow-x-auto pb-3 scrollbar-thin -webkit-overflow-scrolling-touch rounded-lg"
         >
           <div
-            className={`w-full flex flex-col ${
-              timeRange === 'year' ? 'min-w-[540px] sm:min-w-0' : 'min-w-0'
+            className={`flex flex-col ${
+              timeRange === 'year'
+                ? 'min-w-[760px] md:min-w-full w-full'
+                : 'min-w-[420px] md:min-w-full w-full'
             }`}
           >
             {/* Month labels header matching fractional week positions */}
-            <div className="flex text-[10px] sm:text-[11px] text-github-muted font-mono mb-1.5 pl-6 sm:pl-7 h-4 relative w-full select-none">
+            <div className="flex text-[10px] sm:text-[11px] text-github-muted font-mono mb-2 pl-6 sm:pl-7 h-4 relative w-full select-none">
               {monthLabels.map((m, idx) => (
                 <span
                   key={idx}
-                  className="absolute transform -translate-x-1 whitespace-nowrap"
+                  className="absolute transform -translate-x-1 whitespace-nowrap font-medium"
                   style={{ left: `calc(1.5rem + ${(m.colIndex / weeks.length) * 100}%)` }}
                 >
                   {m.name}
@@ -525,7 +532,7 @@ export default function ContributionHeatmap({
                 <div className="flex items-center justify-center invisible select-none">S</div>
               </div>
 
-              {/* Weeks Columns: Stretches to fill 100% of the box */}
+              {/* Weeks Columns: Stretches to fill 100% of the box on desktop, spacious on mobile */}
               <div
                 className="flex-1 w-full grid items-stretch"
                 style={{
@@ -550,7 +557,7 @@ export default function ContributionHeatmap({
                           onMouseEnter={(e) => handleCellHover(e, day)}
                           onMouseLeave={handleCellLeave}
                           disabled={day.isFuture}
-                          className={`w-full aspect-square rounded-[2px] sm:rounded-[3px] border heatmap-cell ${levelClass} focus:outline-none transition-transform hover:scale-110 hover:z-10`}
+                          className={`w-full aspect-square min-w-[10px] min-h-[10px] rounded-[2px] sm:rounded-[3px] border heatmap-cell ${levelClass} focus:outline-none transition-transform hover:scale-110 active:scale-95`}
                           aria-label={`${day.formattedDate}: ${day.count} tasks completed`}
                         />
                       );

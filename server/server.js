@@ -56,33 +56,22 @@ mongoose.connection.on('connected', () => {
   console.log('MongoDB re-connected');
 });
 
-// Middleware to inject Mongo connection status check
-const checkMongoConnection = (req, res, next) => {
-  if (!isMongoConnected) {
-    return res.status(503).json({
-      success: false,
-      isMongoConnected: false,
-      message: 'MongoDB is currently offline or connecting. Client using localStorage persistence mode.',
-    });
-  }
-  next();
-};
-
 // Health & Status
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
+    storageEngine: 'Persistent Dual Store (FileStore + MongoDB)',
     isMongoConnected,
     mongoUri: MONGODB_URI,
     timestamp: new Date().toISOString()
   });
 });
 
-// Routes
-app.use('/api/user', checkMongoConnection, userRoutes);
-app.use('/api/tasks', checkMongoConnection, taskRoutes);
-app.use('/api/challenges', checkMongoConnection, challengeRoutes);
-app.use('/api/sync', checkMongoConnection, syncRoutes);
+// Routes - Fully operational with Persistent FileStore & MongoDB auto-fallback
+app.use('/api/user', userRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/challenges', challengeRoutes);
+app.use('/api/sync', syncRoutes);
 
 // SPA fallback for non-API client routes
 app.get('*', (req, res, next) => {
