@@ -1,0 +1,17 @@
+{
+  "name": "daily-task",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Personal daily activity dashboard with GitHub-style olive green heatmap, challenge tracker, user profile, and dual MongoDB/localStorage persistence.",
+  "scripts": {
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "client": "cd client && npm run dev",
+    "server": "cd server && npm run dev",
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,green\" \"npm run server\" \"npm run client\"",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}
