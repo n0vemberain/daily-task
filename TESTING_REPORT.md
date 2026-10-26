@@ -58,51 +58,22 @@ Evaluated across modern desktop and mobile browser engines:
 
 ## 4. Automated Test Suite Execution (Vitest and React Testing Library)
 
-Executed seven test suites verifying application state, component rendering, storage persistence, theme switching, login authentication, and data wiping:
+Executed ten test suites verifying application state, component rendering, storage persistence, theme switching, full-screen authentication gate, settings modal, manual category creation, and data wiping:
 
 ```text
  [PASS] src/tests/storageService.test.js (5 tests)
-   [PASS] should return initialUserProfile when localStorage is empty
-   [PASS] should persist and retrieve modified user profile
-   [PASS] should return initialTasks when localStorage is empty
-   [PASS] should persist new tasks correctly
-   [PASS] should save and load challenges
-
  [PASS] src/tests/ContributionHeatmap.test.jsx (5 tests)
-   [PASS] renders heatmap title and default olive shades indicator
-   [PASS] renders month labels and day of week labels
-   [PASS] displays correct summary count of completed tasks
-   [PASS] toggles time range across 1 Year, Last 6 Months, and 1 Month
-   [PASS] allows switching color theme
-
  [PASS] src/tests/ChallengeTracker.test.jsx (2 tests)
-   [PASS] renders challenge title, category, and day count
-   [PASS] renders Day-by-Day check-in buttons
-
  [PASS] src/tests/UserProfile.test.jsx (3 tests)
-   [PASS] renders initial profile fields
-   [PASS] renders current skills and allows adding new skill
-   [PASS] calls onSaveProfile when form is submitted
-
  [PASS] src/tests/LoginModal.test.jsx (4 tests)
-   [PASS] does not render when isOpen is false
-   [PASS] renders modal elements when open
-   [PASS] displays error on incorrect credentials
-   [PASS] calls onLoginSuccess on valid credentials
-
+ [PASS] src/tests/LoginView.test.jsx (3 tests)
+ [PASS] src/tests/SettingsModal.test.jsx (4 tests)
+ [PASS] src/tests/TaskManager.test.jsx (2 tests)
  [PASS] src/tests/DataCleanModal.test.jsx (4 tests)
-   [PASS] does not render when closed
-   [PASS] renders all cleaning options when open
-   [PASS] handles clean completed tasks action
-   [PASS] handles factory wipe with double confirmation
-
  [PASS] src/tests/ThemeContext.test.jsx (3 tests)
-   [PASS] provides default olive theme
-   [PASS] updates theme and persists to localStorage
-   [PASS] supports all 5 defined theme palettes
 
- Test Files  7 passed (7)
-      Tests  26 passed (26)
+ Test Files  10 passed (10)
+      Tests  35 passed (35)
 ```
 
 ---

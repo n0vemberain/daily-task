@@ -5,9 +5,8 @@ import ContributionHeatmap from './components/ContributionHeatmap';
 import ChallengeTracker from './components/ChallengeTracker';
 import TaskManager from './components/TaskManager';
 import UserProfile from './components/UserProfile';
-import BackupModal from './components/BackupModal';
-import LoginModal from './components/LoginModal';
-import DataCleanModal from './components/DataCleanModal';
+import SettingsModal from './components/SettingsModal';
+import LoginView from './components/LoginView';
 import MobileBottomNav from './components/MobileBottomNav';
 import { storageService } from './services/storageService';
 import { apiService } from './services/apiService';
@@ -21,21 +20,18 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedDate, setSelectedDate] = useState(null);
 
-  // Modals state
-  const [isBackupOpen, setIsBackupOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isCleanOpen, setIsCleanOpen] = useState(false);
-
-  // Authentication State
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    const saved = localStorage.getItem('daily_task_auth_session');
-    return saved !== 'false';
-  });
+  // Settings Modal State
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Core State initialized from LocalStorage
   const [userProfile, setUserProfile] = useState(() => storageService.getUserProfile());
   const [tasks, setTasks] = useState(() => storageService.getTasks());
   const [challenges, setChallenges] = useState(() => storageService.getChallenges());
+
+  // Authentication State: MUST be explicitly true to access the dashboard
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('daily_task_auth_session') === 'true';
+  });
 
   // MongoDB & Sync State
   const [mongoStatus, setMongoStatus] = useState({ connected: false, isMongoConnected: false });
@@ -117,7 +113,7 @@ export default function App() {
 
   const handleSignOut = () => {
     setIsAuthenticated(false);
-    localStorage.setItem('daily_task_auth_session', 'false');
+    localStorage.removeItem('daily_task_auth_session');
   };
 
   // Handlers for User Profile
@@ -319,6 +315,17 @@ export default function App() {
     performSync(restored);
   };
 
+  // AUTHENTICATION BARRIER: When user is not authenticated, render Login Screen only!
+  if (!isAuthenticated) {
+    return (
+      <LoginView
+        userProfile={userProfile}
+        onLoginSuccess={handleLoginSuccess}
+      />
+    );
+  }
+
+  // AUTHENTICATED USER DASHBOARD
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#c9d1d9] flex flex-col font-sans pb-16 md:pb-0">
       {/* Top Navigation */}
@@ -326,14 +333,7 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         userProfile={userProfile}
-        mongoStatus={mongoStatus}
-        isSyncing={isSyncing}
-        lastSyncTime={lastSyncTime}
-        onManualSync={() => performSync()}
-        onOpenBackup={() => setIsBackupOpen(true)}
-        onOpenClean={() => setIsCleanOpen(true)}
-        isAuthenticated={isAuthenticated}
-        onOpenLogin={() => setIsLoginOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         onSignOut={handleSignOut}
       />
 
@@ -382,7 +382,7 @@ export default function App() {
             {/* Quick Metrics */}
             <StatsOverview tasks={tasks} challenges={challenges} />
 
-            {/* Dynamic Color Heatmap */}
+            {/* Dynamic Full-Width Heatmap */}
             <ContributionHeatmap
               tasks={tasks}
               selectedDate={selectedDate}
@@ -400,7 +400,7 @@ export default function App() {
                 onEditTask={handleEditTask}
                 selectedDate={selectedDate}
                 onClearDateFilter={() => setSelectedDate(null)}
-                onOpenDataClean={() => setIsCleanOpen(true)}
+                onOpenDataClean={() => setIsSettingsOpen(true)}
               />
             </div>
           </div>
@@ -425,7 +425,7 @@ export default function App() {
             onEditTask={handleEditTask}
             selectedDate={selectedDate}
             onClearDateFilter={() => setSelectedDate(null)}
-            onOpenDataClean={() => setIsCleanOpen(true)}
+            onOpenDataClean={() => setIsSettingsOpen(true)}
           />
         )}
 
@@ -436,40 +436,29 @@ export default function App() {
             mongoStatus={mongoStatus}
             lastSyncTime={lastSyncTime}
             isAuthenticated={isAuthenticated}
-            onOpenLogin={() => setIsLoginOpen(true)}
+            onOpenLogin={() => {}}
             onSignOut={handleSignOut}
-            onOpenCleanModal={() => setIsCleanOpen(true)}
+            onOpenCleanModal={() => setIsSettingsOpen(true)}
           />
         )}
       </main>
 
-      {/* Authentication Modal */}
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        userProfile={userProfile}
-        onLoginSuccess={handleLoginSuccess}
-      />
-
-      {/* Selective & Global Data Cleaning Center */}
-      <DataCleanModal
-        isOpen={isCleanOpen}
-        onClose={() => setIsCleanOpen(false)}
-        onClearAllData={handleClearAllData}
-        onClearCompletedTasks={handleClearCompletedTasks}
-        onClearChallenges={handleClearChallenges}
-        onResetDemoData={handleResetDemoData}
-        tasksCount={tasks.length}
-        challengesCount={challenges.length}
-      />
-
-      {/* Backup & Portability Modal */}
-      <BackupModal
-        isOpen={isBackupOpen}
-        onClose={() => setIsBackupOpen(false)}
+      {/* Central Application Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        mongoStatus={mongoStatus}
+        isSyncing={isSyncing}
+        lastSyncTime={lastSyncTime}
+        onManualSync={() => performSync()}
         data={{ user: userProfile, tasks, challenges }}
         onRestoreData={handleRestoreData}
         onResetData={handleResetDemoData}
+        onClearAllData={handleClearAllData}
+        onClearCompletedTasks={handleClearCompletedTasks}
+        onClearChallenges={handleClearChallenges}
+        tasksCount={tasks.length}
+        challengesCount={challenges.length}
       />
 
       {/* Mobile Sticky Bottom Navigation (Screens < 768px) */}

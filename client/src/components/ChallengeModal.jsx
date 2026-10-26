@@ -10,6 +10,8 @@ export default function ChallengeModal({ isOpen, onClose, onCreateChallenge }) {
   const [category, setCategory] = useState('Coding');
   const [customDays, setCustomDays] = useState(30);
   const [startDate, setStartDate] = useState(formatDateStr(new Date()));
+  const [isManualCategory, setIsManualCategory] = useState(false);
+  const [manualCategoryInput, setManualCategoryInput] = useState('');
 
   if (!isOpen) return null;
 
@@ -20,10 +22,14 @@ export default function ChallengeModal({ isOpen, onClose, onCreateChallenge }) {
     e.preventDefault();
     if (!title.trim()) return;
 
+    const finalCategory = isManualCategory && manualCategoryInput.trim()
+      ? manualCategoryInput.trim()
+      : category;
+
     onCreateChallenge({
       title: title.trim(),
       description: description.trim(),
-      category,
+      category: finalCategory || 'Habit',
       durationDays: parseInt(customDays, 10) || 30,
       startDate
     });
@@ -32,6 +38,8 @@ export default function ChallengeModal({ isOpen, onClose, onCreateChallenge }) {
     setTitle('');
     setDescription('');
     setCustomDays(30);
+    setIsManualCategory(false);
+    setManualCategoryInput('');
     onClose();
   };
 
@@ -81,32 +89,58 @@ export default function ChallengeModal({ isOpen, onClose, onCreateChallenge }) {
             />
           </div>
 
-          {/* Category */}
+          {/* Category with Manual Option */}
           <div>
-            <label className="block text-xs font-semibold text-github-text uppercase tracking-wider mb-1.5">
-              Category
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setCategory(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                    category === cat
-                      ? 'text-white border-white/50 shadow-sm'
-                      : 'bg-[#0d1117] text-github-muted border-github-border hover:text-white hover:border-github-borderLight'
-                  }`}
-                  style={{
-                    backgroundColor: category === cat ? theme.accent : undefined,
-                    color: category === cat ? '#0d1117' : undefined,
-                    fontWeight: category === cat ? 'bold' : 'normal'
-                  }}
-                >
-                  {cat}
-                </button>
-              ))}
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-github-text uppercase tracking-wider">
+                Category
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsManualCategory(!isManualCategory);
+                  if (!isManualCategory) setManualCategoryInput('');
+                }}
+                className="text-[11px] font-medium hover:underline text-github-muted hover:text-white"
+                style={{ color: isManualCategory ? theme.accentLight : undefined }}
+              >
+                {isManualCategory ? 'Choose Preset' : '+ Enter Manually'}
+              </button>
             </div>
+
+            {isManualCategory ? (
+              <input
+                type="text"
+                required
+                value={manualCategoryInput}
+                onChange={(e) => setManualCategoryInput(e.target.value)}
+                placeholder="Type custom challenge category..."
+                className="w-full px-3.5 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-sm text-white placeholder-github-muted outline-none focus:border-white/40 font-medium"
+                style={{ borderColor: theme.accent + '70' }}
+              />
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCategory(cat)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                      category === cat
+                        ? 'text-white border-white/50 shadow-sm'
+                        : 'bg-[#0d1117] text-github-muted border-github-border hover:text-white hover:border-github-borderLight'
+                    }`}
+                    style={{
+                      backgroundColor: category === cat ? theme.accent : undefined,
+                      color: category === cat ? '#0d1117' : undefined,
+                      fontWeight: category === cat ? 'bold' : 'normal'
+                    }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Duration in Days */}

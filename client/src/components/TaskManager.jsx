@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   CheckSquare,
   Plus,
@@ -11,7 +11,8 @@ import {
   Filter,
   Search,
   Edit3,
-  ShieldAlert
+  ShieldAlert,
+  Tag
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatDateStr } from '../data/initialData';
@@ -30,6 +31,29 @@ export default function TaskManager({
   onOpenDataClean
 }) {
   const { theme } = useTheme();
+  const defaultCategories = ['Coding', 'Study', 'Fitness', 'Work', 'General'];
+  const [customCategories, setCustomCategories] = useState(() => {
+    try {
+      const saved = localStorage.getItem('daily_task_custom_categories');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Combine default, custom, and task categories dynamically
+  const allCategories = useMemo(() => {
+    const fromTasks = tasks.map((t) => t.category).filter(Boolean);
+    const set = new Set([...defaultCategories, ...customCategories, ...fromTasks]);
+    return Array.from(set);
+  }, [tasks, customCategories]);
+
+  const categories = ['All', ...allCategories];
+
+  // Manual Category State
+  const [isManualCategory, setIsManualCategory] = useState(false);
+  const [manualCategoryInput, setManualCategoryInput] = useState('');
+
   const [filter, setFilter] = useState(selectedDate ? 'selectedDate' : 'today');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,8 +68,6 @@ export default function TaskManager({
   const [newDate, setNewDate] = useState(selectedDate || formatDateStr(new Date()));
 
   const todayStr = formatDateStr(new Date());
-
-  const categories = ['All', 'Coding', 'Study', 'Fitness', 'Work', 'General'];
 
   const handleToggle = (taskId) => {
     const task = tasks.find((t) => t.id === taskId || t._id === taskId);
@@ -70,10 +92,20 @@ export default function TaskManager({
     e.preventDefault();
     if (!newTitle.trim()) return;
 
+    let finalCategory = newCategory;
+    if (isManualCategory && manualCategoryInput.trim()) {
+      finalCategory = manualCategoryInput.trim();
+      if (!customCategories.includes(finalCategory)) {
+        const next = [...customCategories, finalCategory];
+        setCustomCategories(next);
+        localStorage.setItem('daily_task_custom_categories', JSON.stringify(next));
+      }
+    }
+
     onAddTask({
       id: `task-${Date.now()}`,
       title: newTitle.trim(),
-      category: newCategory,
+      category: finalCategory || 'General',
       priority: newPriority,
       estimatedMinutes: parseInt(newEstimatedMinutes, 10) || 30,
       date: newDate || todayStr,
@@ -82,6 +114,8 @@ export default function TaskManager({
     });
 
     setNewTitle('');
+    setManualCategoryInput('');
+    setIsManualCategory(false);
     setIsAddFormOpen(false);
   };
 
@@ -220,24 +254,56 @@ export default function TaskManager({
               />
             </div>
 
-            {/* Category */}
+            {/* Category with Manual Custom Category Entry */}
             <div>
-              <label className="block text-[11px] font-semibold text-github-text uppercase tracking-wider mb-1">
-                Category
-              </label>
-              <select
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none"
-              >
-                {categories
-                  .filter((c) => c !== 'All')
-                  .map((c) => (
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-semibold text-github-text uppercase tracking-wider">
+                  Category
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsManualCategory(!isManualCategory);
+                    if (!isManualCategory) setManualCategoryInput('');
+                  }}
+                  className="text-[10px] font-medium hover:underline text-github-muted hover:text-white"
+                  style={{ color: isManualCategory ? theme.accentLight : undefined }}
+                >
+                  {isManualCategory ? 'Choose Preset' : '+ Enter Manually'}
+                </button>
+              </div>
+
+              {isManualCategory ? (
+                <input
+                  type="text"
+                  required
+                  value={manualCategoryInput}
+                  onChange={(e) => setManualCategoryInput(e.target.value)}
+                  placeholder="Type new category..."
+                  className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted focus:outline-none font-medium"
+                  style={{ borderColor: theme.accent + '70' }}
+                />
+              ) : (
+                <select
+                  value={newCategory}
+                  onChange={(e) => {
+                    if (e.target.value === '__NEW__') {
+                      setIsManualCategory(true);
+                      setManualCategoryInput('');
+                    } else {
+                      setNewCategory(e.target.value);
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none"
+                >
+                  {allCategories.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>
                   ))}
-              </select>
+                  <option value="__NEW__">+ Enter New Category Manually...</option>
+                </select>
+              )}
             </div>
 
             {/* Priority */}
