@@ -5,15 +5,18 @@ import ContributionHeatmap from './components/ContributionHeatmap';
 import ChallengeTracker from './components/ChallengeTracker';
 import TaskManager from './components/TaskManager';
 import UserProfile from './components/UserProfile';
+import BackupModal from './components/BackupModal';
+import MobileBottomNav from './components/MobileBottomNav';
 import { storageService } from './services/storageService';
 import { apiService } from './services/apiService';
-import { formatDateStr } from './data/initialData';
-import { Calendar, Flame, CheckSquare, Database } from 'lucide-react';
+import { formatDateStr, initialUserProfile, initialTasks, initialChallenges } from './data/initialData';
+import { Calendar, Flame, CheckSquare, Database, Sparkles, Quote } from 'lucide-react';
 import GithubIcon from './components/GithubIcon';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedDate, setSelectedDate] = useState(null);
+  const [isBackupOpen, setIsBackupOpen] = useState(false);
 
   // Core State initialized from LocalStorage
   const [userProfile, setUserProfile] = useState(() => storageService.getUserProfile());
@@ -24,6 +27,16 @@ export default function App() {
   const [mongoStatus, setMongoStatus] = useState({ connected: false, isMongoConnected: false });
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(() => storageService.getLastSync());
+
+  // Daily Motivational Quote
+  const quotes = [
+    { text: "Consistency is what transforms average into excellence.", author: "Anonymous" },
+    { text: "Small daily improvements over time lead to stunning results.", author: "Robin Sharma" },
+    { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", author: "Will Durant" },
+    { text: "Focus on the step in front of you, not the whole staircase.", author: "Anonymous" },
+    { text: "Action isn't just the effect of motivation; it's also the cause of it.", author: "Mark Manson" }
+  ];
+  const todayQuote = quotes[new Date().getDate() % quotes.length];
 
   // Check backend server & MongoDB status on start
   const checkServerStatus = useCallback(async () => {
@@ -46,7 +59,6 @@ export default function App() {
       const now = new Date().toISOString();
 
       if (result && result.success && result.data) {
-        // If MongoDB provided freshest unified data, update local state
         if (result.data.user) {
           setUserProfile(result.data.user);
           storageService.saveUserProfile(result.data.user);
@@ -131,7 +143,6 @@ export default function App() {
   const handleCreateChallenge = async (newChallengeData) => {
     const { durationDays, startDate, title, description, category } = newChallengeData;
 
-    // Helper to add days
     const addDays = (dStr, days) => {
       const d = new Date(dStr);
       d.setDate(d.getDate() + days);
@@ -201,8 +212,39 @@ export default function App() {
     await apiService.deleteChallenge(challengeId);
   };
 
+  // Data Restore & Reset Handlers
+  const handleRestoreData = (restored) => {
+    if (restored.user) {
+      setUserProfile(restored.user);
+      storageService.saveUserProfile(restored.user);
+    }
+    if (restored.tasks) {
+      setTasks(restored.tasks);
+      storageService.saveTasks(restored.tasks);
+    }
+    if (restored.challenges) {
+      setChallenges(restored.challenges);
+      storageService.saveChallenges(restored.challenges);
+    }
+    performSync(restored);
+  };
+
+  const handleResetData = () => {
+    setUserProfile(initialUserProfile);
+    setTasks(initialTasks);
+    setChallenges(initialChallenges);
+    storageService.saveUserProfile(initialUserProfile);
+    storageService.saveTasks(initialTasks);
+    storageService.saveChallenges(initialChallenges);
+    performSync({
+      user: initialUserProfile,
+      tasks: initialTasks,
+      challenges: initialChallenges
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-[#0d1117] text-[#c9d1d9] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#0d1117] text-[#c9d1d9] flex flex-col font-sans pb-16 md:pb-0">
       {/* Top Navigation */}
       <Navbar
         activeTab={activeTab}
@@ -212,10 +254,30 @@ export default function App() {
         isSyncing={isSyncing}
         lastSyncTime={lastSyncTime}
         onManualSync={() => performSync()}
+        onOpenBackup={() => setIsBackupOpen(true)}
       />
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Daily Motivation Banner */}
+        <div className="mb-5 bg-gradient-to-r from-olive-950/60 via-[#161b22] to-[#161b22] border border-olive-700/30 rounded-xl p-3 sm:p-4 flex items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-olive-900/60 text-olive-300 border border-olive-600/40 hidden sm:flex">
+              <Quote className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm text-white font-medium italic">
+                "{todayQuote.text}"
+              </p>
+              <span className="text-[10px] text-olive-400 font-mono">— {todayQuote.author}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#0d1117] border border-github-border text-[11px] font-mono text-github-muted whitespace-nowrap">
+            <span className="w-2 h-2 rounded-full bg-olive-400"></span>
+            <span>{formatDateStr(new Date())}</span>
+          </div>
+        </div>
+
         {/* Render Tab Contents */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
@@ -227,6 +289,7 @@ export default function App() {
               tasks={tasks}
               selectedDate={selectedDate}
               onSelectDate={(d) => setSelectedDate(d)}
+              onNavigateToTasks={() => setActiveTab('tasks')}
             />
 
             {/* Connected Daily Task Quick Section */}
@@ -273,8 +336,27 @@ export default function App() {
         )}
       </main>
 
+      {/* Backup & Portability Modal */}
+      <BackupModal
+        isOpen={isBackupOpen}
+        onClose={() => setIsBackupOpen(false)}
+        data={{ user: userProfile, tasks, challenges }}
+        onRestoreData={handleRestoreData}
+        onResetData={handleResetData}
+      />
+
+      {/* Mobile Sticky Bottom Navigation (Screens < 768px) */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onQuickAdd={() => {
+          setActiveTab('tasks');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
+
       {/* Footer */}
-      <footer className="border-t border-github-border bg-[#0d1117] py-6 mt-12 text-center text-xs text-github-muted">
+      <footer className="border-t border-github-border bg-[#0d1117] py-6 text-center text-xs text-github-muted hidden md:block">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-olive-500"></span>
@@ -287,7 +369,7 @@ export default function App() {
               rel="noreferrer"
               className="hover:text-white flex items-center gap-1.5 transition-colors"
             >
-              <GithubIcon className="w-3.5 h-3.5" />
+              <GithubIcon className="w-3.5 h-3.5 text-olive-400" />
               <span>n0vemberain/daily-task</span>
             </a>
             <span>•</span>

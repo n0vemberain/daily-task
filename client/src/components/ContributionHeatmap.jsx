@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Calendar, ChevronRight, Info, Sparkles, Filter } from 'lucide-react';
+import { Calendar, ChevronRight, Info, Sparkles, Filter, Smartphone, CheckSquare } from 'lucide-react';
 import { formatDateStr } from '../data/initialData';
 
-export default function ContributionHeatmap({ tasks, onSelectDate, selectedDate }) {
+export default function ContributionHeatmap({ tasks, onSelectDate, selectedDate, onNavigateToTasks }) {
   const [timeRange, setTimeRange] = useState('year'); // 'year' (52 weeks) or 'half' (26 weeks)
   const [hoveredDay, setHoveredDay] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [mobileSelectedDay, setMobileSelectedDay] = useState(null);
 
   // Map task completions by date
   const activityMap = useMemo(() => {
@@ -28,8 +29,7 @@ export default function ContributionHeatmap({ tasks, onSelectDate, selectedDate 
     const totalDays = weeksCount * 7;
 
     const today = new Date();
-    // End the calendar on the upcoming Saturday to keep a clean 7-row grid
-    const endDayOfWeek = today.getDay(); // 0 is Sunday, 6 is Saturday
+    const endDayOfWeek = today.getDay();
     const daysUntilSaturday = 6 - endDayOfWeek;
     const endDate = new Date(today);
     endDate.setDate(today.getDate() + daysUntilSaturday);
@@ -46,7 +46,6 @@ export default function ContributionHeatmap({ tasks, onSelectDate, selectedDate 
     let activeDays = 0;
 
     const cur = new Date(startDate);
-    let dayIndex = 0;
 
     while (cur <= endDate) {
       const dateStr = formatDateStr(cur);
@@ -94,7 +93,6 @@ export default function ContributionHeatmap({ tasks, onSelectDate, selectedDate 
       }
 
       cur.setDate(cur.getDate() + 1);
-      dayIndex++;
     }
 
     if (currentWeek.length > 0) {
@@ -121,15 +119,23 @@ export default function ContributionHeatmap({ tasks, onSelectDate, selectedDate 
       return 'bg-[#161b22] border-[#21262d] hover:border-[#384620]';
     }
     if (count === 1) {
-      return 'bg-[#263b19] border-[#384f27] hover:border-[#4d6b2c]'; // Level 1: Dark olive
+      return 'bg-[#263b19] border-[#384f27] hover:border-[#4d6b2c]';
     }
     if (count === 2) {
-      return 'bg-[#3d5c24] border-[#4e7430] hover:border-[#63923c]'; // Level 2: Medium olive
+      return 'bg-[#3d5c24] border-[#4e7430] hover:border-[#63923c]';
     }
     if (count <= 4) {
-      return 'bg-[#5a8533] border-[#6ea03f] hover:border-[#83bd4b]'; // Level 3: Rich olive
+      return 'bg-[#5a8533] border-[#6ea03f] hover:border-[#83bd4b]';
     }
-    return 'bg-[#7eb644] border-[#92ce52] hover:border-[#abeb64] shadow-sm shadow-olive-600/40'; // Level 4: Vibrant olive
+    return 'bg-[#7eb644] border-[#92ce52] hover:border-[#abeb64] shadow-sm shadow-olive-600/40';
+  };
+
+  const handleCellClick = (day) => {
+    if (day.isFuture) return;
+    setMobileSelectedDay(day);
+    if (onSelectDate) {
+      onSelectDate(day.date === selectedDate ? null : day.date);
+    }
   };
 
   const handleCellHover = (e, day) => {
@@ -157,16 +163,16 @@ export default function ContributionHeatmap({ tasks, onSelectDate, selectedDate 
               Activity Contribution Heatmap
             </h2>
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-olive-950 text-olive-300 border border-olive-700/40 font-mono">
-              Olive Shades
+              Olive Green Shades
             </span>
           </div>
           <p className="text-xs text-github-muted mt-0.5">
-            Visual record of daily task completions and productive streaks
+            Visual GitHub-style record of daily task completions and streaks
           </p>
         </div>
 
         {/* Time range selector */}
-        <div className="flex items-center gap-2 bg-[#0d1117] p-1 rounded-lg border border-github-border text-xs">
+        <div className="flex items-center gap-2 bg-[#0d1117] p-1 rounded-lg border border-github-border text-xs w-full sm:w-auto justify-between sm:justify-start">
           <button
             onClick={() => setTimeRange('year')}
             className={`px-3 py-1 rounded-md font-medium transition-all ${
@@ -190,8 +196,14 @@ export default function ContributionHeatmap({ tasks, onSelectDate, selectedDate 
         </div>
       </div>
 
-      {/* Heatmap Grid Container with horizontal scroll */}
-      <div className="overflow-x-auto pb-2 scrollbar-thin">
+      {/* Mobile Swipe Hint */}
+      <div className="sm:hidden flex items-center justify-between text-[11px] text-github-muted mb-2 px-1">
+        <span>← Swipe horizontally to explore full year →</span>
+        <span className="font-mono text-olive-400 font-semibold">{weeks.length}w</span>
+      </div>
+
+      {/* Heatmap Grid Container with horizontal touch scroll */}
+      <div className="overflow-x-auto pb-2 scrollbar-thin -webkit-overflow-scrolling-touch">
         <div className="inline-block min-w-full">
           {/* Month labels header */}
           <div className="flex text-[11px] text-github-muted font-mono mb-1.5 ml-7 h-4 relative">
@@ -223,17 +235,17 @@ export default function ContributionHeatmap({ tasks, onSelectDate, selectedDate 
               {weeks.map((week, wIdx) => (
                 <div key={wIdx} className="flex flex-col gap-[3px]">
                   {week.map((day, dIdx) => {
-                    const isSelected = selectedDate === day.date;
+                    const isSelected = selectedDate === day.date || mobileSelectedDay?.date === day.date;
                     const levelClass = getOliveLevelClass(day.count, day.isFuture, isSelected);
 
                     return (
                       <button
                         key={dIdx}
-                        onClick={() => !day.isFuture && onSelectDate && onSelectDate(day.date)}
+                        onClick={() => handleCellClick(day)}
                         onMouseEnter={(e) => handleCellHover(e, day)}
                         onMouseLeave={handleCellLeave}
                         disabled={day.isFuture}
-                        className={`w-3 h-3 rounded-[2.5px] border heatmap-cell ${levelClass} focus:outline-none focus:ring-1 focus:ring-olive-400`}
+                        className={`w-3 h-3 rounded-[2.5px] border heatmap-cell ${levelClass} focus:outline-none`}
                         aria-label={`${day.formattedDate}: ${day.count} tasks completed`}
                       />
                     );
@@ -245,6 +257,49 @@ export default function ContributionHeatmap({ tasks, onSelectDate, selectedDate 
         </div>
       </div>
 
+      {/* Mobile Active Day Detail Drawer */}
+      {mobileSelectedDay && (
+        <div className="sm:hidden mt-3 p-3 rounded-lg bg-[#0d1117] border border-olive-700/50 flex flex-col gap-2 animate-in fade-in">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-xs text-white">
+              {mobileSelectedDay.formattedDate}
+            </span>
+            <span className="text-[11px] font-mono text-olive-300 px-2 py-0.5 rounded bg-olive-950 border border-olive-800">
+              {mobileSelectedDay.count} tasks completed
+            </span>
+          </div>
+
+          {mobileSelectedDay.tasks.length > 0 && (
+            <ul className="text-[11px] text-github-muted space-y-1 max-h-20 overflow-y-auto">
+              {mobileSelectedDay.tasks.map((task, i) => (
+                <li key={i} className="flex items-center gap-1.5 truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-olive-400 flex-shrink-0" />
+                  <span className="truncate">{task}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="flex items-center justify-between pt-1 border-t border-github-border text-[11px]">
+            <button
+              onClick={() => {
+                if (onNavigateToTasks) onNavigateToTasks();
+              }}
+              className="text-olive-400 font-medium hover:underline flex items-center gap-1"
+            >
+              <CheckSquare className="w-3 h-3" />
+              <span>Manage tasks for this date</span>
+            </button>
+            <button
+              onClick={() => setMobileSelectedDay(null)}
+              className="text-github-muted hover:text-white"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Footer: Summary Stats & Olive Color Legend */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4 mt-2 border-t border-github-border text-xs text-github-muted">
         <div className="flex items-center gap-4 flex-wrap">
@@ -252,7 +307,7 @@ export default function ContributionHeatmap({ tasks, onSelectDate, selectedDate 
             <span className="text-white font-semibold font-mono">{totalTasksCount}</span> completed tasks in{' '}
             {timeRange === 'year' ? 'past 365 days' : 'past 6 months'}
           </div>
-          <span className="text-github-border">•</span>
+          <span className="text-github-border hidden sm:inline">•</span>
           <div>
             <span className="text-white font-semibold font-mono">{activeDaysCount}</span> active days
           </div>
@@ -281,10 +336,10 @@ export default function ContributionHeatmap({ tasks, onSelectDate, selectedDate 
         </div>
       </div>
 
-      {/* Floating Hover Tooltip */}
+      {/* Floating Hover Tooltip (Desktop) */}
       {hoveredDay && (
         <div
-          className="fixed z-50 pointer-events-none transform -translate-x-1/2 -translate-y-full bg-[#0d1117]/95 border border-github-borderLight text-white px-3 py-2 rounded-lg text-xs shadow-xl backdrop-blur-md max-w-xs transition-opacity duration-150"
+          className="hidden sm:block fixed z-50 pointer-events-none transform -translate-x-1/2 -translate-y-full bg-[#0d1117]/95 border border-github-borderLight text-white px-3 py-2 rounded-lg text-xs shadow-xl backdrop-blur-md max-w-xs transition-opacity duration-150"
           style={{ left: `${tooltipPos.x}px`, top: `${tooltipPos.y}px` }}
         >
           <div className="font-semibold text-white flex items-center justify-between gap-2 border-b border-github-border pb-1 mb-1">

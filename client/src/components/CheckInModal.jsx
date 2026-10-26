@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, CheckCircle2, XCircle, RotateCcw, Calendar, FileText, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { soundEffects } from '../utils/audioFeedback';
 
 export default function CheckInModal({
   isOpen,
@@ -18,6 +19,7 @@ export default function CheckInModal({
     const finalStatus = selectedStatus || status;
 
     if (finalStatus === 'completed') {
+      soundEffects.playCelebration();
       try {
         confetti({
           particleCount: 60,

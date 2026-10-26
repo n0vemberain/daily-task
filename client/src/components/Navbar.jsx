@@ -1,13 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   CalendarDays,
   Flame,
   CheckSquare,
   User,
+  Volume2,
+  VolumeX,
+  HardDriveDownload,
   Award
 } from 'lucide-react';
 import GithubIcon from './GithubIcon';
 import SyncStatusBadge from './SyncStatusBadge';
+import { soundEffects } from '../utils/audioFeedback';
 
 export default function Navbar({
   activeTab,
@@ -16,8 +20,20 @@ export default function Navbar({
   mongoStatus,
   isSyncing,
   lastSyncTime,
-  onManualSync
+  onManualSync,
+  onOpenBackup
 }) {
+  const [isMuted, setIsMuted] = useState(soundEffects.isMuted());
+
+  const handleToggleSound = () => {
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    soundEffects.setMuted(nextMuted);
+    if (!nextMuted) {
+      soundEffects.playSuccess();
+    }
+  };
+
   const tabs = [
     { id: 'dashboard', label: 'Heatmap & Overview', icon: CalendarDays },
     { id: 'challenges', label: 'Goal Challenges', icon: Flame },
@@ -75,6 +91,28 @@ export default function Navbar({
               lastSyncTime={lastSyncTime}
               onManualSync={onManualSync}
             />
+
+            {/* Sound Effects Toggle */}
+            <button
+              onClick={handleToggleSound}
+              className={`p-1.5 rounded-md border text-xs transition-colors ${
+                isMuted
+                  ? 'bg-[#161b22] border-github-border text-github-muted hover:text-white'
+                  : 'bg-olive-950 border-olive-700/50 text-olive-300 hover:bg-olive-900'
+              }`}
+              title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
+            >
+              {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+            </button>
+
+            {/* Backup & Portability Button */}
+            <button
+              onClick={onOpenBackup}
+              className="p-1.5 rounded-md border border-github-border bg-[#161b22] hover:bg-[#21262d] text-github-text transition-colors"
+              title="Backup & Restore Data (JSON)"
+            >
+              <HardDriveDownload className="w-3.5 h-3.5 text-olive-400" />
+            </button>
 
             {/* GitHub Repo Link */}
             <a

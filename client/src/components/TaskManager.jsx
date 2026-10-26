@@ -9,10 +9,12 @@ import {
   Circle,
   AlertCircle,
   Filter,
+  Search,
   Sparkles
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatDateStr } from '../data/initialData';
+import { soundEffects } from '../utils/audioFeedback';
 
 export default function TaskManager({
   tasks,
@@ -24,6 +26,7 @@ export default function TaskManager({
 }) {
   const [filter, setFilter] = useState(selectedDate ? 'selectedDate' : 'today');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
 
   // Form State
@@ -42,6 +45,7 @@ export default function TaskManager({
     const willComplete = !task?.completed;
 
     if (willComplete) {
+      soundEffects.playSuccess();
       try {
         confetti({
           particleCount: 40,
@@ -76,6 +80,14 @@ export default function TaskManager({
 
   // Filter tasks
   const filteredTasks = tasks.filter((t) => {
+    // Search query match
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchTitle = t.title?.toLowerCase().includes(q);
+      const matchCategory = t.category?.toLowerCase().includes(q);
+      if (!matchTitle && !matchCategory) return false;
+    }
+
     // Category match
     if (categoryFilter !== 'All' && t.category !== categoryFilter) {
       return false;
@@ -258,14 +270,14 @@ export default function TaskManager({
         </form>
       )}
 
-      {/* Filters Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#161b22] p-3 rounded-xl border border-github-border">
+      {/* Filters & Search Bar */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-[#161b22] p-3 rounded-xl border border-github-border">
         {/* Main Status Filters */}
         {!selectedDate && (
-          <div className="flex items-center gap-1 bg-[#0d1117] p-1 rounded-lg border border-github-border text-xs">
+          <div className="flex items-center gap-1 bg-[#0d1117] p-1 rounded-lg border border-github-border text-xs overflow-x-auto scrollbar-none">
             <button
               onClick={() => setFilter('today')}
-              className={`px-3 py-1 rounded-md font-medium transition-all ${
+              className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
                 filter === 'today'
                   ? 'bg-olive-800 text-white shadow-sm border border-olive-600/40'
                   : 'text-github-muted hover:text-white'
@@ -275,7 +287,7 @@ export default function TaskManager({
             </button>
             <button
               onClick={() => setFilter('pending')}
-              className={`px-3 py-1 rounded-md font-medium transition-all ${
+              className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
                 filter === 'pending'
                   ? 'bg-olive-800 text-white shadow-sm border border-olive-600/40'
                   : 'text-github-muted hover:text-white'
@@ -285,7 +297,7 @@ export default function TaskManager({
             </button>
             <button
               onClick={() => setFilter('completed')}
-              className={`px-3 py-1 rounded-md font-medium transition-all ${
+              className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
                 filter === 'completed'
                   ? 'bg-olive-800 text-white shadow-sm border border-olive-600/40'
                   : 'text-github-muted hover:text-white'
@@ -295,7 +307,7 @@ export default function TaskManager({
             </button>
             <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-1 rounded-md font-medium transition-all ${
+              className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
                 filter === 'all'
                   ? 'bg-olive-800 text-white shadow-sm border border-olive-600/40'
                   : 'text-github-muted hover:text-white'
@@ -306,24 +318,36 @@ export default function TaskManager({
           </div>
         )}
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto scrollbar-none">
-          <span className="text-[11px] text-github-muted whitespace-nowrap hidden sm:inline">
-            Category:
-          </span>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategoryFilter(cat)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
-                categoryFilter === cat
-                  ? 'bg-olive-950 text-olive-300 border border-olive-700/60'
-                  : 'text-github-muted hover:text-white bg-[#0d1117] border border-github-border'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+        {/* Search input & Category Pills */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          {/* Quick Search */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-github-muted absolute left-2.5 top-2.5" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search tasks..."
+              className="w-full sm:w-44 pl-8 pr-2.5 py-1.5 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted focus:border-olive-500 outline-none"
+            />
+          </div>
+
+          {/* Category Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
+                  categoryFilter === cat
+                    ? 'bg-olive-950 text-olive-300 border border-olive-700/60'
+                    : 'text-github-muted hover:text-white bg-[#0d1117] border border-github-border'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
