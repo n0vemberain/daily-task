@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   CheckSquare,
   Plus,
@@ -12,7 +12,8 @@ import {
   Search,
   Edit3,
   ArrowUpDown,
-  Tag
+  Tag,
+  Lock
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatDateStr } from '../data/initialData';
@@ -62,18 +63,31 @@ export default function TaskManager({
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
 
-  // Form State
+  const todayStr = formatDateStr(new Date());
+
+  // Form State: Ensure new tasks cannot default to a past date
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('Coding');
   const [newPriority, setNewPriority] = useState('Medium');
   const [newEstimatedMinutes, setNewEstimatedMinutes] = useState(30);
-  const [newDate, setNewDate] = useState(selectedDate || formatDateStr(new Date()));
+  const [newDate, setNewDate] = useState(() => (selectedDate && selectedDate >= todayStr ? selectedDate : todayStr));
 
-  const todayStr = formatDateStr(new Date());
+  useEffect(() => {
+    if (selectedDate && selectedDate >= todayStr) {
+      setNewDate(selectedDate);
+    } else {
+      setNewDate(todayStr);
+    }
+  }, [selectedDate, todayStr]);
+
+  const isSelectedDatePast = selectedDate ? selectedDate < todayStr : false;
 
   const handleToggle = (taskId) => {
     const task = tasks.find((t) => t.id === taskId || t._id === taskId);
-    const willComplete = !task?.completed;
+    // Block toggling tasks from past dates (History is locked)
+    if (!task || task.date < todayStr) return;
+
+    const willComplete = !task.completed;
 
     if (willComplete) {
       soundEffects.playSuccess();
@@ -93,6 +107,11 @@ export default function TaskManager({
   const handleCreateTask = (e) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
+
+    // Strict protection: do not allow adding tasks to past dates
+    if (newDate < todayStr) {
+      return;
+    }
 
     let finalCategory = newCategory;
     if (isManualCategory && manualCategoryInput.trim()) {
@@ -198,14 +217,18 @@ export default function TaskManager({
             </h2>
             {selectedDate ? (
               <span
-                className="text-xs px-2.5 py-0.5 rounded-full font-mono border"
+                className="text-xs px-2.5 py-0.5 rounded-full font-mono border flex items-center gap-1.5"
                 style={{
                   backgroundColor: theme.accentDark,
                   color: theme.accent,
                   borderColor: theme.accent + '40'
                 }}
               >
-                Filtered: {selectedDate}
+                {isSelectedDatePast && <Lock className="w-3 h-3 text-amber-400" />}
+                <span>
+                  Filtered: {selectedDate}
+                  {isSelectedDatePast ? ' (Past Date - Read Only)' : ''}
+                </span>
               </span>
             ) : (
               <span
@@ -246,6 +269,19 @@ export default function TaskManager({
           </button>
         </div>
       </div>
+
+      {/* Notice Banner for Past Dates */}
+      {isSelectedDatePast && (
+        <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-950/30 border border-amber-800/40 text-amber-300 text-xs animate-in fade-in">
+          <Lock className="w-4 h-4 flex-shrink-0 text-amber-400" />
+          <div className="flex-1">
+            <span className="font-semibold">History Locked:</span>
+            <span className="ml-1 text-github-muted">
+              Tasks from past date ({selectedDate}) cannot be edited, toggled, or modified. Only task deletion is permitted.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Add Task Collapsible Card */}
       {isAddFormOpen && (
@@ -353,8 +389,14 @@ export default function TaskManager({
               </label>
               <input
                 type="date"
+                min={todayStr}
                 value={newDate}
-                onChange={(e) => setNewDate(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val || val >= todayStr) {
+                    setNewDate(val);
+                  }
+                }}
                 className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none"
               />
             </div>
@@ -592,6 +634,8 @@ export default function TaskManager({
         ) : (
           filteredTasks.map((task) => {
             const taskId = task.id || task._id;
+            const isPast = task.date < todayStr;
+
             return (
               <div
                 key={taskId}
@@ -604,14 +648,23 @@ export default function TaskManager({
                 {/* Left: Checkbox + Title */}
                 <div className="flex items-center gap-3 flex-1 min-w-0 mr-3">
                   <button
-                    onClick={() => handleToggle(taskId)}
-                    className="focus:outline-none flex-shrink-0"
-                    title={task.completed ? 'Mark incomplete' : 'Mark completed'}
+                    disabled={isPast}
+                    onClick={() => !isPast && handleToggle(taskId)}
+                    className={`focus:outline-none flex-shrink-0 ${
+                      isPast ? 'cursor-not-allowed opacity-75' : ''
+                    }`}
+                    title={
+                      isPast
+                        ? 'Past date task status is locked and cannot be changed'
+                        : task.completed
+                        ? 'Mark incomplete'
+                        : 'Mark completed'
+                    }
                   >
                     {task.completed ? (
                       <CheckCircle2
                         className="w-5 h-5 transition-colors"
-                        style={{ color: theme.accent }}
+                        style={{ color: isPast ? '#6e7681' : theme.accent }}
                       />
                     ) : (
                       <Circle className="w-5 h-5 text-github-muted hover:text-white transition-colors" />
@@ -619,13 +672,24 @@ export default function TaskManager({
                   </button>
 
                   <div className="min-w-0 flex-1">
-                    <span
-                      className={`text-xs sm:text-sm font-medium block truncate ${
-                        task.completed ? 'line-through text-github-muted' : 'text-white'
-                      }`}
-                    >
-                      {task.title}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`text-xs sm:text-sm font-medium block truncate ${
+                          task.completed ? 'line-through text-github-muted' : 'text-white'
+                        }`}
+                      >
+                        {task.title}
+                      </span>
+                      {isPast && (
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-[#0d1117] text-amber-300/80 border border-amber-800/30 flex items-center gap-1 select-none"
+                          title="Past date task - Locked"
+                        >
+                          <Lock className="w-2.5 h-2.5" />
+                          Locked
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2 mt-0.5 text-[11px] text-github-muted flex-wrap">
                       <span className="font-mono">{task.date}</span>
                       <span>•</span>
@@ -657,16 +721,25 @@ export default function TaskManager({
                     {task.priority}
                   </span>
 
-                  {/* Individual Edit Task Button */}
-                  <button
-                    onClick={() => setEditingTask(task)}
-                    className="p-1 rounded-md text-github-muted hover:text-white hover:bg-[#21262d] transition-colors"
-                    title="Edit individual task"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                  </button>
+                  {/* Individual Edit Task Button - Disabled/Hidden for past tasks */}
+                  {isPast ? (
+                    <span
+                      className="p-1 rounded-md text-github-muted/30 cursor-not-allowed flex items-center justify-center"
+                      title="Past date tasks cannot be edited. You can only delete them."
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => setEditingTask(task)}
+                      className="p-1 rounded-md text-github-muted hover:text-white hover:bg-[#21262d] transition-colors"
+                      title="Edit individual task"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
 
-                  {/* Delete button */}
+                  {/* Delete button - Always enabled (user explicitly requested: only delete is allowed) */}
                   <button
                     onClick={() => onDeleteTask(taskId)}
                     className="p-1 rounded-md text-github-muted hover:text-red-400 hover:bg-[#21262d] transition-colors"

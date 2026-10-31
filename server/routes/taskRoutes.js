@@ -18,18 +18,21 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Heatmap statistics (grouped by date)
+// Heatmap statistics (grouped by date) with locked historical activity
 router.get('/heatmap', async (req, res) => {
   try {
-    const tasks = fileStore.getTasks();
-    const heatmapData = {};
+    const store = fileStore.readStore();
+    const tasks = store.tasks || [];
+    const heatmapData = { ...(store.heatmapHistory || {}) };
 
     tasks.filter(t => t.completed && t.date).forEach(t => {
       if (!heatmapData[t.date]) {
         heatmapData[t.date] = { count: 0, tasks: [] };
       }
-      heatmapData[t.date].count += 1;
-      heatmapData[t.date].tasks.push(t.title);
+      heatmapData[t.date].count = Math.max(heatmapData[t.date].count || 0, 1);
+      if (!heatmapData[t.date].tasks.includes(t.title)) {
+        heatmapData[t.date].tasks.push(t.title);
+      }
     });
 
     res.json({ success: true, data: heatmapData });
@@ -44,6 +47,11 @@ router.post('/', async (req, res) => {
     const { title, category, priority, date, estimatedMinutes, id } = req.body;
     if (!title) {
       return res.status(400).json({ success: false, message: 'Title is required' });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    if (date && date < today) {
+      return res.status(400).json({ success: false, message: 'Cannot create tasks for past dates. History is locked.' });
     }
 
     const task = fileStore.createTask({
@@ -72,6 +80,11 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const taskId = req.params.id;
+    const today = new Date().toISOString().split('T')[0];
+    if (req.body.date && req.body.date < today) {
+      return res.status(400).json({ success: false, message: 'Cannot move task to a past date. History is locked.' });
+    }
+
     const task = fileStore.updateTask(taskId, req.body);
 
     if (!task) {

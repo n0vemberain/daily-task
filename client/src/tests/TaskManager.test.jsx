@@ -155,4 +155,53 @@ describe('TaskManager Component', () => {
     // Verify select value changed
     expect(sortSelect.value).toBe('high-first');
   });
+
+  it('locks past date tasks so they cannot be toggled or edited, but allows deletion', () => {
+    const onToggleTask = vi.fn();
+    const onDeleteTask = vi.fn();
+    const pastTasks = [
+      {
+        id: 'past-1',
+        title: 'Completed algorithm practice',
+        category: 'Coding',
+        priority: 'High',
+        estimatedMinutes: 45,
+        date: '2026-01-01',
+        completed: true
+      }
+    ];
+
+    render(
+      <ThemeProvider>
+        <TaskManager
+          tasks={pastTasks}
+          onAddTask={vi.fn()}
+          onToggleTask={onToggleTask}
+          onDeleteTask={onDeleteTask}
+          onEditTask={vi.fn()}
+          selectedDate="2026-01-01"
+          onClearDateFilter={vi.fn()}
+        />
+      </ThemeProvider>
+    );
+
+    // Verify history locked indicator appears
+    expect(screen.getByText(/History Locked/i)).toBeInTheDocument();
+
+    // Verify checkbox button is disabled for past task
+    const checkboxBtn = screen.getByTitle('Past date task status is locked and cannot be changed');
+    expect(checkboxBtn).toBeDisabled();
+    fireEvent.click(checkboxBtn);
+    expect(onToggleTask).not.toHaveBeenCalled();
+
+    // Verify edit button is locked/disabled
+    expect(screen.getByTitle(/Past date tasks cannot be edited\. You can only delete them\./i)).toBeInTheDocument();
+    expect(screen.queryByTitle('Edit individual task')).not.toBeInTheDocument();
+
+    // Verify delete button is active and callable
+    const deleteBtn = screen.getByTitle('Delete task');
+    expect(deleteBtn).toBeInTheDocument();
+    fireEvent.click(deleteBtn);
+    expect(onDeleteTask).toHaveBeenCalledWith('past-1');
+  });
 });

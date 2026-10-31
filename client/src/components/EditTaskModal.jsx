@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Edit3, Clock, Calendar, Tag } from 'lucide-react';
+import { X, CheckCircle2, Edit3, Clock, Calendar, Tag, Lock } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { formatDateStr } from '../data/initialData';
 
 export default function EditTaskModal({
   isOpen,
@@ -9,6 +10,9 @@ export default function EditTaskModal({
   onSaveTask
 }) {
   const { theme } = useTheme();
+  const todayStr = formatDateStr(new Date());
+  const isPast = task ? task.date < todayStr : false;
+
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Coding');
   const [priority, setPriority] = useState('Medium');
@@ -45,7 +49,7 @@ export default function EditTaskModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || isPast || (date && date < todayStr)) return;
 
     let finalCategory = category;
     if (isManualCategory && manualCategoryInput.trim()) {
@@ -173,6 +177,16 @@ export default function EditTaskModal({
             </div>
           </div>
 
+          {/* Past Date Locked Warning */}
+          {isPast && (
+            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-950/30 border border-amber-800/40 text-amber-300 text-xs animate-in fade-in">
+              <Lock className="w-4 h-4 flex-shrink-0 text-amber-400" />
+              <span>
+                This task is from a past date ({task.date}). Previous dates cannot be edited. History is locked. You can only delete this task.
+              </span>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             {/* Date */}
             <div>
@@ -182,9 +196,18 @@ export default function EditTaskModal({
               <input
                 type="date"
                 required
+                min={todayStr}
+                disabled={isPast}
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val || val >= todayStr) {
+                    setDate(val);
+                  }
+                }}
+                className={`w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none ${
+                  isPast ? 'opacity-60 cursor-not-allowed' : ''
+                }`}
               />
             </div>
 
@@ -197,9 +220,12 @@ export default function EditTaskModal({
                 type="number"
                 min="5"
                 step="5"
+                disabled={isPast}
                 value={estimatedMinutes}
                 onChange={(e) => setEstimatedMinutes(e.target.value)}
-                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none"
+                className={`w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none ${
+                  isPast ? 'opacity-60 cursor-not-allowed' : ''
+                }`}
               />
             </div>
           </div>
@@ -215,10 +241,13 @@ export default function EditTaskModal({
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white shadow-md transition-all"
-              style={{ backgroundColor: theme.accent, color: '#0d1117' }}
+              disabled={isPast}
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold text-white shadow-md transition-all ${
+                isPast ? 'opacity-50 cursor-not-allowed bg-gray-700' : ''
+              }`}
+              style={!isPast ? { backgroundColor: theme.accent, color: '#0d1117' } : {}}
             >
-              Update Task
+              {isPast ? 'History Locked' : 'Update Task'}
             </button>
           </div>
         </form>

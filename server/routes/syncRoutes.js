@@ -19,6 +19,7 @@ router.get('/', async (req, res) => {
         tasks: data.tasks || [],
         challenges: data.challenges || [],
         timerSessions: data.timerSessions || [],
+        heatmapHistory: data.heatmapHistory || {},
         lastUpdated: data.lastUpdated
       }
     });
@@ -30,10 +31,10 @@ router.get('/', async (req, res) => {
 // POST /api/sync - Bi-directional intelligent full sync
 router.post('/', async (req, res) => {
   try {
-    const { user, tasks, challenges, timerSessions } = req.body;
+    const { user, tasks, challenges, timerSessions, heatmapHistory } = req.body;
 
     // 1. Sync into persistent file store (Guarantees cross-device data persistence)
-    const syncedData = fileStore.syncAll({ user, tasks, challenges, timerSessions });
+    const syncedData = fileStore.syncAll({ user, tasks, challenges, timerSessions, heatmapHistory });
 
     // 2. If MongoDB is actively connected (readyState === 1), mirror to Mongo
     if (mongoose.connection && mongoose.connection.readyState === 1) {

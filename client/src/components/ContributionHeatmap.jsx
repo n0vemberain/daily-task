@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Calendar, ChevronRight, Info, Filter, Palette, CheckSquare, Sparkles } from 'lucide-react';
+import { Calendar, ChevronRight, Info, Filter, Palette, CheckSquare, Sparkles, Lock } from 'lucide-react';
 import { formatDateStr } from '../data/initialData';
 import { useTheme } from '../context/ThemeContext';
 
@@ -133,20 +133,60 @@ export default function ContributionHeatmap({
     setShowThemePicker(false);
   };
 
-  // Map task completions by date
+  const todayDateStr = formatDateStr(new Date());
+
+  // Map task completions by date with locked past contribution history
   const activityMap = useMemo(() => {
+    // 1. Retrieve locked history from localStorage if available
+    let savedHistory = {};
+    try {
+      const stored = localStorage.getItem('daily_task_heatmap_history_v1');
+      if (stored) savedHistory = JSON.parse(stored);
+    } catch (e) {}
+
     const map = {};
-    tasks.forEach(t => {
+
+    // 2. Aggregate current tasks
+    (tasks || []).forEach(t => {
       if (t.completed && t.date) {
         if (!map[t.date]) {
           map[t.date] = { count: 0, tasks: [] };
         }
         map[t.date].count += 1;
-        map[t.date].tasks.push(t.title);
+        if (!map[t.date].tasks.includes(t.title)) {
+          map[t.date].tasks.push(t.title);
+        }
       }
     });
+
+    // 3. For any past date (d < todayDateStr), preserve and lock historical contributions
+    // Ensuring the heatmap block count NEVER decreases or deletes even if a task is deleted
+    const allDates = new Set([...Object.keys(savedHistory), ...Object.keys(map)]);
+    allDates.forEach(d => {
+      const isPastDate = d < todayDateStr;
+      const currentEntry = map[d] || { count: 0, tasks: [] };
+      const savedEntry = savedHistory[d] || { count: 0, tasks: [] };
+
+      if (isPastDate) {
+        const lockedCount = Math.max(savedEntry.count || 0, currentEntry.count || 0);
+        const mergedTasks = Array.from(new Set([...(savedEntry.tasks || []), ...(currentEntry.tasks || [])]));
+        map[d] = {
+          count: lockedCount,
+          tasks: mergedTasks,
+          isLocked: true
+        };
+      } else {
+        map[d] = currentEntry;
+      }
+    });
+
+    // 4. Save updated history so past blocks stay permanently locked
+    try {
+      localStorage.setItem('daily_task_heatmap_history_v1', JSON.stringify(map));
+    } catch (e) {}
+
     return map;
-  }, [tasks]);
+  }, [tasks, todayDateStr]);
 
   // Compute weeks & days based on selected timeRange (year=52, half=26, month=5)
   const { weeks, monthLabels, totalTasksCount, activeDaysCount, timeRangeLabel } = useMemo(() => {
@@ -191,6 +231,7 @@ export default function ContributionHeatmap({
         activeDays += 1;
       }
 
+      const isPast = !isFuture && dateStr < todayDateStr;
       const dayObj = {
         date: dateStr,
         dayOfWeek: cur.getDay(),
@@ -200,7 +241,9 @@ export default function ContributionHeatmap({
         count: isFuture ? 0 : activity.count,
         tasks: isFuture ? [] : activity.tasks,
         isFuture,
-        isToday: dateStr === formatDateStr(today),
+        isPast,
+        isLocked: isPast && activity.count > 0,
+        isToday: dateStr === todayDateStr,
         formattedDate: cur.toLocaleDateString('en-US', {
           weekday: 'short',
           month: 'short',
@@ -574,9 +617,17 @@ export default function ContributionHeatmap({
       {mobileSelectedDay && (
         <div className="sm:hidden mt-3 p-3.5 rounded-xl bg-[#0d1117] border border-github-border flex flex-col gap-2.5 animate-in fade-in">
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-xs text-white">
-              {mobileSelectedDay.formattedDate}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-xs text-white">
+                {mobileSelectedDay.formattedDate}
+              </span>
+              {mobileSelectedDay.date < todayDateStr && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-amber-950/40 text-amber-300 border border-amber-800/40 flex items-center gap-1">
+                  <Lock className="w-2.5 h-2.5" />
+                  Locked
+                </span>
+              )}
+            </div>
             <span
               className="text-[11px] font-mono px-2 py-0.5 rounded border"
               style={{
@@ -603,6 +654,12 @@ export default function ContributionHeatmap({
             </ul>
           )}
 
+          {mobileSelectedDay.date < todayDateStr && (
+            <p className="text-[10px] text-github-muted italic">
+              Past date history is locked and permanent. Tasks can only be deleted, not edited.
+            </p>
+          )}
+
           <div className="flex items-center justify-between pt-2 border-t border-github-border text-[11px]">
             <button
               onClick={() => {
@@ -612,7 +669,11 @@ export default function ContributionHeatmap({
               style={{ color: currentTheme.accent }}
             >
               <CheckSquare className="w-3.5 h-3.5" />
-              <span>Manage tasks for this date</span>
+              <span>
+                {mobileSelectedDay.date < todayDateStr
+                  ? 'View recorded tasks (Read-only)'
+                  : 'Manage tasks for this date'}
+              </span>
             </button>
             <button
               onClick={() => setMobileSelectedDay(null)}
@@ -671,7 +732,7 @@ export default function ContributionHeatmap({
         >
           <div className="font-semibold text-white flex items-center justify-between gap-2 border-b border-github-border pb-1 mb-1">
             <span>{hoveredDay.formattedDate}</span>
-            {hoveredDay.isToday && (
+            {hoveredDay.isToday ? (
               <span
                 className="text-[10px] uppercase px-1.5 py-0.2 rounded font-bold border"
                 style={{
@@ -682,7 +743,12 @@ export default function ContributionHeatmap({
               >
                 Today
               </span>
-            )}
+            ) : hoveredDay.date < todayDateStr ? (
+              <span className="text-[10px] px-1.5 py-0.2 rounded font-medium bg-[#161b22] text-amber-300 border border-amber-800/40 flex items-center gap-1">
+                <Lock className="w-2.5 h-2.5" />
+                History Locked
+              </span>
+            ) : null}
           </div>
           <div className="font-medium" style={{ color: currentTheme.accent }}>
             {hoveredDay.count === 0
@@ -707,7 +773,11 @@ export default function ContributionHeatmap({
               )}
             </ul>
           )}
-          <div className="text-[10px] text-github-muted mt-1 italic">Click to view/filter tasks</div>
+          <div className="text-[10px] text-github-muted mt-1 italic">
+            {hoveredDay.date < todayDateStr
+              ? 'Past date • History locked (View only)'
+              : 'Click to view / filter tasks'}
+          </div>
         </div>
       )}
     </div>

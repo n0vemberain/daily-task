@@ -67,7 +67,15 @@ export default function App() {
         user: storageService.getUserProfile(),
         tasks: storageService.getTasks(),
         challenges: storageService.getChallenges(),
-        timerSessions: storageService.getTimerSessions()
+        timerSessions: storageService.getTimerSessions(),
+        heatmapHistory: (() => {
+          try {
+            const h = localStorage.getItem('daily_task_heatmap_history_v1');
+            return h ? JSON.parse(h) : {};
+          } catch (e) {
+            return {};
+          }
+        })()
       };
 
       const result = await apiService.syncAll(dataToSync);
@@ -89,6 +97,22 @@ export default function App() {
         if (Array.isArray(result.data.timerSessions) && result.data.timerSessions.length > 0) {
           setTimerSessions(result.data.timerSessions);
           storageService.saveTimerSessions(result.data.timerSessions);
+        }
+        if (result.data.heatmapHistory) {
+          try {
+            const localH = JSON.parse(localStorage.getItem('daily_task_heatmap_history_v1') || '{}');
+            const merged = { ...localH };
+            Object.entries(result.data.heatmapHistory).forEach(([d, val]) => {
+              const exCount = merged[d]?.count || 0;
+              const inCount = typeof val === 'number' ? val : (val?.count || 0);
+              merged[d] = {
+                count: Math.max(exCount, inCount),
+                tasks: Array.from(new Set([...(merged[d]?.tasks || []), ...(val?.tasks || [])])),
+                isLocked: true
+              };
+            });
+            localStorage.setItem('daily_task_heatmap_history_v1', JSON.stringify(merged));
+          } catch (e) {}
         }
         setMongoStatus({ connected: true, isMongoConnected: !!result.data.isMongoConnected });
       }
@@ -119,6 +143,22 @@ export default function App() {
         if (Array.isArray(res.data.timerSessions) && res.data.timerSessions.length > 0) {
           setTimerSessions(res.data.timerSessions);
           storageService.saveTimerSessions(res.data.timerSessions);
+        }
+        if (res.data.heatmapHistory) {
+          try {
+            const localH = JSON.parse(localStorage.getItem('daily_task_heatmap_history_v1') || '{}');
+            const merged = { ...localH };
+            Object.entries(res.data.heatmapHistory).forEach(([d, val]) => {
+              const exCount = merged[d]?.count || 0;
+              const inCount = typeof val === 'number' ? val : (val?.count || 0);
+              merged[d] = {
+                count: Math.max(exCount, inCount),
+                tasks: Array.from(new Set([...(merged[d]?.tasks || []), ...(val?.tasks || [])])),
+                isLocked: true
+              };
+            });
+            localStorage.setItem('daily_task_heatmap_history_v1', JSON.stringify(merged));
+          } catch (e) {}
         }
       }
       checkServerStatus();
@@ -155,8 +195,12 @@ export default function App() {
     storageService.setLastSync(now);
   };
 
-  // Handlers for Tasks
+  // Handlers for Tasks with past-date protection
   const handleAddTask = async (newTask) => {
+    const today = formatDateStr(new Date());
+    if (newTask.date && newTask.date < today) {
+      return; // Prevent creating tasks in the past
+    }
     const updated = [newTask, ...tasks];
     setTasks(updated);
     storageService.saveTasks(updated);
@@ -164,6 +208,13 @@ export default function App() {
   };
 
   const handleToggleTask = async (taskId) => {
+    const today = formatDateStr(new Date());
+    const target = tasks.find((t) => t.id === taskId || t._id === taskId);
+    // Protect past tasks from being toggled (History is locked)
+    if (target && target.date < today) {
+      return;
+    }
+
     const updated = tasks.map((t) => {
       if (t.id === taskId || t._id === taskId) {
         const nextCompleted = !t.completed;
@@ -183,6 +234,24 @@ export default function App() {
   };
 
   const handleDeleteTask = async (taskId) => {
+    const taskToDelete = tasks.find((t) => t.id === taskId || t._id === taskId);
+    // Lock the past day's contribution count into heatmapHistory before deleting task,
+    // so deleting a task NEVER deletes or changes previous heatmap blocks!
+    if (taskToDelete && taskToDelete.completed && taskToDelete.date) {
+      try {
+        const stored = JSON.parse(localStorage.getItem('daily_task_heatmap_history_v1') || '{}');
+        const d = taskToDelete.date;
+        const tasksOnDate = tasks.filter(t => t.completed && t.date === d);
+        const lockedCount = Math.max(stored[d]?.count || 0, tasksOnDate.length);
+        stored[d] = {
+          count: lockedCount,
+          tasks: stored[d]?.tasks || tasksOnDate.map(t => t.title),
+          isLocked: true
+        };
+        localStorage.setItem('daily_task_heatmap_history_v1', JSON.stringify(stored));
+      } catch (e) {}
+    }
+
     const updated = tasks.filter((t) => t.id !== taskId && t._id !== taskId);
     setTasks(updated);
     storageService.saveTasks(updated);
@@ -191,6 +260,17 @@ export default function App() {
 
   // Individual Task Edit Handler
   const handleEditTask = async (taskId, updatedFields) => {
+    const today = formatDateStr(new Date());
+    const target = tasks.find((t) => t.id === taskId || t._id === taskId);
+    // Prevent editing past tasks
+    if (target && target.date < today) {
+      return;
+    }
+    // Prevent moving tasks to past dates
+    if (updatedFields.date && updatedFields.date < today) {
+      return;
+    }
+
     const updated = tasks.map((t) => {
       if (t.id === taskId || t._id === taskId) {
         const patched = { ...t, ...updatedFields };

@@ -285,13 +285,17 @@ class FileStore {
   }
 
   createTask(taskData) {
+    const today = formatDate(new Date());
+    if (taskData.date && taskData.date < today) {
+      throw new Error('Cannot create tasks with past dates. History is locked.');
+    }
     const store = this.readStore();
     const newTask = {
       id: taskData.id || `task-${Date.now()}`,
       title: taskData.title,
       category: taskData.category || 'General',
       priority: taskData.priority || 'Medium',
-      date: taskData.date || todayStr,
+      date: taskData.date || today,
       estimatedMinutes: parseInt(taskData.estimatedMinutes, 10) || 30,
       completed: !!taskData.completed,
       completedAt: taskData.completed ? (taskData.completedAt || new Date().toISOString()) : null
@@ -303,7 +307,16 @@ class FileStore {
   }
 
   updateTask(taskId, updates) {
+    const today = formatDate(new Date());
     const store = this.readStore();
+    const existing = (store.tasks || []).find(t => t.id === taskId || t._id === taskId);
+    if (existing && existing.date < today) {
+      throw new Error('Tasks from past dates cannot be edited. History is locked.');
+    }
+    if (updates.date && updates.date < today) {
+      throw new Error('Cannot move task to a past date. History is locked.');
+    }
+
     let updated = null;
     store.tasks = (store.tasks || []).map(t => {
       if (t.id === taskId || t._id === taskId) {
@@ -325,6 +338,19 @@ class FileStore {
 
   deleteTask(taskId) {
     const store = this.readStore();
+    const taskToDelete = (store.tasks || []).find(t => t.id === taskId || t._id === taskId);
+    // Lock contribution history for past dates if completed so heatmap blocks never disappear
+    if (taskToDelete && taskToDelete.completed && taskToDelete.date) {
+      if (!store.heatmapHistory) store.heatmapHistory = {};
+      const d = taskToDelete.date;
+      const count = (store.tasks || []).filter(t => t.completed && t.date === d).length;
+      store.heatmapHistory[d] = {
+        count: Math.max(store.heatmapHistory[d]?.count || 0, count),
+        tasks: Array.from(new Set([...(store.heatmapHistory[d]?.tasks || []), taskToDelete.title])),
+        isLocked: true
+      };
+    }
+
     const prevLength = (store.tasks || []).length;
     store.tasks = (store.tasks || []).filter(t => t.id !== taskId && t._id !== taskId);
     this.writeStore(store);
@@ -508,6 +534,22 @@ class FileStore {
       store.timerSessions = Array.from(sessMap.values());
     }
 
+    // 5. Merge Heatmap History (Locked Past Contributions)
+    if (heatmapHistory && typeof heatmapHistory === 'object') {
+      const currentHistory = store.heatmapHistory || {};
+      const merged = { ...currentHistory };
+      Object.entries(heatmapHistory).forEach(([d, val]) => {
+        const exCount = merged[d]?.count || 0;
+        const inCount = typeof val === 'number' ? val : (val?.count || 0);
+        merged[d] = {
+          count: Math.max(exCount, inCount),
+          tasks: Array.from(new Set([...(merged[d]?.tasks || []), ...(val?.tasks || [])])),
+          isLocked: true
+        };
+      });
+      store.heatmapHistory = merged;
+    }
+
     this.writeStore(store);
 
     return {
@@ -515,6 +557,7 @@ class FileStore {
       tasks: store.tasks,
       challenges: store.challenges,
       timerSessions: store.timerSessions,
+      heatmapHistory: store.heatmapHistory || {},
       lastUpdated: store.lastUpdated
     };
   }

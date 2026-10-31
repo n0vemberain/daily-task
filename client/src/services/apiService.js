@@ -25,12 +25,12 @@ export const apiService = {
     }
   },
 
-  syncAll: async ({ user, tasks, challenges, timerSessions }) => {
+  syncAll: async ({ user, tasks, challenges, timerSessions, heatmapHistory }) => {
     try {
       const res = await fetch(`${BASE_URL}/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user, tasks, challenges, timerSessions }),
+        body: JSON.stringify({ user, tasks, challenges, timerSessions, heatmapHistory }),
         signal: AbortSignal.timeout(8000)
       });
       const data = await res.json();
