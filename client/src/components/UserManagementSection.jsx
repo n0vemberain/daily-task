@@ -479,17 +479,19 @@ export default function UserManagementSection({ currentUser, theme }) {
                     <span>Change Credentials</span>
                   </button>
 
-                  {/* Force Logout */}
-                  <button
-                    type="button"
-                    onClick={() => handleForceLogout(u)}
-                    disabled={actionLoading === `logout-${u.id}`}
-                    className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-[#21262d] hover:bg-amber-950/40 text-amber-300 hover:text-amber-200 border border-github-border hover:border-amber-800/50 flex items-center gap-1.5 transition-colors"
-                    title="Terminate active session across all devices"
-                  >
-                    <LogOut className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Force Logout</span>
-                  </button>
+                  {/* Force Logout (Disabled for primary admin) */}
+                  {!isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => handleForceLogout(u)}
+                      disabled={actionLoading === `logout-${u.id}`}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-[#21262d] hover:bg-amber-950/40 text-amber-300 hover:text-amber-200 border border-github-border hover:border-amber-800/50 flex items-center gap-1.5 transition-colors"
+                      title="Terminate active session across all devices"
+                    >
+                      <LogOut className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Force Logout</span>
+                    </button>
+                  )}
 
                   {/* Suspend / Activate (Disabled for admin) */}
                   {!isAdmin && (

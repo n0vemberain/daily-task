@@ -137,9 +137,9 @@ describe('User & Guest Accounts Management', () => {
     });
 
     const forceLogoutButtons = screen.getAllByRole('button', { name: /Force Logout/i });
-    expect(forceLogoutButtons.length).toBeGreaterThan(0);
+    expect(forceLogoutButtons.length).toBe(1); // Only guest user has force logout
 
-    fireEvent.click(forceLogoutButtons[1]); // Guest user's force logout button
+    fireEvent.click(forceLogoutButtons[0]); // Guest user's force logout button
 
     await waitFor(() => {
       expect(apiService.forceLogoutUser).toHaveBeenCalledWith('user-guest-1');

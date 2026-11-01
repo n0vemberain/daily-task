@@ -74,19 +74,22 @@ export default function App() {
       setIsSyncing(true);
       const activeUser = storageService.getCurrentUser();
       const uname = (activeUser?.username || 'n0vemberain').toLowerCase();
-      const dataToSync = currentData || {
-        user: storageService.getUserProfile(uname),
-        tasks: storageService.getTasks(uname),
-        challenges: storageService.getChallenges(uname),
-        timerSessions: storageService.getTimerSessions(uname),
-        username: uname,
-        sessionVersion: activeUser?.sessionVersion || 1
-      };
+      const isAdmin = activeUser?.role === 'admin' || uname === 'n0vemberain';
+      const dataToSync = currentData
+        ? { sessionVersion: activeUser?.sessionVersion || 1, ...currentData }
+        : {
+            user: storageService.getUserProfile(uname),
+            tasks: storageService.getTasks(uname),
+            challenges: storageService.getChallenges(uname),
+            timerSessions: storageService.getTimerSessions(uname),
+            username: uname,
+            sessionVersion: activeUser?.sessionVersion || 1
+          };
 
       const result = await apiService.syncAll(dataToSync);
       const now = new Date().toISOString();
 
-      if (result && result.sessionRevoked) {
+      if (result && result.sessionRevoked && !isAdmin) {
         setIsAuthenticated(false);
         storageService.clearCurrentSession();
         setIsSyncing(false);
@@ -97,6 +100,17 @@ export default function App() {
         if (result.data.user) {
           setUserProfile(result.data.user);
           storageService.saveUserProfile(result.data.user, uname);
+
+          // Keep current active session version synchronized with server
+          if (activeUser && activeUser.username.toLowerCase() === uname) {
+            const updatedActive = {
+              ...activeUser,
+              ...result.data.user,
+              sessionVersion: result.data.user.sessionVersion || activeUser.sessionVersion || 1
+            };
+            setCurrentUser(updatedActive);
+            storageService.saveCurrentUser(updatedActive);
+          }
         }
         if (Array.isArray(result.data.tasks)) {
           setTasks(result.data.tasks);
@@ -123,12 +137,13 @@ export default function App() {
   useEffect(() => {
     const activeUser = storageService.getCurrentUser();
     const uname = (activeUser?.username || 'n0vemberain').toLowerCase();
+    const isAdmin = activeUser?.role === 'admin' || uname === 'n0vemberain';
 
     // Initial fetch from central server on mount
     apiService
       .getFullData(uname, activeUser?.sessionVersion)
       .then((res) => {
-        if (res && res.sessionRevoked) {
+        if (res && res.sessionRevoked && !isAdmin) {
           setIsAuthenticated(false);
           storageService.clearCurrentSession();
           return;
@@ -137,6 +152,16 @@ export default function App() {
           if (res.data.user) {
             setUserProfile(res.data.user);
             storageService.saveUserProfile(res.data.user, uname);
+
+            if (activeUser && activeUser.username.toLowerCase() === uname) {
+              const updatedActive = {
+                ...activeUser,
+                ...res.data.user,
+                sessionVersion: res.data.user.sessionVersion || activeUser.sessionVersion || 1
+              };
+              setCurrentUser(updatedActive);
+              storageService.saveCurrentUser(updatedActive);
+            }
           }
           if (Array.isArray(res.data.tasks)) {
             setTasks(res.data.tasks);
@@ -205,6 +230,13 @@ export default function App() {
           if (res.data.user) {
             setUserProfile(res.data.user);
             storageService.saveUserProfile(res.data.user, uname);
+            const updatedActive = {
+              ...activeUser,
+              ...res.data.user,
+              sessionVersion: res.data.user.sessionVersion || activeUser.sessionVersion || 1
+            };
+            setCurrentUser(updatedActive);
+            storageService.saveCurrentUser(updatedActive);
           }
           if (Array.isArray(res.data.tasks)) {
             setTasks(res.data.tasks);

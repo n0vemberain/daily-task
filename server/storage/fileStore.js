@@ -757,20 +757,23 @@ class FileStore {
     const store = this.readStore();
     const targetUsername = (username || user?.username || 'n0vemberain').trim().toLowerCase();
 
-    // Verify session version & active status
+    // Verify session version & active status (only for guest users, admin is exempt)
     const dbUser = this.getUserByUsername(targetUsername);
     if (dbUser) {
-      if (dbUser.isActive === false) {
-        return {
-          sessionRevoked: true,
-          message: 'This account has been deactivated or suspended by the administrator.'
-        };
-      }
-      if (sessionVersion !== null && sessionVersion !== undefined && parseInt(sessionVersion, 10) < (dbUser.sessionVersion || 1)) {
-        return {
-          sessionRevoked: true,
-          message: 'Active session has been terminated by the administrator. Please log in again.'
-        };
+      const isAdmin = dbUser.role === 'admin' || targetUsername === 'n0vemberain';
+      if (!isAdmin) {
+        if (dbUser.isActive === false) {
+          return {
+            sessionRevoked: true,
+            message: 'This account has been deactivated or suspended by the administrator.'
+          };
+        }
+        if (sessionVersion !== null && sessionVersion !== undefined && parseInt(sessionVersion, 10) < (dbUser.sessionVersion || 1)) {
+          return {
+            sessionRevoked: true,
+            message: 'Active session has been terminated by the administrator. Please log in again.'
+          };
+        }
       }
     }
 
