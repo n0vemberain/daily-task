@@ -24,7 +24,7 @@ import {
 import { apiService } from '../services/apiService';
 import { soundEffects } from '../utils/audioFeedback';
 
-export default function UserManagementSection({ currentUser, theme }) {
+export default function UserManagementSection({ currentUser, theme, embedded = false }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
@@ -325,12 +325,12 @@ export default function UserManagementSection({ currentUser, theme }) {
   const activeCount = users.filter((u) => u.isActive !== false).length;
 
   return (
-    <div className="bg-[#161b22] border border-github-border rounded-xl p-6 shadow-sm space-y-6">
+    <div className={embedded ? "space-y-6" : "bg-[#161b22] border border-github-border rounded-xl p-5 sm:p-6 shadow-sm space-y-6"}>
       {/* Top Header Card */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-github-border">
         <div className="flex items-center gap-3">
           <div
-            className="p-2.5 rounded-xl border flex items-center justify-center"
+            className="p-2.5 rounded-xl border flex items-center justify-center flex-shrink-0"
             style={{
               backgroundColor: theme.accentDark,
               borderColor: theme.accent + '40',
@@ -340,26 +340,26 @@ export default function UserManagementSection({ currentUser, theme }) {
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2 flex-wrap">
               <span>User &amp; Guest Accounts Management</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-purple-950/60 text-purple-300 border border-purple-800/50 flex items-center gap-1">
                 <ShieldCheck className="w-2.5 h-2.5 text-purple-400" />
                 Administrator Access
               </span>
             </h3>
-            <p className="text-xs text-github-muted">
+            <p className="text-xs text-github-muted mt-0.5">
               Create guest accounts, update credentials, isolate user activity data, or force logout sessions.
             </p>
           </div>
         </div>
 
         {/* Action Button: Add User & Passwords Toggle */}
-        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-start sm:justify-end">
           <button
             type="button"
             onClick={fetchUsers}
             disabled={loading}
-            className="p-2 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-github-muted hover:text-white border border-github-border transition-colors"
+            className="p-2 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-github-muted hover:text-white border border-github-border transition-colors flex-shrink-0"
             title="Refresh user list"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -392,18 +392,18 @@ export default function UserManagementSection({ currentUser, theme }) {
       </div>
 
       {/* Stats Counter Bar */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="p-3 rounded-lg bg-[#0d1117] border border-github-border text-center">
-          <div className="text-[11px] text-github-muted">Total Accounts</div>
-          <div className="text-base font-bold text-white font-mono mt-0.5">{users.length}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="p-3.5 rounded-xl bg-[#0d1117] border border-github-border flex sm:flex-col items-center justify-between sm:justify-center text-left sm:text-center min-h-[60px]">
+          <div className="text-[11px] text-github-muted font-medium">Total Accounts</div>
+          <div className="text-base font-bold text-white font-mono sm:mt-1">{users.length}</div>
         </div>
-        <div className="p-3 rounded-lg bg-[#0d1117] border border-github-border text-center">
-          <div className="text-[11px] text-github-muted">Active Sessions</div>
-          <div className="text-base font-bold text-emerald-400 font-mono mt-0.5">{activeCount}</div>
+        <div className="p-3.5 rounded-xl bg-[#0d1117] border border-github-border flex sm:flex-col items-center justify-between sm:justify-center text-left sm:text-center min-h-[60px]">
+          <div className="text-[11px] text-github-muted font-medium">Active Sessions</div>
+          <div className="text-base font-bold text-emerald-400 font-mono sm:mt-1">{activeCount}</div>
         </div>
-        <div className="p-3 rounded-lg bg-[#0d1117] border border-github-border text-center">
-          <div className="text-[11px] text-github-muted">Guest Accounts</div>
-          <div className="text-base font-bold text-blue-400 font-mono mt-0.5">{guestCount}</div>
+        <div className="p-3.5 rounded-xl bg-[#0d1117] border border-github-border flex sm:flex-col items-center justify-between sm:justify-center text-left sm:text-center min-h-[60px]">
+          <div className="text-[11px] text-github-muted font-medium">Guest Accounts</div>
+          <div className="text-base font-bold text-blue-400 font-mono sm:mt-1">{guestCount}</div>
         </div>
       </div>
 
@@ -448,12 +448,12 @@ export default function UserManagementSection({ currentUser, theme }) {
             return (
               <div
                 key={u.id || u.username}
-                className="p-4 rounded-xl bg-[#0d1117] border border-github-border hover:border-white/20 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+                className="p-4 rounded-xl bg-[#0d1117] border border-github-border hover:border-white/20 transition-all flex flex-col xl:flex-row xl:items-center justify-between gap-4"
               >
                 {/* User Identity Column */}
-                <div className="flex items-center gap-3.5 min-w-0">
+                <div className="flex items-start gap-3.5 min-w-0 flex-1">
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-md border flex-shrink-0"
+                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-md border flex-shrink-0 mt-0.5"
                     style={{
                       backgroundColor: isAdmin ? theme.accentDark : '#21262d',
                       borderColor: isAdmin ? theme.accent + '70' : '#30363d',
@@ -471,7 +471,7 @@ export default function UserManagementSection({ currentUser, theme }) {
                     )}
                   </div>
 
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-bold text-white truncate">{u.name || 'User'}</span>
                       <span className="text-xs font-mono text-github-muted">@{u.username}</span>
@@ -506,13 +506,13 @@ export default function UserManagementSection({ currentUser, theme }) {
                     {/* Prominent Login Credentials Box (Username & Password with Copy & Reveal) */}
                     <div className="flex items-center gap-2 flex-wrap text-xs mt-2.5 pt-2 border-t border-github-border/60">
                       {/* Username Pill */}
-                      <div className="flex items-center gap-1.5 bg-[#0d1117] px-2.5 py-1 rounded-md border border-github-border">
+                      <div className="flex items-center gap-1.5 bg-[#161b22] px-2.5 py-1.5 rounded-lg border border-github-border max-w-full">
                         <span className="text-[10px] uppercase font-bold text-github-muted tracking-wider">ID:</span>
-                        <span className="font-mono text-white font-medium select-all">@{u.username}</span>
+                        <span className="font-mono text-white font-medium select-all truncate">@{u.username}</span>
                         <button
                           type="button"
                           onClick={() => handleCopy(u.username, `user-${u.id}`)}
-                          className="text-github-muted hover:text-white p-0.5 rounded transition-colors ml-0.5"
+                          className="text-github-muted hover:text-white p-0.5 rounded transition-colors ml-0.5 flex-shrink-0"
                           title="Copy Username / Login ID"
                         >
                           {copiedKey === `user-${u.id}` ? (
@@ -525,15 +525,15 @@ export default function UserManagementSection({ currentUser, theme }) {
 
                       {/* Password Pill (Protected for Admin, Visible for Guests) */}
                       {u.role === 'admin' || u.username === 'n0vemberain' ? (
-                        <div className="flex items-center gap-1.5 bg-[#0d1117] px-2.5 py-1 rounded-md border border-purple-800/40 text-purple-300">
-                          <ShieldAlert className="w-3 h-3 text-purple-400" />
+                        <div className="flex items-center gap-1.5 bg-[#161b22] px-2.5 py-1.5 rounded-lg border border-purple-800/40 text-purple-300 max-w-full">
+                          <ShieldAlert className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
                           <span className="text-[10px] uppercase font-bold tracking-wider">Password:</span>
-                          <span className="font-mono text-purple-300 font-semibold select-none">Protected (Admin Secret)</span>
+                          <span className="font-mono text-purple-300 font-semibold select-none truncate">Protected (Admin Secret)</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1.5 bg-[#0d1117] px-2.5 py-1 rounded-md border border-github-border">
+                        <div className="flex items-center gap-1.5 bg-[#161b22] px-2.5 py-1.5 rounded-lg border border-github-border max-w-full">
                           <span className="text-[10px] uppercase font-bold text-github-muted tracking-wider">Password:</span>
-                          <span className="font-mono text-emerald-400 font-semibold select-all">
+                          <span className="font-mono text-emerald-400 font-semibold select-all truncate">
                             {(revealedPasswords[u.id] !== undefined ? revealedPasswords[u.id] : alwaysShowPasswords)
                               ? (u.password || '••••••••')
                               : '••••••••'}
@@ -541,7 +541,7 @@ export default function UserManagementSection({ currentUser, theme }) {
                           <button
                             type="button"
                             onClick={() => togglePasswordVisibility(u.id)}
-                            className="text-github-muted hover:text-white p-0.5 rounded transition-colors ml-0.5"
+                            className="text-github-muted hover:text-white p-0.5 rounded transition-colors ml-0.5 flex-shrink-0"
                             title={(revealedPasswords[u.id] !== undefined ? revealedPasswords[u.id] : alwaysShowPasswords) ? 'Hide Password' : 'Show Password'}
                           >
                             {(revealedPasswords[u.id] !== undefined ? revealedPasswords[u.id] : alwaysShowPasswords) ? (
@@ -553,7 +553,7 @@ export default function UserManagementSection({ currentUser, theme }) {
                           <button
                             type="button"
                             onClick={() => handleCopy(u.password, `pass-${u.id}`)}
-                            className="text-github-muted hover:text-white p-0.5 rounded transition-colors"
+                            className="text-github-muted hover:text-white p-0.5 rounded transition-colors flex-shrink-0"
                             title="Copy Password"
                           >
                             {copiedKey === `pass-${u.id}` ? (
@@ -569,12 +569,12 @@ export default function UserManagementSection({ currentUser, theme }) {
                 </div>
 
                 {/* Actions Column */}
-                <div className="flex items-center gap-2 flex-wrap w-full md:w-auto justify-end border-t md:border-t-0 pt-3 md:pt-0 border-github-border">
+                <div className="flex items-center gap-2 flex-wrap w-full xl:w-auto justify-start xl:justify-end border-t xl:border-t-0 pt-3 xl:pt-0 border-github-border/60 flex-shrink-0">
                   {/* Edit Credentials */}
                   <button
                     type="button"
                     onClick={() => handleOpenEdit(u)}
-                    className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-[#21262d] hover:bg-[#30363d] text-white border border-github-border flex items-center gap-1.5 transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#21262d] hover:bg-[#30363d] text-white border border-github-border flex items-center gap-1.5 transition-colors whitespace-nowrap"
                     title="Change Username or Password"
                   >
                     <KeyRound className="w-3.5 h-3.5 text-amber-400" />
@@ -587,7 +587,7 @@ export default function UserManagementSection({ currentUser, theme }) {
                       type="button"
                       onClick={() => handleForceLogout(u)}
                       disabled={actionLoading === `logout-${u.id}`}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-[#21262d] hover:bg-amber-950/40 text-amber-300 hover:text-amber-200 border border-github-border hover:border-amber-800/50 flex items-center gap-1.5 transition-colors"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#21262d] hover:bg-amber-950/40 text-amber-300 hover:text-amber-200 border border-github-border hover:border-amber-800/50 flex items-center gap-1.5 transition-colors whitespace-nowrap"
                       title="Terminate active session across all devices"
                     >
                       <LogOut className="w-3.5 h-3.5 text-amber-400" />
@@ -601,7 +601,7 @@ export default function UserManagementSection({ currentUser, theme }) {
                       type="button"
                       onClick={() => handleToggleStatus(u)}
                       disabled={actionLoading === `toggle-${u.id}`}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition-colors ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition-colors whitespace-nowrap ${
                         isActive
                           ? 'bg-[#21262d] hover:bg-red-950/40 text-red-300 border-github-border hover:border-red-800/50'
                           : 'bg-[#21262d] hover:bg-emerald-950/40 text-emerald-300 border-github-border hover:border-emerald-800/50'
@@ -618,7 +618,7 @@ export default function UserManagementSection({ currentUser, theme }) {
                     <button
                       type="button"
                       onClick={() => handleOpenDelete(u)}
-                      className="p-1.5 rounded-lg text-xs bg-[#21262d] hover:bg-red-950/60 text-red-400 hover:text-red-200 border border-github-border hover:border-red-800/50 transition-colors"
+                      className="p-2 rounded-lg text-xs bg-[#21262d] hover:bg-red-950/60 text-red-400 hover:text-red-200 border border-github-border hover:border-red-800/50 transition-colors flex-shrink-0"
                       title="Delete user account and isolated tasks"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
