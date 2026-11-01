@@ -10,12 +10,18 @@ export default function LoginView({ userProfile, onLoginSuccess }) {
   const [errorMessage, setErrorMessage] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
 
+  const targetUsername = (userProfile?.username || 'n0vemberain').trim().toLowerCase();
+  const targetPassword = userProfile?.password || 'Password123!';
+
+  const isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '');
+
   const handleLogin = (e) => {
     e.preventDefault();
     setErrorMessage('');
-
-    const targetUsername = (userProfile?.username || 'n0vemberain').trim().toLowerCase();
-    const targetPassword = userProfile?.password || 'Password123!';
 
     const enteredUsername = usernameInput.trim().toLowerCase();
     const enteredPassword = passwordInput;
@@ -28,7 +34,7 @@ export default function LoginView({ userProfile, onLoginSuccess }) {
     if (enteredUsername === targetUsername && enteredPassword === targetPassword) {
       onLoginSuccess({ rememberMe, username: enteredUsername });
     } else {
-      setErrorMessage('Invalid username or password. Check demo credentials below.');
+      setErrorMessage('Invalid username or password. Please verify your credentials.');
     }
   };
 
@@ -150,14 +156,16 @@ export default function LoginView({ userProfile, onLoginSuccess }) {
                 <span>Remember session</span>
               </label>
 
-              <button
-                type="button"
-                onClick={handleQuickDemoFill}
-                className="text-xs font-medium hover:underline transition-colors"
-                style={{ color: theme.accentLight }}
-              >
-                Auto-fill Demo Credentials
-              </button>
+              {isLocalhost && (
+                <button
+                  type="button"
+                  onClick={handleQuickDemoFill}
+                  className="text-xs font-medium hover:underline transition-colors"
+                  style={{ color: theme.accentLight }}
+                >
+                  Auto-fill Demo Credentials
+                </button>
+              )}
             </div>
 
             {/* Submit Button */}
@@ -172,11 +180,14 @@ export default function LoginView({ userProfile, onLoginSuccess }) {
             </div>
           </form>
 
-          {/* Demo Credentials Reminder Footer inside Card */}
-          <div className="px-6 py-3.5 bg-[#0d1117] border-t border-github-border text-center text-[11px] text-github-muted">
-            Registered Demo Account:{' '}
-            <span className="font-mono text-white font-semibold">n0vemberain</span> /{' '}
-            <span className="font-mono text-white font-semibold">Password123!</span>
+          {/* Security Notice Footer inside Card */}
+          <div className="px-6 py-3.5 bg-[#0d1117] border-t border-github-border text-center text-[11px] text-github-muted flex items-center justify-center gap-1.5">
+            <Lock className="w-3.5 h-3.5 text-github-muted flex-shrink-0" />
+            <span>
+              {isLocalhost
+                ? `Authorized Account: ${targetUsername} (Password protected)`
+                : 'Protected Dashboard: Username and password required to sign in'}
+            </span>
           </div>
         </div>
       </main>

@@ -12,6 +12,18 @@ export const apiService = {
     }
   },
 
+  getNetworkAccess: async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/network-access`, {
+        signal: AbortSignal.timeout(3000)
+      });
+      if (!res.ok) throw new Error('Failed to fetch network access details');
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
   getFullData: async () => {
     try {
       const res = await fetch(`${BASE_URL}/sync`, {

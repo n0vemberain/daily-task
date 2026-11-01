@@ -86,4 +86,21 @@ describe('UserProfile Component', () => {
     expect(screen.getByText(/Password secured and hidden/i)).toBeInTheDocument();
     expect(screen.getByText('Change Password')).toBeInTheDocument();
   });
+
+  it('renders Multi-Device & Remote Network Access section with QR code and links', async () => {
+    render(
+      <UserProfile
+        userProfile={mockProfile}
+        onSaveProfile={vi.fn()}
+        mongoStatus={{ isMongoConnected: true }}
+      />
+    );
+
+    expect(screen.getByText('Multi-Device & Remote Network Access')).toBeInTheDocument();
+    expect(screen.getByText('Scan QR Code on Phone')).toBeInTheDocument();
+    expect(screen.getByText(/Public Internet Access/i)).toBeInTheDocument();
+    expect(screen.getByText(/Localhost URL/i)).toBeInTheDocument();
+    expect(screen.getByText('Mandatory Sign-in Protection')).toBeInTheDocument();
+    expect(screen.getByText(/must enter your Account ID and Password/i)).toBeInTheDocument();
+  });
 });

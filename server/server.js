@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { fileURLToPath } from 'url';
 import userRoutes from './routes/userRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
@@ -65,6 +66,44 @@ app.get('/api/health', (req, res) => {
     mongoUri: MONGODB_URI,
     timestamp: new Date().toISOString()
   });
+});
+
+// Network Access Information (Public Tunnel, LAN IP, and Localhost)
+app.get('/api/network-access', (req, res) => {
+  try {
+    const interfaces = os.networkInterfaces();
+    let localIp = '127.0.0.1';
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name]) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          localIp = iface.address;
+          break;
+        }
+      }
+    }
+
+    let publicUrl = '';
+    const tunnelFile = path.join(__dirname, '../tunnel-url.txt');
+    if (fs.existsSync(tunnelFile)) {
+      publicUrl = fs.readFileSync(tunnelFile, 'utf8').trim();
+    }
+
+    const localhostUrl = `http://localhost:${PORT}`;
+    const localNetworkUrl = `http://${localIp}:${PORT}`;
+
+    res.json({
+      success: true,
+      data: {
+        publicUrl: publicUrl || localNetworkUrl,
+        rawPublicUrl: publicUrl,
+        localhostUrl,
+        localNetworkUrl,
+        isTunnelActive: Boolean(publicUrl)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 // Routes - Fully operational with Persistent FileStore & MongoDB auto-fallback

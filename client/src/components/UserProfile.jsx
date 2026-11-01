@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import QRCode from 'qrcode';
 import {
   User,
   Upload,
@@ -17,9 +18,20 @@ import {
   LogOut,
   LogIn,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  Globe,
+  QrCode,
+  Smartphone,
+  Laptop,
+  Wifi,
+  Copy,
+  Check,
+  ExternalLink,
+  Share2,
+  KeyRound
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { apiService } from '../services/apiService';
 
 export default function UserProfile({
   userProfile,
@@ -49,6 +61,70 @@ export default function UserProfile({
   const [newPasswordInput, setNewPasswordInput] = useState('');
   const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
+
+  // Multi-Device & Network Access State
+  const [networkInfo, setNetworkInfo] = useState({
+    publicUrl: '',
+    localhostUrl: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5001',
+    localNetworkUrl: '',
+    isTunnelActive: false
+  });
+  const [activeUrlType, setActiveUrlType] = useState('public');
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
+  const [copiedType, setCopiedType] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    apiService.getNetworkAccess().then((res) => {
+      if (isMounted && res && res.success && res.data) {
+        setNetworkInfo(res.data);
+        if (!res.data.publicUrl && res.data.localhostUrl) {
+          setActiveUrlType('localhost');
+        }
+      }
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, []);
+
+  const currentSelectedUrl = useMemo(() => {
+    if (activeUrlType === 'public') {
+      return networkInfo.publicUrl || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5001');
+    }
+    if (activeUrlType === 'lan') {
+      return networkInfo.localNetworkUrl || 'http://localhost:5001';
+    }
+    return networkInfo.localhostUrl || 'http://localhost:5001';
+  }, [activeUrlType, networkInfo]);
+
+  useEffect(() => {
+    if (!currentSelectedUrl) return;
+    let isMounted = true;
+    QRCode.toDataURL(currentSelectedUrl, {
+      width: 240,
+      margin: 1,
+      color: {
+        dark: '#0d1117',
+        light: '#ffffff'
+      }
+    })
+      .then((url) => {
+        if (isMounted) setQrCodeDataUrl(url);
+      })
+      .catch((err) => {
+        console.error('QR code generation error:', err);
+      });
+
+    return () => { isMounted = false; };
+  }, [currentSelectedUrl]);
+
+  const handleCopy = (text, typeKey) => {
+    if (!text) return;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+      setCopiedType(typeKey);
+      setTimeout(() => setCopiedType(null), 2500);
+    }
+  };
 
   const suggestedSkills = [
     'React.js',
@@ -240,6 +316,284 @@ export default function UserProfile({
               <span>Sign In Now</span>
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Network Access & Shareable QR Code Section */}
+      <div className="bg-[#161b22] border border-github-border rounded-xl p-6 shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-github-border">
+          <div className="flex items-center gap-3">
+            <div
+              className="p-2.5 rounded-xl border flex items-center justify-center"
+              style={{
+                backgroundColor: theme.accentDark,
+                borderColor: theme.accent + '40',
+                color: theme.accent
+              }}
+            >
+              <QrCode className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <span>Multi-Device &amp; Remote Network Access</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-blue-950/60 text-blue-300 border border-blue-800/50 flex items-center gap-1">
+                  <Globe className="w-2.5 h-2.5 text-blue-400" />
+                  Remote &amp; Local
+                </span>
+              </h3>
+              <p className="text-xs text-github-muted">
+                Access DailyTask from other devices (smartphones, laptops, tablets) or any other network using the links or QR code below.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Security Status */}
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-[10px] px-2.5 py-1 rounded font-mono bg-[#0d1117] text-amber-300 border border-amber-800/40 flex items-center gap-1">
+              <Lock className="w-3 h-3 text-amber-400" />
+              <span>Password Required on Shared Devices</span>
+            </span>
+          </div>
+        </div>
+
+        {/* QR Code and Links Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          {/* Left Column: QR Code Display Card */}
+          <div className="md:col-span-5 flex flex-col items-center text-center p-5 rounded-xl bg-[#0d1117] border border-github-border">
+            <div className="text-xs font-semibold text-github-text uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Smartphone className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+              <span>Scan QR Code on Phone</span>
+            </div>
+
+            {/* QR Code Container with High-Contrast White Background for Camera Scanning */}
+            <div className="p-3 bg-white rounded-xl shadow-lg border border-white/20 my-2 flex items-center justify-center transition-transform hover:scale-[1.02]">
+              {qrCodeDataUrl ? (
+                <img
+                  src={qrCodeDataUrl}
+                  alt="DailyTask Mobile Access QR Code"
+                  className="w-44 h-44 object-contain rounded-lg"
+                />
+              ) : (
+                <div className="w-44 h-44 flex items-center justify-center text-gray-500 font-mono text-xs">
+                  Generating QR Code...
+                </div>
+              )}
+            </div>
+
+            <p className="text-[11px] text-github-muted mt-2 max-w-[240px]">
+              Open your phone camera to scan and immediately load DailyTask on your mobile browser.
+            </p>
+
+            {/* Active URL selector tabs */}
+            <div className="flex items-center gap-1 mt-3 w-full bg-[#161b22] p-1 rounded-lg border border-github-border text-[11px]">
+              <button
+                type="button"
+                onClick={() => setActiveUrlType('public')}
+                className={`flex-1 py-1 rounded text-center font-medium transition-all ${
+                  activeUrlType === 'public'
+                    ? 'bg-white text-black font-semibold shadow-sm'
+                    : 'text-github-muted hover:text-white'
+                }`}
+              >
+                Public Link
+              </button>
+              {networkInfo.localNetworkUrl && (
+                <button
+                  type="button"
+                  onClick={() => setActiveUrlType('lan')}
+                  className={`flex-1 py-1 rounded text-center font-medium transition-all ${
+                    activeUrlType === 'lan'
+                      ? 'bg-white text-black font-semibold shadow-sm'
+                      : 'text-github-muted hover:text-white'
+                  }`}
+                >
+                  Wi-Fi LAN
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setActiveUrlType('localhost')}
+                className={`flex-1 py-1 rounded text-center font-medium transition-all ${
+                  activeUrlType === 'localhost'
+                    ? 'bg-white text-black font-semibold shadow-sm'
+                    : 'text-github-muted hover:text-white'
+                }`}
+              >
+                Localhost
+              </button>
+            </div>
+          </div>
+
+          {/* Right Column: Direct Links & Sharing Details */}
+          <div className="md:col-span-7 space-y-3.5">
+            {/* 1. Public Remote URL (Any internet connection) */}
+            <div className="p-3.5 rounded-xl bg-[#0d1117] border border-github-border hover:border-white/20 transition-all space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-semibold text-white text-xs">
+                  <Globe className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Public Internet Access (Any External Network or Phone)</span>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-emerald-950/60 text-emerald-300 border border-emerald-800/40">
+                  {networkInfo.isTunnelActive ? 'Active Cloudflare Tunnel' : 'Remote URL'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 px-3 py-1.5 bg-[#161b22] border border-github-border rounded-lg text-xs font-mono text-blue-300 truncate select-all">
+                  {networkInfo.publicUrl || 'https://...trycloudflare.com'}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopy(networkInfo.publicUrl, 'public')}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#21262d] hover:bg-[#30363d] text-white border border-github-border flex items-center gap-1.5 whitespace-nowrap transition-colors"
+                >
+                  {copiedType === 'public' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-400 font-semibold">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-github-muted" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+                {networkInfo.publicUrl && (
+                  <a
+                    href={networkInfo.publicUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 rounded-lg text-github-muted hover:text-white hover:bg-[#21262d] border border-transparent hover:border-github-border transition-colors"
+                    title="Open public URL in new tab"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+              <p className="text-[11px] text-github-muted">
+                Use this link from any mobile device, cellular data (4G/5G), or foreign network to access your daily tasks.
+              </p>
+            </div>
+
+            {/* 2. Localhost URL */}
+            <div className="p-3.5 rounded-xl bg-[#0d1117] border border-github-border hover:border-white/20 transition-all space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-semibold text-white text-xs">
+                  <Laptop className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Localhost URL (This Computer)</span>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-purple-950/60 text-purple-300 border border-purple-800/40">
+                  Local Machine
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 px-3 py-1.5 bg-[#161b22] border border-github-border rounded-lg text-xs font-mono text-purple-300 truncate select-all">
+                  {networkInfo.localhostUrl || 'http://localhost:5001'}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopy(networkInfo.localhostUrl, 'localhost')}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#21262d] hover:bg-[#30363d] text-white border border-github-border flex items-center gap-1.5 whitespace-nowrap transition-colors"
+                >
+                  {copiedType === 'localhost' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-400 font-semibold">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-github-muted" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <p className="text-[11px] text-github-muted">
+                Default loopback link when running directly in a desktop browser on this PC.
+              </p>
+            </div>
+
+            {/* 3. Local Wi-Fi Network URL */}
+            {networkInfo.localNetworkUrl && (
+              <div className="p-3.5 rounded-xl bg-[#0d1117] border border-github-border hover:border-white/20 transition-all space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-semibold text-white text-xs">
+                    <Wifi className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Home Wi-Fi Access (LAN Network)</span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-emerald-950/60 text-emerald-300 border border-emerald-800/40">
+                    Same Wi-Fi
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 px-3 py-1.5 bg-[#161b22] border border-github-border rounded-lg text-xs font-mono text-emerald-300 truncate select-all">
+                    {networkInfo.localNetworkUrl}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(networkInfo.localNetworkUrl, 'lan')}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#21262d] hover:bg-[#30363d] text-white border border-github-border flex items-center gap-1.5 whitespace-nowrap transition-colors"
+                  >
+                    {copiedType === 'lan' ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-emerald-400 font-semibold">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-github-muted" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <p className="text-[11px] text-github-muted">
+                  Direct LAN link for phones and tablets connected to the same home Wi-Fi network.
+                </p>
+              </div>
+            )}
+
+            {/* 4. Mandatory Password Protection Notice */}
+            <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-800/40 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Mandatory Sign-in Protection</span>
+                </div>
+                <span className="text-[10px] font-mono text-amber-400/90 font-semibold">
+                  Protected with Account Password
+                </span>
+              </div>
+              <p className="text-[11px] text-github-muted leading-relaxed">
+                When sharing this link or opening on another device, visitors <strong className="text-amber-200">must enter your Account ID and Password</strong> before they can see or edit your dashboard.
+              </p>
+              <div className="pt-1 flex items-center justify-between text-[11px] border-t border-amber-800/20">
+                <span className="text-github-muted">
+                  Account ID: <strong className="text-white font-mono">{userProfile?.username || username}</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const inviteText = `DailyTask Access Link: ${networkInfo.publicUrl || networkInfo.localhostUrl}\nAccount ID: ${userProfile?.username || username}\n(Password required to sign in)`;
+                    handleCopy(inviteText, 'invite');
+                  }}
+                  className="px-2.5 py-1 rounded bg-[#21262d] text-amber-300 hover:text-white border border-amber-800/40 text-[11px] font-medium flex items-center gap-1 transition-colors"
+                >
+                  {copiedType === 'invite' ? (
+                    <>
+                      <Check className="w-3 h-3 text-emerald-400" />
+                      <span>Copied Invite!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-3 h-3" />
+                      <span>Copy Share Invite</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
