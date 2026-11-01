@@ -6,8 +6,31 @@ A web-based personal daily activity dashboard developed with React 18, Vite, Tai
 
 ## Key Features
 
-### 1. Centered Navigation Architecture and Settings Modal
-- **Centered Navigation Tabs:** The primary navigation tabs (**Heatmap & Overview**, **Goal Challenges**, **Daily Tasks**, and **Profile & Skills**) are centered in the top navigation bar.
+### 1. Goal Challenge Day Check-In and Daily Tasks Integration
+- **Direct Task Planning Inside Challenge Days:** In Goal Challenges, opening any day (e.g. Day 1) allows users to add daily tasks directly inside the Check-in modal with title, priority (High, Medium, Low), and estimated duration.
+- **Bi-Directional Daily Task Synchronization:** Tasks planned inside a challenge day immediately synchronize with the main Daily Task list, tagged with a dedicated challenge badge (e.g., `Day 1 • 30-Day LeetCode Grind`).
+- **Interactive Day Grid Task Counters:** Each day square in the challenge matrix displays a real-time completion counter (e.g., `1/2`) representing finished vs total planned tasks for that date.
+
+---
+
+### 2. Password-Protected History and Past Data Security (`PasswordPromptModal.jsx`)
+- **Restricted History Modification:** Any attempt to edit, change completion status, or delete historical records (dates prior to today) triggers a secure password authorization prompt.
+- **Account Password Authorization:** Users must verify their account password before modifying past task status, editing past tasks, deleting past tasks, or updating past challenge day reflections.
+- **Tamper-Resistant Historical Records:** Prevents accidental backdating or deletion while granting access once verified with credentials.
+
+---
+
+### 3. Neutral Activity Heatmap with Outside-Click Reset
+- **Pure Activity Visualization:** Heatmap cells strictly display authentic activity colors without neon glowing shadow halos or distracting hover rings.
+- **Outside-Click Neutralization:** Clicking anywhere outside the heatmap container immediately resets active selections and returns the heatmap to its neutral state.
+- **Full Container Width Scaling:** Selecting 1 Year (52 weeks) or Last 6 Months (26 weeks) stretches seamlessly across 100% of the box width.
+- **Dedicated 1-Month Mobile Grid:** 5-week touch-friendly view tailored for smartphones and narrow screens.
+- **5 Selectable Color Themes:** Olive Green, Emerald Mint, Ocean Cyan, Sunset Amber, and Amethyst Purple.
+
+---
+
+### 4. Centered Navigation Architecture and Settings Modal
+- **Centered Navigation Tabs:** The primary navigation tabs (Heatmap & Overview, Goal Challenges, Daily Tasks, and Profile & Skills) are centered in the top navigation bar.
 - **Unified Settings Modal (`SettingsModal.jsx`):** Auxiliary controls have been consolidated from the header into a dedicated Settings modal:
   - **Theme Chooser:** Instant switching between 5 themes with live palette swatch previews.
   - **Dual Persistence & Sync:** Live MongoDB connection status, last sync timestamp, and on-demand "Sync Now" button.
@@ -18,22 +41,14 @@ A web-based personal daily activity dashboard developed with React 18, Vite, Tai
 
 ---
 
-### 2. Full-Screen Authentication Gate (`LoginView.jsx`)
+### 5. Full-Screen Authentication Gate (`LoginView.jsx`)
 - **Strict Privacy Protection:** Unauthenticated sessions are blocked by a full-screen authentication screen. The dashboard, tasks, challenges, and activity heatmap remain hidden until credentials are confirmed.
 - **One-Click Demo Credentials:** An "Auto-fill Demo Credentials" button populates registered demo credentials (`n0vemberain` / `Password123!`) for instant access.
 - **Instant Sign-Out / Session Lock:** Clicking "Sign Out" in the navigation bar immediately clears the session and returns the user to the full-screen login screen.
 
 ---
 
-### 3. Full-Width Container Heatmap (1 Year and 6 Months)
-- **Full Container Width Scaling:** Selecting **1 Year (52 weeks)** or **Last 6 Months (26 weeks)** expands columns proportionally (`1fr` grid) across 100% of the container box width, leaving no empty space on the right.
-- **1 Month Responsive Grid:** The 1-Month view remains an optimized 5-week touch-friendly calendar tailored for mobile viewports.
-- **Dynamic Month Labels:** Month indicators align above their corresponding week columns across all screen resolutions.
-- **5 Selectable Themes:** Olive Green, Emerald Mint, Ocean Cyan, Sunset Amber, and Amethyst Purple.
-
----
-
-### 4. Manual Custom Category Creation
+### 6. Manual Custom Category Creation
 - **Flexible Category Workflow:** Users can pick from standard presets or manually enter custom category names in:
   - **Task Manager (`TaskManager.jsx`):** Type custom categories when adding a task or filter tasks by custom tags.
   - **Edit Task Modal (`EditTaskModal.jsx`):** Assign tasks to custom categories.
@@ -43,7 +58,7 @@ A web-based personal daily activity dashboard developed with React 18, Vite, Tai
 
 ---
 
-### 5. Individual Item Editing Across All Modules
+### 7. Individual Item Editing Across All Modules
 - **Individual Task Editing (`EditTaskModal.jsx`):** Modify task description, category, priority, date, and estimated duration.
 - **Individual Challenge Editing (`EditChallengeModal.jsx`):** Update challenge title, description, and category.
 - **Individual Day Reflection Check-In (`CheckInModal.jsx`):** Log daily check-in status (Completed, Skipped/Rest, Pending) and append personal accomplishment reflections.
@@ -51,7 +66,7 @@ A web-based personal daily activity dashboard developed with React 18, Vite, Tai
 
 ---
 
-### 6. Comprehensive Data Cleaning and Factory Reset Center
+### 8. Comprehensive Data Cleaning and Factory Reset Center
 - **Selective and Global Cleaning (`SettingsModal.jsx` & `DataCleanModal.jsx`):**
   - **Clean Completed Tasks Only:** Removes finished tasks while preserving active pending tasks and challenges.
   - **Clean All Habit Challenges:** Wipes all habit challenge goals.
@@ -60,7 +75,7 @@ A web-based personal daily activity dashboard developed with React 18, Vite, Tai
 
 ---
 
-### 7. Dual-Persistence Architecture (MongoDB and LocalStorage)
+### 9. Dual-Persistence Architecture (MongoDB and LocalStorage)
 - **Zero-Latency Offline-First Operation:** All client state updates, task completions, and profile edits persist immediately to browser `localStorage`.
 - **Database Synchronization:** An Express REST API with Mongoose handles bi-directional data persistence with MongoDB (`mongodb://localhost:27017/daily_task` or remote MongoDB Atlas).
 - **Resilient Fallback Mode:** When MongoDB is unreachable, the client operates in LocalStorage mode with an informational status badge (`LocalStorage Active`) and synchronizes automatically upon database reconnection.
@@ -68,7 +83,7 @@ A web-based personal daily activity dashboard developed with React 18, Vite, Tai
 
 ---
 
-### 8. Remote Public Access via Cloudflare Tunnel
+### 10. Remote Public Access via Cloudflare Tunnel
 - **Global Network Access:** Integrated Cloudflare Tunnel (`cloudflared`) enables secure public HTTPS access from any smartphone, laptop, or remote network without port forwarding or DNS configuration.
 - **Single-Port Architecture:** Express server hosts both the compiled React frontend (`client/dist`) and REST API (`/api/*`) on port 5001, providing clean remote access via a single tunnel.
 
@@ -81,9 +96,9 @@ Unit and integration tests are executed using Vitest and React Testing Library:
 ```bash
 $ npm test --prefix client
 
- Test Files  10 passed (10)
-      Tests  35 passed (35)
-   Duration  3.19s
+ Test Files  13 passed (13)
+      Tests  61 passed (61)
+   Duration  3.73s
 ```
 
 Detailed test coverage and audit metrics are documented in [TESTING_REPORT.md](TESTING_REPORT.md).
@@ -148,7 +163,8 @@ daily-task/
 │   │   │   ├── StatsOverview.jsx        # Streaks and productivity summary cards
 │   │   │   ├── ChallengeTracker.jsx     # Challenge grid and daily check-ins
 │   │   │   ├── ChallengeModal.jsx       # Modal for creating challenges with manual categories
-│   │   │   ├── CheckInModal.jsx         # Modal for day check-in and reflection notes
+│   │   │   ├── CheckInModal.jsx         # Day check-in, reflection notes and daily task manager
+│   │   │   ├── PasswordPromptModal.jsx  # Security modal for authorizing past history changes
 │   │   │   ├── TaskManager.jsx          # Task CRUD with manual custom category creation
 │   │   │   ├── UserProfile.jsx          # Profile credentials, photo, and skills
 │   │   │   ├── LoginModal.jsx           # Account login & authentication modal
@@ -170,13 +186,16 @@ daily-task/
 │   │   │   ├── storageService.test.js   # Storage persistence test suite
 │   │   │   ├── ContributionHeatmap.test.jsx
 │   │   │   ├── ChallengeTracker.test.jsx
+│   │   │   ├── CheckInModal.test.jsx
+│   │   │   ├── PasswordPromptModal.test.jsx
 │   │   │   ├── UserProfile.test.jsx
 │   │   │   ├── LoginModal.test.jsx
 │   │   │   ├── LoginView.test.jsx       # Authentication gate test suite
 │   │   │   ├── SettingsModal.test.jsx   # Settings modal test suite
-│   │   │   ├── TaskManager.test.jsx     # Manual category creation test suite
+│   │   │   ├── TaskManager.test.jsx     # Manual category & history auth test suite
 │   │   │   ├── DataCleanModal.test.jsx
 │   │   │   ├── ThemeContext.test.jsx
+│   │   │   ├── FocusTimer.test.jsx
 │   │   │   └── setup.js
 │   │   ├── data/
 │   │   │   └── initialData.js           # Seed data for immediate preview

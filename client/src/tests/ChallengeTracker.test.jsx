@@ -51,4 +51,41 @@ describe('ChallengeTracker Component', () => {
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
   });
+
+  it('displays task count indicator on days with linked tasks and opens CheckInModal on day click', () => {
+    const mockTasks = [
+      {
+        id: 'task-c1',
+        title: 'Binary Tree Traversal',
+        challengeId: 'ch-1',
+        dayNumber: 3,
+        date: '2026-10-03',
+        completed: true
+      }
+    ];
+
+    render(
+      <ChallengeTracker
+        challenges={mockChallenges}
+        tasks={mockTasks}
+        onAddTask={vi.fn()}
+        onToggleTask={vi.fn()}
+        onDeleteTask={vi.fn()}
+        onCreateChallenge={vi.fn()}
+        onCheckIn={vi.fn()}
+        onDeleteChallenge={vi.fn()}
+      />
+    );
+
+    // Indicator 1/1 on day 3 button
+    expect(screen.getByText('1/1')).toBeInTheDocument();
+
+    // Click Day 3 square
+    const day3Btn = screen.getByText('3').closest('button');
+    fireEvent.click(day3Btn);
+
+    // Modal opens showing Day 3 Check-in & Daily Tasks
+    expect(screen.getByText(/Day 3 Check-in & Daily Tasks/i)).toBeInTheDocument();
+    expect(screen.getByText('Binary Tree Traversal')).toBeInTheDocument();
+  });
 });

@@ -156,9 +156,15 @@ describe('TaskManager Component', () => {
     expect(sortSelect.value).toBe('high-first');
   });
 
-  it('locks past date tasks so they cannot be toggled or edited, but allows deletion', () => {
+  it('requires password authorization to modify, toggle, edit, or delete past date tasks', () => {
     const onToggleTask = vi.fn();
     const onDeleteTask = vi.fn();
+    const onEditTask = vi.fn();
+    const mockProfile = {
+      username: 'testuser',
+      password: 'SecretPassword123!'
+    };
+
     const pastTasks = [
       {
         id: 'past-1',
@@ -178,30 +184,80 @@ describe('TaskManager Component', () => {
           onAddTask={vi.fn()}
           onToggleTask={onToggleTask}
           onDeleteTask={onDeleteTask}
-          onEditTask={vi.fn()}
+          onEditTask={onEditTask}
           selectedDate="2026-01-01"
           onClearDateFilter={vi.fn()}
+          userProfile={mockProfile}
         />
       </ThemeProvider>
     );
 
     // Verify history locked indicator appears
     expect(screen.getByText(/History Locked/i)).toBeInTheDocument();
+    expect(screen.getByText('Protected History')).toBeInTheDocument();
 
-    // Verify checkbox button is disabled for past task
-    const checkboxBtn = screen.getByTitle('Past date task status is locked and cannot be changed');
-    expect(checkboxBtn).toBeDisabled();
+    // 1. Toggling past task triggers password prompt modal
+    const checkboxBtn = screen.getByTitle('Modifying past task status requires password');
     fireEvent.click(checkboxBtn);
+
+    expect(screen.getByText('Authorize Status Change')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Modifying completion status for past task "Completed algorithm practice"/i)
+    ).toBeInTheDocument();
+
+    // Cancel prompt
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onToggleTask).not.toHaveBeenCalled();
 
-    // Verify edit button is locked/disabled
-    expect(screen.getByTitle(/Past date tasks cannot be edited\. You can only delete them\./i)).toBeInTheDocument();
-    expect(screen.queryByTitle('Edit individual task')).not.toBeInTheDocument();
-
-    // Verify delete button is active and callable
-    const deleteBtn = screen.getByTitle('Delete task');
-    expect(deleteBtn).toBeInTheDocument();
+    // 2. Deleting past task triggers password prompt modal
+    const deleteBtn = screen.getByTitle('Delete past task (Requires password)');
     fireEvent.click(deleteBtn);
+
+    expect(screen.getByText('Authorize Task Deletion')).toBeInTheDocument();
+
+    // Enter wrong password
+    const passwordInput = screen.getByPlaceholderText('Enter your account password...');
+    fireEvent.change(passwordInput, { target: { value: 'WrongPassword' } });
+    fireEvent.click(screen.getByRole('button', { name: /Authorize & Proceed/i }));
+
+    expect(screen.getByText(/Incorrect password\. Authorization failed\./i)).toBeInTheDocument();
+    expect(onDeleteTask).not.toHaveBeenCalled();
+
+    // Enter correct password and authorize
+    fireEvent.change(passwordInput, { target: { value: 'SecretPassword123!' } });
+    fireEvent.click(screen.getByRole('button', { name: /Authorize & Proceed/i }));
+
     expect(onDeleteTask).toHaveBeenCalledWith('past-1');
+  });
+
+  it('displays Goal Challenge badge when a task is linked to a challenge day', () => {
+    const challengeTasks = [
+      {
+        id: 'task-ch-1',
+        title: 'Solve LeetCode #15',
+        category: 'Coding',
+        priority: 'High',
+        estimatedMinutes: 30,
+        date: todayStr,
+        completed: false,
+        challengeId: 'ch-1',
+        challengeTitle: '30-Day LeetCode Grind',
+        dayNumber: 3
+      }
+    ];
+
+    render(
+      <ThemeProvider>
+        <TaskManager
+          tasks={challengeTasks}
+          onAddTask={vi.fn()}
+          onToggleTask={vi.fn()}
+          onDeleteTask={vi.fn()}
+          onEditTask={vi.fn()}
+        />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByText(/Day 3 • 30-Day LeetCode Grind/i)).toBeInTheDocument();
   });
 });

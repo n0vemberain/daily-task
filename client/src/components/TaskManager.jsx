@@ -13,13 +13,16 @@ import {
   Edit3,
   ArrowUpDown,
   Tag,
-  Lock
+  Lock,
+  Flame,
+  ShieldCheck
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatDateStr } from '../data/initialData';
 import { soundEffects } from '../utils/audioFeedback';
 import { useTheme } from '../context/ThemeContext';
 import EditTaskModal from './EditTaskModal';
+import PasswordPromptModal from './PasswordPromptModal';
 
 export default function TaskManager({
   tasks,
@@ -29,10 +32,19 @@ export default function TaskManager({
   onEditTask,
   selectedDate,
   onClearDateFilter,
-  onOpenDataClean
+  onOpenDataClean,
+  userProfile
 }) {
   const { theme } = useTheme();
   const defaultCategories = ['Coding', 'Study', 'Fitness', 'Work', 'General'];
+
+  // Password confirmation state for modifying past history
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [pendingHistoryAction, setPendingHistoryAction] = useState(null);
+  const [passwordPromptInfo, setPasswordPromptInfo] = useState({
+    title: 'Authorization Required',
+    description: 'Modifying past history requires your account password.'
+  });
   const [customCategories, setCustomCategories] = useState(() => {
     try {
       const saved = localStorage.getItem('daily_task_custom_categories');
@@ -82,11 +94,15 @@ export default function TaskManager({
 
   const isSelectedDatePast = selectedDate ? selectedDate < todayStr : false;
 
-  const handleToggle = (taskId) => {
-    const task = tasks.find((t) => t.id === taskId || t._id === taskId);
-    // Block toggling tasks from past dates (History is locked)
-    if (!task || task.date < todayStr) return;
+  const handlePasswordSuccess = () => {
+    if (pendingHistoryAction) {
+      pendingHistoryAction();
+      setPendingHistoryAction(null);
+    }
+  };
 
+  const executeToggle = (task) => {
+    const taskId = task.id || task._id;
     const willComplete = !task.completed;
 
     if (willComplete) {
@@ -102,6 +118,46 @@ export default function TaskManager({
     }
 
     onToggleTask(taskId);
+  };
+
+  const handleTaskToggleClick = (task) => {
+    if (task.date < todayStr) {
+      setPasswordPromptInfo({
+        title: 'Authorize Status Change',
+        description: `Modifying completion status for past task "${task.title}" (${task.date}) requires your account password.`
+      });
+      setPendingHistoryAction(() => () => executeToggle(task));
+      setIsPasswordModalOpen(true);
+      return;
+    }
+    executeToggle(task);
+  };
+
+  const handleTaskDeleteClick = (task) => {
+    const taskId = task.id || task._id;
+    if (task.date < todayStr) {
+      setPasswordPromptInfo({
+        title: 'Authorize Task Deletion',
+        description: `Deleting historical task record "${task.title}" (${task.date}) requires your account password.`
+      });
+      setPendingHistoryAction(() => () => onDeleteTask(taskId));
+      setIsPasswordModalOpen(true);
+      return;
+    }
+    onDeleteTask(taskId);
+  };
+
+  const handleTaskEditClick = (task) => {
+    if (task.date < todayStr) {
+      setPasswordPromptInfo({
+        title: 'Authorize Task Edit',
+        description: `Editing historical task record "${task.title}" (${task.date}) requires your account password.`
+      });
+      setPendingHistoryAction(() => () => setEditingTask(task));
+      setIsPasswordModalOpen(true);
+      return;
+    }
+    setEditingTask(task);
   };
 
   const handleCreateTask = (e) => {
@@ -648,14 +704,11 @@ export default function TaskManager({
                 {/* Left: Checkbox + Title */}
                 <div className="flex items-center gap-3 flex-1 min-w-0 mr-3">
                   <button
-                    disabled={isPast}
-                    onClick={() => !isPast && handleToggle(taskId)}
-                    className={`focus:outline-none flex-shrink-0 ${
-                      isPast ? 'cursor-not-allowed opacity-75' : ''
-                    }`}
+                    onClick={() => handleTaskToggleClick(task)}
+                    className="focus:outline-none flex-shrink-0"
                     title={
                       isPast
-                        ? 'Past date task status is locked and cannot be changed'
+                        ? 'Modifying past task status requires password'
                         : task.completed
                         ? 'Mark incomplete'
                         : 'Mark completed'
@@ -664,7 +717,7 @@ export default function TaskManager({
                     {task.completed ? (
                       <CheckCircle2
                         className="w-5 h-5 transition-colors"
-                        style={{ color: isPast ? '#6e7681' : theme.accent }}
+                        style={{ color: isPast ? '#d97706' : theme.accent }}
                       />
                     ) : (
                       <Circle className="w-5 h-5 text-github-muted hover:text-white transition-colors" />
@@ -683,10 +736,19 @@ export default function TaskManager({
                       {isPast && (
                         <span
                           className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-[#0d1117] text-amber-300/80 border border-amber-800/30 flex items-center gap-1 select-none"
-                          title="Past date task - Locked"
+                          title="Past date task - Requires password to edit/delete"
                         >
                           <Lock className="w-2.5 h-2.5" />
-                          Locked
+                          Protected History
+                        </span>
+                      )}
+                      {task.challengeTitle && (
+                        <span
+                          className="text-[10px] px-2 py-0.5 rounded font-mono bg-amber-950/40 text-amber-300 border border-amber-800/40 flex items-center gap-1"
+                          title={`Linked to Goal Challenge: ${task.challengeTitle}`}
+                        >
+                          <Flame className="w-3 h-3 text-amber-400" />
+                          <span>Day {task.dayNumber || 1} • {task.challengeTitle}</span>
                         </span>
                       )}
                     </div>
@@ -721,29 +783,20 @@ export default function TaskManager({
                     {task.priority}
                   </span>
 
-                  {/* Individual Edit Task Button - Disabled/Hidden for past tasks */}
-                  {isPast ? (
-                    <span
-                      className="p-1 rounded-md text-github-muted/30 cursor-not-allowed flex items-center justify-center"
-                      title="Past date tasks cannot be edited. You can only delete them."
-                    >
-                      <Lock className="w-3.5 h-3.5" />
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => setEditingTask(task)}
-                      className="p-1 rounded-md text-github-muted hover:text-white hover:bg-[#21262d] transition-colors"
-                      title="Edit individual task"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-
-                  {/* Delete button - Always enabled (user explicitly requested: only delete is allowed) */}
+                  {/* Individual Edit Task Button */}
                   <button
-                    onClick={() => onDeleteTask(taskId)}
+                    onClick={() => handleTaskEditClick(task)}
+                    className="p-1 rounded-md text-github-muted hover:text-white hover:bg-[#21262d] transition-colors"
+                    title={isPast ? 'Edit past task (Requires password)' : 'Edit individual task'}
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Delete button */}
+                  <button
+                    onClick={() => handleTaskDeleteClick(task)}
                     className="p-1 rounded-md text-github-muted hover:text-red-400 hover:bg-[#21262d] transition-colors"
-                    title="Delete task"
+                    title={isPast ? 'Delete past task (Requires password)' : 'Delete task'}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -760,6 +813,19 @@ export default function TaskManager({
         onClose={() => setEditingTask(null)}
         task={editingTask}
         onSaveTask={onEditTask}
+      />
+
+      {/* Password Authorization Modal for Past History Operations */}
+      <PasswordPromptModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => {
+          setIsPasswordModalOpen(false);
+          setPendingHistoryAction(null);
+        }}
+        onSuccess={handlePasswordSuccess}
+        title={passwordPromptInfo.title}
+        description={passwordPromptInfo.description}
+        userProfile={userProfile}
       />
     </div>
   );

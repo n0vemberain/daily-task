@@ -526,6 +526,7 @@ export default function App() {
                 onEditTask={handleEditTask}
                 selectedDate={selectedDate}
                 onClearDateFilter={() => setSelectedDate(null)}
+                userProfile={userProfile}
               />
             </div>
           </div>
@@ -534,10 +535,15 @@ export default function App() {
         {activeTab === 'challenges' && (
           <ChallengeTracker
             challenges={challenges}
+            tasks={tasks}
+            onAddTask={handleAddTask}
+            onToggleTask={handleToggleTask}
+            onDeleteTask={handleDeleteTask}
             onCreateChallenge={handleCreateChallenge}
             onCheckIn={handleCheckIn}
             onDeleteChallenge={handleDeleteChallenge}
             onEditChallenge={handleEditChallenge}
+            userProfile={userProfile}
           />
         )}
 
@@ -550,6 +556,7 @@ export default function App() {
             onEditTask={handleEditTask}
             selectedDate={selectedDate}
             onClearDateFilter={() => setSelectedDate(null)}
+            userProfile={userProfile}
           />
         )}
 

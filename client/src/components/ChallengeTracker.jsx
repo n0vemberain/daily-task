@@ -20,10 +20,15 @@ import { useTheme } from '../context/ThemeContext';
 
 export default function ChallengeTracker({
   challenges,
+  tasks = [],
+  onAddTask,
+  onToggleTask,
+  onDeleteTask,
   onCreateChallenge,
   onCheckIn,
   onDeleteChallenge,
-  onEditChallenge
+  onEditChallenge,
+  userProfile
 }) {
   const { theme } = useTheme();
   const [filter, setFilter] = useState('active'); // 'active', 'completed', 'all'
@@ -301,6 +306,12 @@ export default function ChallengeTracker({
                       const isToday = dayItem.date === todayStr;
                       const isDone = dayItem.status === 'completed';
                       const isSkipped = dayItem.status === 'skipped';
+                      const challengeId = challenge.id || challenge._id;
+                      const dayTasks = tasks.filter(
+                        (t) =>
+                          (t.challengeId === challengeId && t.dayNumber === dayItem.dayNumber) ||
+                          (t.challengeId === challengeId && t.date === dayItem.date)
+                      );
 
                       let cellStyle = 'bg-[#0d1117] border-github-border text-github-muted hover:border-white/30';
                       if (isDone) {
@@ -332,7 +343,7 @@ export default function ChallengeTracker({
                           }
                           title={`Day ${dayItem.dayNumber} (${dayItem.date}): ${dayItem.status}${
                             dayItem.note ? ` - "${dayItem.note}"` : ''
-                          }`}
+                          }${dayTasks.length > 0 ? ` • ${dayTasks.length} task(s)` : ''}`}
                         >
                           <span className="text-[11px] font-mono leading-none">
                             {dayItem.dayNumber}
@@ -349,6 +360,10 @@ export default function ChallengeTracker({
                               className="w-1.5 h-1.5 rounded-full mt-1"
                               style={{ backgroundColor: theme.accent }}
                             />
+                          ) : dayTasks.length > 0 ? (
+                            <span className="text-[9px] font-mono leading-none px-1 rounded bg-[#161b22] text-amber-300 border border-amber-800/40 mt-1">
+                              {dayTasks.filter((t) => t.completed).length}/{dayTasks.length}
+                            </span>
                           ) : (
                             <span className="w-1.5 h-1.5 rounded-full bg-[#30363d] mt-1 group-hover:bg-github-muted" />
                           )}
@@ -380,7 +395,12 @@ export default function ChallengeTracker({
         onClose={() => setSelectedDayCheckIn(null)}
         challenge={selectedDayCheckIn?.challenge}
         dayItem={selectedDayCheckIn?.dayItem}
+        tasks={tasks}
+        onAddTask={onAddTask}
+        onToggleTask={onToggleTask}
+        onDeleteTask={onDeleteTask}
         onSaveCheckIn={onCheckIn}
+        userProfile={userProfile}
       />
 
       {/* Modal to Edit Challenge */}

@@ -298,7 +298,10 @@ class FileStore {
       date: taskData.date || today,
       estimatedMinutes: parseInt(taskData.estimatedMinutes, 10) || 30,
       completed: !!taskData.completed,
-      completedAt: taskData.completed ? (taskData.completedAt || new Date().toISOString()) : null
+      completedAt: taskData.completed ? (taskData.completedAt || new Date().toISOString()) : null,
+      challengeId: taskData.challengeId || null,
+      challengeTitle: taskData.challengeTitle || null,
+      dayNumber: taskData.dayNumber || null
     };
 
     store.tasks = [newTask, ...(store.tasks || [])];
@@ -310,11 +313,11 @@ class FileStore {
     const today = formatDate(new Date());
     const store = this.readStore();
     const existing = (store.tasks || []).find(t => t.id === taskId || t._id === taskId);
-    if (existing && existing.date < today) {
-      throw new Error('Tasks from past dates cannot be edited. History is locked.');
+    if (existing && existing.date < today && !updates.authorized) {
+      throw new Error('Tasks from past dates cannot be edited without authorization.');
     }
-    if (updates.date && updates.date < today) {
-      throw new Error('Cannot move task to a past date. History is locked.');
+    if (updates.date && updates.date < today && !updates.authorized) {
+      throw new Error('Cannot move task to a past date without authorization.');
     }
 
     let updated = null;

@@ -67,4 +67,45 @@ describe('ContributionHeatmap Component', () => {
     // Verify theme badge updated
     expect(screen.getByText(/Emerald Mint Shades/i)).toBeInTheDocument();
   });
+
+  it('neutralizes selection when clicking outside the heatmap', () => {
+    const handleSelectDate = vi.fn();
+    const today = formatDateStr(new Date());
+
+    render(
+      <div>
+        <div data-testid="outside-element">Outside Area</div>
+        <ContributionHeatmap
+          tasks={sampleTasks}
+          selectedDate={today}
+          onSelectDate={handleSelectDate}
+        />
+      </div>
+    );
+
+    // Simulate clicking outside the heatmap container
+    const outsideEl = screen.getByTestId('outside-element');
+    fireEvent.mouseDown(outsideEl);
+
+    expect(handleSelectDate).toHaveBeenCalledWith(null);
+  });
+
+  it('keeps clean activity level appearance without glowing shadow halos when selected', () => {
+    const today = formatDateStr(new Date());
+
+    const { container } = render(
+      <ContributionHeatmap
+        tasks={sampleTasks}
+        selectedDate={today}
+      />
+    );
+
+    // Any cell with selectedRing should have border-white and ring-1 without glowing shadow-md
+    const selectedCells = container.querySelectorAll('.ring-1.ring-white\\/80');
+    expect(selectedCells.length).toBeGreaterThan(0);
+    selectedCells.forEach((cell) => {
+      expect(cell.className).not.toMatch(/shadow-md/);
+      expect(cell.className).not.toMatch(/shadow-olive/);
+    });
+  });
 });

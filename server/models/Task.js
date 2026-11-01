@@ -32,6 +32,18 @@ const taskSchema = new mongoose.Schema(
     estimatedMinutes: {
       type: Number,
       default: 30
+    },
+    challengeId: {
+      type: String,
+      default: null
+    },
+    challengeTitle: {
+      type: String,
+      default: null
+    },
+    dayNumber: {
+      type: Number,
+      default: null
     }
   },
   { timestamps: true }

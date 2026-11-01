@@ -15,10 +15,10 @@ export const HEATMAP_THEMES = {
       1: 'bg-[#263b19] border-[#384f27] hover:border-[#4d6b2c]',
       2: 'bg-[#3d5c24] border-[#4e7430] hover:border-[#63923c]',
       3: 'bg-[#5a8533] border-[#6ea03f] hover:border-[#83bd4b]',
-      4: 'bg-[#7eb644] border-[#92ce52] hover:border-[#abeb64] shadow-sm shadow-olive-600/40'
+      4: 'bg-[#7eb644] border-[#92ce52] hover:border-[#abeb64]'
     },
     hexLevels: ['#161b22', '#263b19', '#3d5c24', '#5a8533', '#7eb644'],
-    selectedRing: 'bg-olive-500 border-white ring-2 ring-olive-400 shadow-md shadow-olive-600/50',
+    selectedRing: 'border-white ring-1 ring-white/80',
     badgeClass: 'bg-olive-950 text-olive-300 border-olive-700/40',
     activeBtn: 'bg-olive-800 text-white border-olive-600/50 shadow-sm'
   },
@@ -32,10 +32,10 @@ export const HEATMAP_THEMES = {
       1: 'bg-[#0e4429] border-[#165b38] hover:border-[#1d784b]',
       2: 'bg-[#006d32] border-[#108c43] hover:border-[#1ca853]',
       3: 'bg-[#26a641] border-[#34c453] hover:border-[#42dd64]',
-      4: 'bg-[#39d353] border-[#55ea6f] hover:border-[#76f08c] shadow-sm shadow-emerald-600/40'
+      4: 'bg-[#39d353] border-[#55ea6f] hover:border-[#76f08c]'
     },
     hexLevels: ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'],
-    selectedRing: 'bg-emerald-500 border-white ring-2 ring-emerald-400 shadow-md shadow-emerald-600/50',
+    selectedRing: 'border-white ring-1 ring-white/80',
     badgeClass: 'bg-emerald-950 text-emerald-300 border-emerald-700/40',
     activeBtn: 'bg-emerald-800 text-white border-emerald-600/50 shadow-sm'
   },
@@ -49,10 +49,10 @@ export const HEATMAP_THEMES = {
       1: 'bg-[#0b3c49] border-[#115769] hover:border-[#16728a]',
       2: 'bg-[#0e6075] border-[#15819e] hover:border-[#1da5c9]',
       3: 'bg-[#189cb5] border-[#25c4e3] hover:border-[#41d2f0]',
-      4: 'bg-[#38d8f5] border-[#67e4fa] hover:border-[#96eefa] shadow-sm shadow-cyan-600/40'
+      4: 'bg-[#38d8f5] border-[#67e4fa] hover:border-[#96eefa]'
     },
     hexLevels: ['#161b22', '#0b3c49', '#0e6075', '#189cb5', '#38d8f5'],
-    selectedRing: 'bg-cyan-500 border-white ring-2 ring-cyan-400 shadow-md shadow-cyan-600/50',
+    selectedRing: 'border-white ring-1 ring-white/80',
     badgeClass: 'bg-cyan-950 text-cyan-300 border-cyan-700/40',
     activeBtn: 'bg-cyan-800 text-white border-cyan-600/50 shadow-sm'
   },
@@ -66,10 +66,10 @@ export const HEATMAP_THEMES = {
       1: 'bg-[#452607] border-[#61360a] hover:border-[#7e470e]',
       2: 'bg-[#783c07] border-[#9c4f09] hover:border-[#bf610c]',
       3: 'bg-[#b86209] border-[#e0770b] hover:border-[#f58d1b]',
-      4: 'bg-[#f59e0b] border-[#fbbf24] hover:border-[#fcd34d] shadow-sm shadow-amber-600/40'
+      4: 'bg-[#f59e0b] border-[#fbbf24] hover:border-[#fcd34d]'
     },
     hexLevels: ['#161b22', '#452607', '#783c07', '#b86209', '#f59e0b'],
-    selectedRing: 'bg-amber-500 border-white ring-2 ring-amber-400 shadow-md shadow-amber-600/50',
+    selectedRing: 'border-white ring-1 ring-white/80',
     badgeClass: 'bg-amber-950 text-amber-300 border-amber-700/40',
     activeBtn: 'bg-amber-800 text-white border-amber-600/50 shadow-sm'
   },
@@ -83,10 +83,10 @@ export const HEATMAP_THEMES = {
       1: 'bg-[#341948] border-[#4b2469] hover:border-[#632f8a]',
       2: 'bg-[#58207c] border-[#762ca6] hover:border-[#9637d4]',
       3: 'bg-[#8736bf] border-[#a948ee] hover:border-[#c26df5]',
-      4: 'bg-[#b366f5] border-[#c884fa] hover:border-[#dcabfc] shadow-sm shadow-purple-600/40'
+      4: 'bg-[#b366f5] border-[#c884fa] hover:border-[#dcabfc]'
     },
     hexLevels: ['#161b22', '#341948', '#58207c', '#8736bf', '#b366f5'],
-    selectedRing: 'bg-purple-500 border-white ring-2 ring-purple-400 shadow-md shadow-purple-600/50',
+    selectedRing: 'border-white ring-1 ring-white/80',
     badgeClass: 'bg-purple-950 text-purple-300 border-purple-700/40',
     activeBtn: 'bg-purple-800 text-white border-purple-600/50 shadow-sm'
   }
@@ -120,6 +120,7 @@ export default function ContributionHeatmap({
   const [mobileSelectedDay, setMobileSelectedDay] = useState(null);
   const [showThemePicker, setShowThemePicker] = useState(false);
 
+  const containerRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
   const currentTheme = HEATMAP_THEMES[activeThemeId] || HEATMAP_THEMES.olive;
@@ -294,27 +295,47 @@ export default function ContributionHeatmap({
     }
   }, [timeRange]);
 
-  // Color resolver based on completed task count and current theme
+  // Click outside listener: neutralizes heatmap selection when clicking anywhere outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        if (selectedDate && onSelectDate) {
+          onSelectDate(null);
+        }
+        setMobileSelectedDay(null);
+        setHoveredDay(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, [selectedDate, onSelectDate]);
+
+  // Color resolver based on completed task count and current theme - purely shows activity without glow
   const getThemeLevelClass = (count, isFuture, isSelected) => {
     if (isFuture) {
       return 'bg-[#12161b]/50 border-[#1f242c] opacity-40 cursor-not-allowed';
     }
-    if (isSelected) {
-      return currentTheme.selectedRing;
-    }
-    if (count === 0) {
-      return currentTheme.levels[0];
-    }
+
+    let baseLevel = currentTheme.levels[0];
     if (count === 1) {
-      return currentTheme.levels[1];
+      baseLevel = currentTheme.levels[1];
+    } else if (count === 2) {
+      baseLevel = currentTheme.levels[2];
+    } else if (count <= 4) {
+      baseLevel = currentTheme.levels[3];
+    } else if (count > 4) {
+      baseLevel = currentTheme.levels[4];
     }
-    if (count === 2) {
-      return currentTheme.levels[2];
+
+    if (isSelected) {
+      return `${baseLevel} ${currentTheme.selectedRing}`;
     }
-    if (count <= 4) {
-      return currentTheme.levels[3];
-    }
-    return currentTheme.levels[4];
+    return baseLevel;
   };
 
   const handleCellClick = (day) => {
@@ -340,7 +361,10 @@ export default function ContributionHeatmap({
   };
 
   return (
-    <div className="bg-[#161b22] border border-github-border rounded-xl p-4 sm:p-6 mb-6 shadow-sm relative">
+    <div
+      ref={containerRef}
+      className="bg-[#161b22] border border-github-border rounded-xl p-4 sm:p-6 mb-6 shadow-sm relative"
+    >
       {/* Header & Controls */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-4 pb-3 border-b border-github-border">
         {/* Title and Active Theme Badge */}

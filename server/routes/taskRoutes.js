@@ -44,7 +44,7 @@ router.get('/heatmap', async (req, res) => {
 // Create task
 router.post('/', async (req, res) => {
   try {
-    const { title, category, priority, date, estimatedMinutes, id } = req.body;
+    const { title, category, priority, date, estimatedMinutes, id, challengeId, challengeTitle, dayNumber } = req.body;
     if (!title) {
       return res.status(400).json({ success: false, message: 'Title is required' });
     }
@@ -60,7 +60,10 @@ router.post('/', async (req, res) => {
       category,
       priority,
       date,
-      estimatedMinutes
+      estimatedMinutes,
+      challengeId,
+      challengeTitle,
+      dayNumber
     });
 
     // Mirror to MongoDB if actively connected
@@ -81,8 +84,8 @@ router.put('/:id', async (req, res) => {
   try {
     const taskId = req.params.id;
     const today = new Date().toISOString().split('T')[0];
-    if (req.body.date && req.body.date < today) {
-      return res.status(400).json({ success: false, message: 'Cannot move task to a past date. History is locked.' });
+    if (req.body.date && req.body.date < today && !req.body.authorized) {
+      return res.status(400).json({ success: false, message: 'Cannot move task to a past date without authorization.' });
     }
 
     const task = fileStore.updateTask(taskId, req.body);
