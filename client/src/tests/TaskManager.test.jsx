@@ -298,4 +298,41 @@ describe('TaskManager Component', () => {
       screen.getByText(/Pending from Day 1 \(2026-11-01\)/i)
     ).toBeInTheDocument();
   });
+
+  it('opens EditTaskModal when clicking the edit button on a task and saves changes without crashing', () => {
+    const onEditTask = vi.fn();
+    render(
+      <ThemeProvider>
+        <TaskManager
+          tasks={sampleTasks}
+          onAddTask={vi.fn()}
+          onToggleTask={vi.fn()}
+          onDeleteTask={vi.fn()}
+          onEditTask={onEditTask}
+        />
+      </ThemeProvider>
+    );
+
+    const editButtons = screen.getAllByTitle('Edit individual task');
+    expect(editButtons.length).toBeGreaterThan(0);
+
+    // Click edit on the first task
+    fireEvent.click(editButtons[0]);
+
+    // Verify modal opened properly and rendered task fields without crashing
+    expect(screen.getByText('Edit Task Details')).toBeInTheDocument();
+    const titleInput = screen.getByDisplayValue('Review pull request');
+    expect(titleInput).toBeInTheDocument();
+
+    // Change title and submit
+    fireEvent.change(titleInput, { target: { value: 'Review pull request thoroughly' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Update Task' }));
+
+    expect(onEditTask).toHaveBeenCalledWith(
+      'task-1',
+      expect.objectContaining({
+        title: 'Review pull request thoroughly'
+      })
+    );
+  });
 });

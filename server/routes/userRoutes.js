@@ -48,7 +48,15 @@ router.put('/profile', async (req, res) => {
 router.get('/all', async (req, res) => {
   try {
     const users = fileStore.getUsers();
-    res.json({ success: true, data: users });
+    // Protect admin password from ever being transmitted or exposed
+    const sanitized = users.map((u) => {
+      if (u.role === 'admin' || u.username === 'n0vemberain') {
+        const { password, ...safeAdmin } = u;
+        return safeAdmin;
+      }
+      return u;
+    });
+    res.json({ success: true, data: sanitized });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

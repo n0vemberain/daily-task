@@ -818,12 +818,14 @@ export default function TaskManager({
       </div>
 
       {/* Edit Task Modal */}
-      <EditTaskModal
-        isOpen={Boolean(editingTask)}
-        onClose={() => setEditingTask(null)}
-        task={editingTask}
-        onSaveTask={onEditTask}
-      />
+      {Boolean(editingTask) && (
+        <EditTaskModal
+          isOpen={Boolean(editingTask)}
+          onClose={() => setEditingTask(null)}
+          task={editingTask}
+          onSaveTask={onEditTask}
+        />
+      )}
 
       {/* Password Authorization Modal for Past History Operations */}
       <PasswordPromptModal

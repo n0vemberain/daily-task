@@ -19,19 +19,6 @@ export default function EditTaskModal({
   const [date, setDate] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState(30);
 
-  useEffect(() => {
-    if (task) {
-      setTitle(task.title || '');
-      setCategory(task.category || 'Coding');
-      setPriority(task.priority || 'Medium');
-      setDate(task.date || '');
-      setEstimatedMinutes(task.estimatedMinutes || 30);
-    }
-  }, [task]);
-
-  if (!isOpen || !task) return null;
-
-  const defaultCategories = ['Coding', 'Study', 'Fitness', 'Work', 'General'];
   const [customCategories, setCustomCategories] = useState(() => {
     try {
       const saved = localStorage.getItem('daily_task_custom_categories');
@@ -41,11 +28,26 @@ export default function EditTaskModal({
     }
   });
 
-  const categories = Array.from(new Set([...defaultCategories, ...customCategories]));
-  const priorities = ['Low', 'Medium', 'High'];
-
   const [isManualCategory, setIsManualCategory] = useState(false);
   const [manualCategoryInput, setManualCategoryInput] = useState('');
+
+  useEffect(() => {
+    if (task) {
+      setTitle(task.title || '');
+      setCategory(task.category || 'Coding');
+      setPriority(task.priority || 'Medium');
+      setDate(task.date || '');
+      setEstimatedMinutes(task.estimatedMinutes || 30);
+      setIsManualCategory(false);
+      setManualCategoryInput('');
+    }
+  }, [task]);
+
+  if (!isOpen || !task) return null;
+
+  const defaultCategories = ['Coding', 'Study', 'Fitness', 'Work', 'General'];
+  const categories = Array.from(new Set([...defaultCategories, ...customCategories]));
+  const priorities = ['Low', 'Medium', 'High'];
 
   const handleSubmit = (e) => {
     e.preventDefault();

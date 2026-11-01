@@ -95,8 +95,8 @@
       "priority": "Medium",
       "date": "2026-11-01",
       "estimatedMinutes": 30,
-      "completed": false,
-      "completedAt": null,
+      "completed": true,
+      "completedAt": "2026-11-01T19:52:19.361Z",
       "challengeId": null,
       "challengeTitle": null,
       "dayNumber": null,
@@ -418,7 +418,7 @@
     }
   ],
   "heatmapHistory": {},
-  "lastUpdated": "2026-11-01T19:36:44.024Z",
+  "lastUpdated": "2026-11-01T19:59:04.075Z",
   "users": [
     {
       "id": "user-admin",
