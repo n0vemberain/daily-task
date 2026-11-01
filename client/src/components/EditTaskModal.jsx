@@ -49,7 +49,7 @@ export default function EditTaskModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!title.trim() || isPast || (date && date < todayStr)) return;
+    if (!title.trim()) return;
 
     let finalCategory = category;
     if (isManualCategory && manualCategoryInput.trim()) {
@@ -66,7 +66,7 @@ export default function EditTaskModal({
       title: title.trim(),
       category: finalCategory || 'General',
       priority,
-      date,
+      date: date || task.date,
       estimatedMinutes: parseInt(estimatedMinutes, 10) || 30
     });
     onClose();
@@ -177,12 +177,12 @@ export default function EditTaskModal({
             </div>
           </div>
 
-          {/* Past Date Locked Warning */}
+          {/* Past Date Authorized Indicator */}
           {isPast && (
-            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-950/30 border border-amber-800/40 text-amber-300 text-xs animate-in fade-in">
-              <Lock className="w-4 h-4 flex-shrink-0 text-amber-400" />
+            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-950/30 border border-emerald-800/40 text-emerald-300 text-xs animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-400" />
               <span>
-                This task is from a past date ({task.date}). Previous dates cannot be edited. History is locked. You can only delete this task.
+                Authorized History Edit: You have unlocked this historical record ({task.date}) with your password.
               </span>
             </div>
           )}
@@ -196,18 +196,9 @@ export default function EditTaskModal({
               <input
                 type="date"
                 required
-                min={todayStr}
-                disabled={isPast}
                 value={date}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (!val || val >= todayStr) {
-                    setDate(val);
-                  }
-                }}
-                className={`w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none ${
-                  isPast ? 'opacity-60 cursor-not-allowed' : ''
-                }`}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none"
               />
             </div>
 
@@ -220,12 +211,9 @@ export default function EditTaskModal({
                 type="number"
                 min="5"
                 step="5"
-                disabled={isPast}
                 value={estimatedMinutes}
                 onChange={(e) => setEstimatedMinutes(e.target.value)}
-                className={`w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none ${
-                  isPast ? 'opacity-60 cursor-not-allowed' : ''
-                }`}
+                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none"
               />
             </div>
           </div>
@@ -241,13 +229,10 @@ export default function EditTaskModal({
             </button>
             <button
               type="submit"
-              disabled={isPast}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold text-white shadow-md transition-all ${
-                isPast ? 'opacity-50 cursor-not-allowed bg-gray-700' : ''
-              }`}
-              style={!isPast ? { backgroundColor: theme.accent, color: '#0d1117' } : {}}
+              className="px-4 py-1.5 rounded-lg text-xs font-semibold shadow-md transition-all font-medium"
+              style={{ backgroundColor: theme.accent, color: '#0d1117' }}
             >
-              {isPast ? 'History Locked' : 'Update Task'}
+              Update Task
             </button>
           </div>
         </form>

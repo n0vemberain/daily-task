@@ -68,9 +68,9 @@ describe('User & Guest Accounts Management', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Fatin Ishraque')).toBeInTheDocument();
-      expect(screen.getByText('@n0vemberain')).toBeInTheDocument();
+      expect(screen.getAllByText('@n0vemberain')[0]).toBeInTheDocument();
       expect(screen.getByText('Rahim Khan')).toBeInTheDocument();
-      expect(screen.getByText('@rahim_guest')).toBeInTheDocument();
+      expect(screen.getAllByText('@rahim_guest')[0]).toBeInTheDocument();
     });
   });
 

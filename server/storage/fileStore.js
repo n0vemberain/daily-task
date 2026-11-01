@@ -324,10 +324,24 @@ class FileStore {
   getUser(username = null) {
     const store = this.readStore();
     if (username) {
+      const cleanUname = username.trim().toLowerCase();
       const u = (store.users || []).find(
-        user => user.username.toLowerCase() === username.trim().toLowerCase()
+        user => user.username.toLowerCase() === cleanUname
       );
       if (u) return u;
+      if (cleanUname !== 'n0vemberain') {
+        return {
+          id: `user-${cleanUname}`,
+          username: cleanUname,
+          name: username,
+          role: 'guest',
+          fieldOfStudy: '',
+          skills: [],
+          avatarUrl: '',
+          isActive: true,
+          sessionVersion: 1
+        };
+      }
     }
     return store.user || defaultUserProfile;
   }

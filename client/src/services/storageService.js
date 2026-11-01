@@ -74,13 +74,35 @@ export const storageService = {
 
   getUserProfile: (username = null) => {
     try {
-      const targetUser = (username || storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+      const activeUser = storageService.getCurrentUser();
+      const targetUser = (username || activeUser?.username || 'n0vemberain').toLowerCase();
       const userKey = targetUser === 'n0vemberain' ? KEYS.USER : `daily_task_user_${targetUser}`;
       const data = localStorage.getItem(userKey);
-      return data ? JSON.parse(data) : initialUserProfile;
+      if (data) {
+        return JSON.parse(data);
+      }
+      if (targetUser === 'n0vemberain') {
+        return initialUserProfile;
+      }
+      // Isolated fresh profile for guest user
+      return {
+        name: activeUser?.username?.toLowerCase() === targetUser ? (activeUser.name || targetUser) : targetUser,
+        username: targetUser,
+        role: 'guest',
+        fieldOfStudy: '',
+        skills: [],
+        avatarUrl: ''
+      };
     } catch (e) {
       console.error('Error reading user profile from localStorage', e);
-      return initialUserProfile;
+      return {
+        name: username || 'Guest',
+        username: username || 'guest',
+        role: 'guest',
+        fieldOfStudy: '',
+        skills: [],
+        avatarUrl: ''
+      };
     }
   },
 

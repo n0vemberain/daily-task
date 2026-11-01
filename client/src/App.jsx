@@ -206,10 +206,11 @@ export default function App() {
 
   // Handlers for Authentication
   const handleLoginSuccess = ({ rememberMe, username, user }) => {
+    const uname = (user?.username || username || 'guest').toLowerCase();
     const activeUser = user || {
-      username: username || 'n0vemberain',
-      name: userProfile?.name || 'Fatin Ishraque',
-      role: 'admin',
+      username: uname,
+      name: uname === 'n0vemberain' ? 'Fatin Ishraque' : uname,
+      role: uname === 'n0vemberain' ? 'admin' : 'guest',
       sessionVersion: 1
     };
     setCurrentUser(activeUser);
@@ -217,11 +218,17 @@ export default function App() {
     setIsAuthenticated(true);
     localStorage.setItem('daily_task_auth_session', 'true');
 
-    const uname = (activeUser.username || 'n0vemberain').toLowerCase();
-    setUserProfile(storageService.getUserProfile(uname));
-    setTasks(storageService.getTasks(uname));
-    setChallenges(storageService.getChallenges(uname));
-    setTimerSessions(storageService.getTimerSessions(uname));
+    // Isolate and apply profile for the authenticated user
+    const isolatedProfile = user || storageService.getUserProfile(uname);
+    setUserProfile(isolatedProfile);
+    storageService.saveUserProfile(isolatedProfile, uname);
+
+    const userTasks = storageService.getTasks(uname);
+    const userChallenges = storageService.getChallenges(uname);
+    const userSessions = storageService.getTimerSessions(uname);
+    setTasks(userTasks);
+    setChallenges(userChallenges);
+    setTimerSessions(userSessions);
 
     apiService
       .getFullData(uname, activeUser.sessionVersion)
@@ -258,14 +265,20 @@ export default function App() {
   const handleSignOut = () => {
     setIsAuthenticated(false);
     storageService.clearCurrentSession();
+    setCurrentUser(null);
+    setUserProfile(null);
+    setTasks([]);
+    setChallenges([]);
+    setTimerSessions([]);
   };
 
   // Handlers for User Profile
   const handleSaveProfile = async (updated) => {
-    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
-    setUserProfile(updated);
-    storageService.saveUserProfile(updated, uname);
-    await apiService.updateProfile(updated);
+    const uname = (storageService.getCurrentUser()?.username || userProfile?.username || 'n0vemberain').toLowerCase();
+    const updatedWithUser = { ...updated, username: uname };
+    setUserProfile(updatedWithUser);
+    storageService.saveUserProfile(updatedWithUser, uname);
+    await apiService.updateProfile(updatedWithUser);
     const now = new Date().toISOString();
     setLastSyncTime(now);
     storageService.setLastSync(now);
@@ -274,8 +287,8 @@ export default function App() {
   // Handlers for Tasks with past-date protection
   const handleAddTask = async (newTask) => {
     const today = formatDateStr(new Date());
-    if (newTask.date && newTask.date < today) {
-      return; // Prevent creating tasks in the past
+    if (newTask.date && newTask.date < today && !newTask.allowPast) {
+      return; // Prevent creating tasks in the past unless authorized
     }
     const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
     const taskWithUser = { ...newTask, userId: uname };
@@ -286,13 +299,6 @@ export default function App() {
   };
 
   const handleToggleTask = async (taskId) => {
-    const today = formatDateStr(new Date());
-    const target = tasks.find((t) => t.id === taskId || t._id === taskId);
-    // Protect past tasks from being toggled (History is locked)
-    if (target && target.date < today) {
-      return;
-    }
-
     const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
     const updated = tasks.map((t) => {
       if (t.id === taskId || t._id === taskId) {
@@ -322,17 +328,6 @@ export default function App() {
 
   // Individual Task Edit Handler
   const handleEditTask = async (taskId, updatedFields) => {
-    const today = formatDateStr(new Date());
-    const target = tasks.find((t) => t.id === taskId || t._id === taskId);
-    // Prevent editing past tasks
-    if (target && target.date < today) {
-      return;
-    }
-    // Prevent moving tasks to past dates
-    if (updatedFields.date && updatedFields.date < today) {
-      return;
-    }
-
     const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
     const updated = tasks.map((t) => {
       if (t.id === taskId || t._id === taskId) {

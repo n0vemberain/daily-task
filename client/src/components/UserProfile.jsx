@@ -45,16 +45,25 @@ export default function UserProfile({
   onOpenCleanModal
 }) {
   const { theme } = useTheme();
-  const [name, setName] = useState(userProfile?.name || 'Fatin Ishraque');
-  const [username, setUsername] = useState(userProfile?.username || 'n0vemberain');
-  const [fieldOfStudy, setFieldOfStudy] = useState(
-    userProfile?.fieldOfStudy || 'Computer Science & Engineering'
-  );
-  const [skills, setSkills] = useState(userProfile?.skills || []);
+  const [name, setName] = useState(userProfile?.name || '');
+  const [username, setUsername] = useState(userProfile?.username || '');
+  const [fieldOfStudy, setFieldOfStudy] = useState(userProfile?.fieldOfStudy || '');
+  const [skills, setSkills] = useState(Array.isArray(userProfile?.skills) ? userProfile.skills : []);
   const [newSkillInput, setNewSkillInput] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(userProfile?.avatarUrl || '');
   const [savedAlert, setSavedAlert] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+
+  // Keep state synchronized with active user profile prop
+  useEffect(() => {
+    if (userProfile) {
+      setName(userProfile.name || '');
+      setUsername(userProfile.username || '');
+      setFieldOfStudy(userProfile.fieldOfStudy || '');
+      setSkills(Array.isArray(userProfile.skills) ? userProfile.skills : []);
+      setAvatarUrl(userProfile.avatarUrl || '');
+    }
+  }, [userProfile]);
 
   // Password Management: never expose raw password in input on load
   const [isChangingPassword, setIsChangingPassword] = useState(false);

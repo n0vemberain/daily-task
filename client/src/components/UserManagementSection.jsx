@@ -12,6 +12,7 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Copy,
   Check,
   CheckCircle2,
   AlertCircle,
@@ -28,6 +29,12 @@ export default function UserManagementSection({ currentUser, theme }) {
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
+
+  // Password visibility & clipboard state
+  const [revealedPasswords, setRevealedPasswords] = useState({});
+  const [alwaysShowPasswords, setAlwaysShowPasswords] = useState(true);
+  const [copiedKey, setCopiedKey] = useState(null);
+  const [showCurrentInModal, setShowCurrentInModal] = useState(false);
 
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -85,6 +92,23 @@ export default function UserManagementSection({ currentUser, theme }) {
     fetchUsers();
   }, [fetchUsers]);
 
+  const handleCopy = (text, key) => {
+    if (!text) return;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      soundEffects.playClick();
+      setTimeout(() => setCopiedKey(null), 2500);
+    }
+  };
+
+  const togglePasswordVisibility = (userId) => {
+    setRevealedPasswords((prev) => ({
+      ...prev,
+      [userId]: prev[userId] !== undefined ? !prev[userId] : !alwaysShowPasswords
+    }));
+  };
+
   // Open Edit Credentials Modal
   const handleOpenEdit = (user) => {
     setTargetUser(user);
@@ -96,6 +120,7 @@ export default function UserManagementSection({ currentUser, theme }) {
     setEditIsActive(user.isActive !== false);
     setAdminPasswordConfirm('');
     setEditError('');
+    setShowCurrentInModal(false);
     setIsEditModalOpen(true);
   };
 
@@ -325,7 +350,7 @@ export default function UserManagementSection({ currentUser, theme }) {
           </div>
         </div>
 
-        {/* Action Button: Add User */}
+        {/* Action Button: Add User & Passwords Toggle */}
         <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
           <button
             type="button"
@@ -335,6 +360,19 @@ export default function UserManagementSection({ currentUser, theme }) {
             title="Refresh user list"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setAlwaysShowPasswords((prev) => !prev)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-[#21262d] hover:bg-[#30363d] text-github-muted hover:text-white border border-github-border transition-colors whitespace-nowrap"
+            title={alwaysShowPasswords ? 'Mask all passwords' : 'Show all guest passwords'}
+          >
+            {alwaysShowPasswords ? (
+              <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+            ) : (
+              <Eye className="w-3.5 h-3.5" />
+            )}
+            <span>{alwaysShowPasswords ? 'Hide Passwords' : 'Show Passwords'}</span>
           </button>
           <button
             type="button"
@@ -459,9 +497,62 @@ export default function UserManagementSection({ currentUser, theme }) {
                     <div className="flex items-center gap-3 text-[11px] text-github-muted mt-1">
                       <span>{u.fieldOfStudy || 'General Activity'}</span>
                       <span>•</span>
-                      <span>Password: <strong className="font-mono text-github-muted">••••••••</strong></span>
-                      <span>•</span>
-                      <span className="font-mono">v{u.sessionVersion || 1}</span>
+                      <span className="font-mono">Session v{u.sessionVersion || 1}</span>
+                    </div>
+
+                    {/* Prominent Login Credentials Box (Username & Password with Copy & Reveal) */}
+                    <div className="flex items-center gap-2 flex-wrap text-xs mt-2.5 pt-2 border-t border-github-border/60">
+                      {/* Username Pill */}
+                      <div className="flex items-center gap-1.5 bg-[#0d1117] px-2.5 py-1 rounded-md border border-github-border">
+                        <span className="text-[10px] uppercase font-bold text-github-muted tracking-wider">ID:</span>
+                        <span className="font-mono text-white font-medium select-all">@{u.username}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(u.username, `user-${u.id}`)}
+                          className="text-github-muted hover:text-white p-0.5 rounded transition-colors ml-0.5"
+                          title="Copy Username / Login ID"
+                        >
+                          {copiedKey === `user-${u.id}` ? (
+                            <Check className="w-3 h-3 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Password Pill */}
+                      <div className="flex items-center gap-1.5 bg-[#0d1117] px-2.5 py-1 rounded-md border border-github-border">
+                        <span className="text-[10px] uppercase font-bold text-github-muted tracking-wider">Password:</span>
+                        <span className="font-mono text-emerald-400 font-semibold select-all">
+                          {(revealedPasswords[u.id] !== undefined ? revealedPasswords[u.id] : alwaysShowPasswords)
+                            ? (u.password || '••••••••')
+                            : '••••••••'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => togglePasswordVisibility(u.id)}
+                          className="text-github-muted hover:text-white p-0.5 rounded transition-colors ml-0.5"
+                          title={(revealedPasswords[u.id] !== undefined ? revealedPasswords[u.id] : alwaysShowPasswords) ? 'Hide Password' : 'Show Password'}
+                        >
+                          {(revealedPasswords[u.id] !== undefined ? revealedPasswords[u.id] : alwaysShowPasswords) ? (
+                            <EyeOff className="w-3 h-3 text-amber-400" />
+                          ) : (
+                            <Eye className="w-3 h-3 text-github-muted" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(u.password, `pass-${u.id}`)}
+                          className="text-github-muted hover:text-white p-0.5 rounded transition-colors"
+                          title="Copy Password"
+                        >
+                          {copiedKey === `pass-${u.id}` ? (
+                            <Check className="w-3 h-3 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -722,6 +813,44 @@ export default function UserManagementSection({ currentUser, theme }) {
                   onChange={(e) => setEditUsername(e.target.value)}
                   className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white font-mono outline-none"
                 />
+              </div>
+
+              {/* Current Password Display */}
+              <div className="p-2.5 rounded-lg bg-[#0d1117] border border-github-border flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-[10px] text-github-muted uppercase font-bold tracking-wider block">
+                    Current Password
+                  </span>
+                  <span className="font-mono text-emerald-400 font-semibold select-all mt-0.5 block">
+                    {showCurrentInModal ? (targetUser.password || 'N/A') : '••••••••'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentInModal((prev) => !prev)}
+                    className="p-1 rounded text-github-muted hover:text-white transition-colors"
+                    title={showCurrentInModal ? 'Hide password' : 'Show password'}
+                  >
+                    {showCurrentInModal ? (
+                      <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+                    ) : (
+                      <Eye className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(targetUser.password, 'modal-cur-pass')}
+                    className="p-1 rounded text-github-muted hover:text-white transition-colors"
+                    title="Copy current password"
+                  >
+                    {copiedKey === 'modal-cur-pass' ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div>

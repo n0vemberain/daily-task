@@ -334,7 +334,7 @@ export default function TaskManager({
           <div className="flex-1">
             <span className="font-semibold">History Locked:</span>
             <span className="ml-1 text-github-muted">
-              Tasks from past date ({selectedDate}) cannot be edited, toggled, or modified. Only task deletion is permitted.
+              Tasks from past date ({selectedDate}) require account password authorization to edit, toggle completion, or delete.
             </span>
           </div>
         </div>
