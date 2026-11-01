@@ -34,11 +34,12 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCleanCenterOpen, setIsCleanCenterOpen] = useState(false);
 
-  // Core State initialized from LocalStorage
-  const [userProfile, setUserProfile] = useState(() => storageService.getUserProfile());
-  const [tasks, setTasks] = useState(() => storageService.getTasks());
-  const [challenges, setChallenges] = useState(() => storageService.getChallenges());
-  const [timerSessions, setTimerSessions] = useState(() => storageService.getTimerSessions());
+  // Core State initialized from LocalStorage (Isolated per active user)
+  const [currentUser, setCurrentUser] = useState(() => storageService.getCurrentUser());
+  const [userProfile, setUserProfile] = useState(() => storageService.getUserProfile(storageService.getCurrentUser()?.username));
+  const [tasks, setTasks] = useState(() => storageService.getTasks(storageService.getCurrentUser()?.username));
+  const [challenges, setChallenges] = useState(() => storageService.getChallenges(storageService.getCurrentUser()?.username));
+  const [timerSessions, setTimerSessions] = useState(() => storageService.getTimerSessions(storageService.getCurrentUser()?.username));
 
   // Authentication State: MUST be explicitly true to access the dashboard
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -67,36 +68,47 @@ export default function App() {
     return status;
   }, []);
 
-  // Bi-directional full sync across devices
+  // Bi-directional full sync across devices with User Isolation
   const performSync = useCallback(
     async (currentData = null) => {
       setIsSyncing(true);
+      const activeUser = storageService.getCurrentUser();
+      const uname = (activeUser?.username || 'n0vemberain').toLowerCase();
       const dataToSync = currentData || {
-        user: storageService.getUserProfile(),
-        tasks: storageService.getTasks(),
-        challenges: storageService.getChallenges(),
-        timerSessions: storageService.getTimerSessions()
+        user: storageService.getUserProfile(uname),
+        tasks: storageService.getTasks(uname),
+        challenges: storageService.getChallenges(uname),
+        timerSessions: storageService.getTimerSessions(uname),
+        username: uname,
+        sessionVersion: activeUser?.sessionVersion || 1
       };
 
       const result = await apiService.syncAll(dataToSync);
       const now = new Date().toISOString();
 
+      if (result && result.sessionRevoked) {
+        setIsAuthenticated(false);
+        storageService.clearCurrentSession();
+        setIsSyncing(false);
+        return;
+      }
+
       if (result && result.success && result.data) {
         if (result.data.user) {
           setUserProfile(result.data.user);
-          storageService.saveUserProfile(result.data.user);
+          storageService.saveUserProfile(result.data.user, uname);
         }
         if (Array.isArray(result.data.tasks)) {
           setTasks(result.data.tasks);
-          storageService.saveTasks(result.data.tasks);
+          storageService.saveTasks(result.data.tasks, uname);
         }
         if (Array.isArray(result.data.challenges)) {
           setChallenges(result.data.challenges);
-          storageService.saveChallenges(result.data.challenges);
+          storageService.saveChallenges(result.data.challenges, uname);
         }
         if (Array.isArray(result.data.timerSessions)) {
           setTimerSessions(result.data.timerSessions);
-          storageService.saveTimerSessions(result.data.timerSessions);
+          storageService.saveTimerSessions(result.data.timerSessions, uname);
         }
         setMongoStatus({ connected: true, isMongoConnected: !!result.data.isMongoConnected });
       }
@@ -109,32 +121,43 @@ export default function App() {
   );
 
   useEffect(() => {
-    // Initial fetch from central server on mount so new devices immediately get server data
-    apiService.getFullData().then((res) => {
-      if (res && res.success && res.data) {
-        if (res.data.user) {
-          setUserProfile(res.data.user);
-          storageService.saveUserProfile(res.data.user);
-        }
-        if (Array.isArray(res.data.tasks)) {
-          setTasks(res.data.tasks);
-          storageService.saveTasks(res.data.tasks);
-        }
-        if (Array.isArray(res.data.challenges)) {
-          setChallenges(res.data.challenges);
-          storageService.saveChallenges(res.data.challenges);
-        }
-        if (Array.isArray(res.data.timerSessions)) {
-          setTimerSessions(res.data.timerSessions);
-          storageService.saveTimerSessions(res.data.timerSessions);
-        }
-      }
-      checkServerStatus();
-    }).catch(() => {
-      checkServerStatus();
-    });
+    const activeUser = storageService.getCurrentUser();
+    const uname = (activeUser?.username || 'n0vemberain').toLowerCase();
 
-    // Periodic background sync every 20 seconds to keep all open devices in sync
+    // Initial fetch from central server on mount
+    apiService
+      .getFullData(uname, activeUser?.sessionVersion)
+      .then((res) => {
+        if (res && res.sessionRevoked) {
+          setIsAuthenticated(false);
+          storageService.clearCurrentSession();
+          return;
+        }
+        if (res && res.success && res.data) {
+          if (res.data.user) {
+            setUserProfile(res.data.user);
+            storageService.saveUserProfile(res.data.user, uname);
+          }
+          if (Array.isArray(res.data.tasks)) {
+            setTasks(res.data.tasks);
+            storageService.saveTasks(res.data.tasks, uname);
+          }
+          if (Array.isArray(res.data.challenges)) {
+            setChallenges(res.data.challenges);
+            storageService.saveChallenges(res.data.challenges, uname);
+          }
+          if (Array.isArray(res.data.timerSessions)) {
+            setTimerSessions(res.data.timerSessions);
+            storageService.saveTimerSessions(res.data.timerSessions, uname);
+          }
+        }
+        checkServerStatus();
+      })
+      .catch(() => {
+        checkServerStatus();
+      });
+
+    // Periodic background sync every 20 seconds
     const interval = setInterval(() => {
       performSync();
     }, 20000);
@@ -148,28 +171,68 @@ export default function App() {
       const today = formatDateStr(new Date());
       const { updatedTasks, hasChanges } = processChallengeTaskRollovers(tasks, challenges, today);
       if (hasChanges) {
+        const uname = storageService.getCurrentUser()?.username || 'n0vemberain';
         setTasks(updatedTasks);
-        storageService.saveTasks(updatedTasks);
-        performSync({ user: userProfile, tasks: updatedTasks, challenges });
+        storageService.saveTasks(updatedTasks, uname);
+        performSync({ user: userProfile, tasks: updatedTasks, challenges, username: uname });
       }
     }
   }, [challenges, tasks, userProfile, performSync]);
 
   // Handlers for Authentication
-  const handleLoginSuccess = ({ rememberMe, username }) => {
+  const handleLoginSuccess = ({ rememberMe, username, user }) => {
+    const activeUser = user || {
+      username: username || 'n0vemberain',
+      name: userProfile?.name || 'Fatin Ishraque',
+      role: 'admin',
+      sessionVersion: 1
+    };
+    setCurrentUser(activeUser);
+    storageService.saveCurrentUser(activeUser);
     setIsAuthenticated(true);
     localStorage.setItem('daily_task_auth_session', 'true');
+
+    const uname = (activeUser.username || 'n0vemberain').toLowerCase();
+    setUserProfile(storageService.getUserProfile(uname));
+    setTasks(storageService.getTasks(uname));
+    setChallenges(storageService.getChallenges(uname));
+    setTimerSessions(storageService.getTimerSessions(uname));
+
+    apiService
+      .getFullData(uname, activeUser.sessionVersion)
+      .then((res) => {
+        if (res && res.success && res.data) {
+          if (res.data.user) {
+            setUserProfile(res.data.user);
+            storageService.saveUserProfile(res.data.user, uname);
+          }
+          if (Array.isArray(res.data.tasks)) {
+            setTasks(res.data.tasks);
+            storageService.saveTasks(res.data.tasks, uname);
+          }
+          if (Array.isArray(res.data.challenges)) {
+            setChallenges(res.data.challenges);
+            storageService.saveChallenges(res.data.challenges, uname);
+          }
+          if (Array.isArray(res.data.timerSessions)) {
+            setTimerSessions(res.data.timerSessions);
+            storageService.saveTimerSessions(res.data.timerSessions, uname);
+          }
+        }
+      })
+      .catch(() => {});
   };
 
   const handleSignOut = () => {
     setIsAuthenticated(false);
-    localStorage.removeItem('daily_task_auth_session');
+    storageService.clearCurrentSession();
   };
 
   // Handlers for User Profile
   const handleSaveProfile = async (updated) => {
+    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
     setUserProfile(updated);
-    storageService.saveUserProfile(updated);
+    storageService.saveUserProfile(updated, uname);
     await apiService.updateProfile(updated);
     const now = new Date().toISOString();
     setLastSyncTime(now);
@@ -182,10 +245,12 @@ export default function App() {
     if (newTask.date && newTask.date < today) {
       return; // Prevent creating tasks in the past
     }
-    const updated = [newTask, ...tasks];
+    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+    const taskWithUser = { ...newTask, userId: uname };
+    const updated = [taskWithUser, ...tasks];
     setTasks(updated);
-    storageService.saveTasks(updated);
-    await apiService.createTask(newTask);
+    storageService.saveTasks(updated, uname);
+    await apiService.createTask(taskWithUser);
   };
 
   const handleToggleTask = async (taskId) => {
@@ -196,6 +261,7 @@ export default function App() {
       return;
     }
 
+    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
     const updated = tasks.map((t) => {
       if (t.id === taskId || t._id === taskId) {
         const nextCompleted = !t.completed;
@@ -211,13 +277,14 @@ export default function App() {
     });
 
     setTasks(updated);
-    storageService.saveTasks(updated);
+    storageService.saveTasks(updated, uname);
   };
 
   const handleDeleteTask = async (taskId) => {
+    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
     const updated = tasks.filter((t) => t.id !== taskId && t._id !== taskId);
     setTasks(updated);
-    storageService.saveTasks(updated);
+    storageService.saveTasks(updated, uname);
     await apiService.deleteTask(taskId);
   };
 
@@ -234,6 +301,7 @@ export default function App() {
       return;
     }
 
+    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
     const updated = tasks.map((t) => {
       if (t.id === taskId || t._id === taskId) {
         const patched = { ...t, ...updatedFields };
@@ -244,7 +312,7 @@ export default function App() {
     });
 
     setTasks(updated);
-    storageService.saveTasks(updated);
+    storageService.saveTasks(updated, uname);
   };
 
   // Handlers for Challenges
@@ -265,8 +333,10 @@ export default function App() {
       completedAt: null
     }));
 
+    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
     const newChallenge = {
       id: `ch-${Date.now()}`,
+      userId: uname,
       title,
       description,
       category,
@@ -279,7 +349,7 @@ export default function App() {
 
     const updated = [newChallenge, ...challenges];
     setChallenges(updated);
-    storageService.saveChallenges(updated);
+    storageService.saveChallenges(updated, uname);
     await apiService.createChallenge(newChallenge);
   };
 
@@ -395,15 +465,17 @@ export default function App() {
 
   // Focus Timer Session Handlers
   const handleAddTimerSession = (session) => {
+    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
     const updated = [session, ...timerSessions];
     setTimerSessions(updated);
-    storageService.saveTimerSessions(updated);
+    storageService.saveTimerSessions(updated, uname);
   };
 
   const handleDeleteTimerSession = (sessionId) => {
+    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
     const updated = timerSessions.filter((s) => s.id !== sessionId);
     setTimerSessions(updated);
-    storageService.saveTimerSessions(updated);
+    storageService.saveTimerSessions(updated, uname);
   };
 
   // Data Clean Handlers
@@ -599,6 +671,7 @@ export default function App() {
         {activeTab === 'profile' && (
           <UserProfile
             userProfile={userProfile}
+            currentUser={currentUser}
             onSaveProfile={handleSaveProfile}
             mongoStatus={mongoStatus}
             lastSyncTime={lastSyncTime}

@@ -11,6 +11,7 @@ import userRoutes from './routes/userRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import challengeRoutes from './routes/challengeRoutes.js';
 import syncRoutes from './routes/syncRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 
 dotenv.config();
 
@@ -107,6 +108,7 @@ app.get('/api/network-access', (req, res) => {
 });
 
 // Routes - Fully operational with Persistent FileStore & MongoDB auto-fallback
+app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/challenges', challengeRoutes);

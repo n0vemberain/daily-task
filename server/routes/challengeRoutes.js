@@ -7,10 +7,11 @@ const router = express.Router();
 
 const isMongoActive = () => mongoose.connection && mongoose.connection.readyState === 1;
 
-// Get all challenges
+// Get all challenges (with optional user isolation)
 router.get('/', async (req, res) => {
   try {
-    const challenges = fileStore.getChallenges();
+    const { username } = req.query;
+    const challenges = fileStore.getChallenges(username);
     res.json({ success: true, data: challenges });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -20,12 +21,12 @@ router.get('/', async (req, res) => {
 // Create challenge
 router.post('/', async (req, res) => {
   try {
-    const { title, durationDays, startDate } = req.body;
+    const { title, durationDays, startDate, userId } = req.body;
     if (!title || !durationDays || !startDate) {
       return res.status(400).json({ success: false, message: 'Title, durationDays and startDate are required' });
     }
 
-    const challenge = fileStore.createChallenge(req.body);
+    const challenge = fileStore.createChallenge(req.body, userId);
 
     if (isMongoActive()) {
       try {

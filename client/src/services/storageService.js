@@ -1,6 +1,9 @@
 import { initialUserProfile, initialTasks, initialChallenges, initialTimerSessions } from '../data/initialData';
 
 const KEYS = {
+  CURRENT_USER: 'daily_task_current_user',
+  AUTH_SESSION: 'daily_task_auth_session',
+  ALL_USERS: 'daily_task_all_users_v1',
   USER: 'daily_task_user_v1',
   TASKS: 'daily_task_tasks_v1',
   CHALLENGES: 'daily_task_challenges_v1',
@@ -9,9 +12,71 @@ const KEYS = {
 };
 
 export const storageService = {
-  getUserProfile: () => {
+  // Current active user session
+  getCurrentUser: () => {
     try {
-      const data = localStorage.getItem(KEYS.USER);
+      const data = localStorage.getItem(KEYS.CURRENT_USER);
+      return data
+        ? JSON.parse(data)
+        : {
+            ...initialUserProfile,
+            role: 'admin',
+            isActive: true,
+            sessionVersion: 1
+          };
+    } catch (e) {
+      return {
+        ...initialUserProfile,
+        role: 'admin',
+        isActive: true,
+        sessionVersion: 1
+      };
+    }
+  },
+
+  saveCurrentUser: (user) => {
+    try {
+      localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(user));
+      return true;
+    } catch (e) {
+      console.error('Error saving current user to localStorage', e);
+      return false;
+    }
+  },
+
+  clearCurrentSession: () => {
+    try {
+      localStorage.removeItem(KEYS.CURRENT_USER);
+      localStorage.removeItem(KEYS.AUTH_SESSION);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  getAllUsers: () => {
+    try {
+      const data = localStorage.getItem(KEYS.ALL_USERS);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  saveAllUsers: (users) => {
+    try {
+      localStorage.setItem(KEYS.ALL_USERS, JSON.stringify(users));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  getUserProfile: (username = null) => {
+    try {
+      const targetUser = (username || storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+      const userKey = targetUser === 'n0vemberain' ? KEYS.USER : `daily_task_user_${targetUser}`;
+      const data = localStorage.getItem(userKey);
       return data ? JSON.parse(data) : initialUserProfile;
     } catch (e) {
       console.error('Error reading user profile from localStorage', e);
@@ -19,9 +84,11 @@ export const storageService = {
     }
   },
 
-  saveUserProfile: (user) => {
+  saveUserProfile: (user, username = null) => {
     try {
-      localStorage.setItem(KEYS.USER, JSON.stringify(user));
+      const targetUser = (username || user?.username || storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+      const userKey = targetUser === 'n0vemberain' ? KEYS.USER : `daily_task_user_${targetUser}`;
+      localStorage.setItem(userKey, JSON.stringify(user));
       return true;
     } catch (e) {
       console.error('Error saving user profile to localStorage', e);
@@ -29,23 +96,30 @@ export const storageService = {
     }
   },
 
-  getTasks: () => {
+  getTasks: (username = null) => {
     try {
-      const data = localStorage.getItem(KEYS.TASKS);
+      const targetUser = (username || storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+      const userKey = targetUser === 'n0vemberain' ? KEYS.TASKS : `daily_task_tasks_${targetUser}`;
+      const data = localStorage.getItem(userKey);
       if (data !== null) return JSON.parse(data);
-      if (localStorage.getItem('daily_task_initialized') === 'true') {
-        return [];
+      if (targetUser === 'n0vemberain') {
+        if (localStorage.getItem('daily_task_initialized') === 'true') {
+          return [];
+        }
+        return initialTasks;
       }
-      return initialTasks;
+      return [];
     } catch (e) {
       console.error('Error reading tasks from localStorage', e);
       return [];
     }
   },
 
-  saveTasks: (tasks) => {
+  saveTasks: (tasks, username = null) => {
     try {
-      localStorage.setItem(KEYS.TASKS, JSON.stringify(tasks));
+      const targetUser = (username || storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+      const userKey = targetUser === 'n0vemberain' ? KEYS.TASKS : `daily_task_tasks_${targetUser}`;
+      localStorage.setItem(userKey, JSON.stringify(tasks));
       return true;
     } catch (e) {
       console.error('Error saving tasks to localStorage', e);
@@ -53,19 +127,27 @@ export const storageService = {
     }
   },
 
-  getChallenges: () => {
+  getChallenges: (username = null) => {
     try {
-      const data = localStorage.getItem(KEYS.CHALLENGES);
-      return data ? JSON.parse(data) : initialChallenges;
+      const targetUser = (username || storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+      const userKey = targetUser === 'n0vemberain' ? KEYS.CHALLENGES : `daily_task_challenges_${targetUser}`;
+      const data = localStorage.getItem(userKey);
+      if (data !== null) return JSON.parse(data);
+      if (targetUser === 'n0vemberain') {
+        return initialChallenges;
+      }
+      return [];
     } catch (e) {
       console.error('Error reading challenges from localStorage', e);
-      return initialChallenges;
+      return [];
     }
   },
 
-  saveChallenges: (challenges) => {
+  saveChallenges: (challenges, username = null) => {
     try {
-      localStorage.setItem(KEYS.CHALLENGES, JSON.stringify(challenges));
+      const targetUser = (username || storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+      const userKey = targetUser === 'n0vemberain' ? KEYS.CHALLENGES : `daily_task_challenges_${targetUser}`;
+      localStorage.setItem(userKey, JSON.stringify(challenges));
       return true;
     } catch (e) {
       console.error('Error saving challenges to localStorage', e);
@@ -73,19 +155,27 @@ export const storageService = {
     }
   },
 
-  getTimerSessions: () => {
+  getTimerSessions: (username = null) => {
     try {
-      const data = localStorage.getItem(KEYS.TIMER_SESSIONS);
-      return data ? JSON.parse(data) : initialTimerSessions;
+      const targetUser = (username || storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+      const userKey = targetUser === 'n0vemberain' ? KEYS.TIMER_SESSIONS : `daily_task_timer_sessions_${targetUser}`;
+      const data = localStorage.getItem(userKey);
+      if (data !== null) return JSON.parse(data);
+      if (targetUser === 'n0vemberain') {
+        return initialTimerSessions;
+      }
+      return [];
     } catch (e) {
       console.error('Error reading timer sessions from localStorage', e);
-      return initialTimerSessions;
+      return [];
     }
   },
 
-  saveTimerSessions: (sessions) => {
+  saveTimerSessions: (sessions, username = null) => {
     try {
-      localStorage.setItem(KEYS.TIMER_SESSIONS, JSON.stringify(sessions));
+      const targetUser = (username || storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+      const userKey = targetUser === 'n0vemberain' ? KEYS.TIMER_SESSIONS : `daily_task_timer_sessions_${targetUser}`;
+      localStorage.setItem(userKey, JSON.stringify(sessions));
       return true;
     } catch (e) {
       console.error('Error saving timer sessions to localStorage', e);

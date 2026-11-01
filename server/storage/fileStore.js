@@ -215,14 +215,57 @@ class FileStore {
       }
 
       if (!fs.existsSync(STORE_FILE)) {
+        const adminUser = {
+          id: 'user-admin',
+          username: defaultUserProfile.username.trim().toLowerCase(),
+          password: defaultUserProfile.password,
+          name: defaultUserProfile.name,
+          role: 'admin',
+          fieldOfStudy: defaultUserProfile.fieldOfStudy,
+          skills: defaultUserProfile.skills,
+          avatarUrl: defaultUserProfile.avatarUrl,
+          isActive: true,
+          sessionVersion: 1,
+          createdAt: new Date().toISOString()
+        };
         const initial = {
           user: defaultUserProfile,
-          tasks: defaultTasks,
-          challenges: defaultChallenges,
-          timerSessions: defaultTimerSessions,
+          users: [adminUser],
+          tasks: defaultTasks.map(t => ({ ...t, userId: 'n0vemberain' })),
+          challenges: defaultChallenges.map(c => ({ ...c, userId: 'n0vemberain' })),
+          timerSessions: defaultTimerSessions.map(s => ({ ...s, userId: 'n0vemberain' })),
           lastUpdated: new Date().toISOString()
         };
         fs.writeFileSync(STORE_FILE, JSON.stringify(initial, null, 2), 'utf8');
+      } else {
+        const raw = fs.readFileSync(STORE_FILE, 'utf8');
+        const parsed = JSON.parse(raw);
+        let updated = false;
+
+        if (!Array.isArray(parsed.users) || parsed.users.length === 0) {
+          const adminUser = {
+            id: 'user-admin',
+            username: (parsed.user?.username || 'n0vemberain').trim().toLowerCase(),
+            password: parsed.user?.password || 'Password123!',
+            name: parsed.user?.name || 'Fatin Ishraque',
+            role: 'admin',
+            fieldOfStudy: parsed.user?.fieldOfStudy || 'Computer Science & Engineering',
+            skills: parsed.user?.skills || [],
+            avatarUrl: parsed.user?.avatarUrl || '',
+            isActive: true,
+            sessionVersion: 1,
+            createdAt: new Date().toISOString()
+          };
+          parsed.users = [adminUser];
+          if (!parsed.user.role) {
+            parsed.user.role = 'admin';
+          }
+          updated = true;
+        }
+
+        if (updated) {
+          fs.writeFileSync(STORE_FILE, JSON.stringify(parsed, null, 2), 'utf8');
+        }
       }
     } catch (e) {
       console.error('[FileStore] Initialization error:', e);
@@ -233,11 +276,30 @@ class FileStore {
     this.ensureInitialized();
     try {
       const raw = fs.readFileSync(STORE_FILE, 'utf8');
-      return JSON.parse(raw);
+      const store = JSON.parse(raw);
+      if (!Array.isArray(store.users) || store.users.length === 0) {
+        store.users = [
+          {
+            id: 'user-admin',
+            username: (store.user?.username || 'n0vemberain').trim().toLowerCase(),
+            password: store.user?.password || 'Password123!',
+            name: store.user?.name || 'Fatin Ishraque',
+            role: 'admin',
+            fieldOfStudy: store.user?.fieldOfStudy || 'Computer Science & Engineering',
+            skills: store.user?.skills || [],
+            avatarUrl: store.user?.avatarUrl || '',
+            isActive: true,
+            sessionVersion: 1,
+            createdAt: new Date().toISOString()
+          }
+        ];
+      }
+      return store;
     } catch (e) {
       console.error('[FileStore] Read error:', e);
       return {
         user: defaultUserProfile,
+        users: [],
         tasks: defaultTasks,
         challenges: defaultChallenges,
         timerSessions: defaultTimerSessions,
@@ -259,39 +321,238 @@ class FileStore {
   }
 
   // Profile operations
-  getUser() {
+  getUser(username = null) {
     const store = this.readStore();
+    if (username) {
+      const u = (store.users || []).find(
+        user => user.username.toLowerCase() === username.trim().toLowerCase()
+      );
+      if (u) return u;
+    }
     return store.user || defaultUserProfile;
   }
 
-  updateUser(userData) {
+  updateUser(userData, username = null) {
     const store = this.readStore();
-    store.user = {
-      ...(store.user || defaultUserProfile),
-      ...userData
-    };
+    const targetUsername = (username || userData.username || store.user?.username || 'n0vemberain')
+      .trim()
+      .toLowerCase();
+
+    // Update in users array
+    const userIdx = (store.users || []).findIndex(
+      u => u.username.toLowerCase() === targetUsername
+    );
+
+    if (userIdx !== -1) {
+      store.users[userIdx] = {
+        ...store.users[userIdx],
+        ...userData
+      };
+    }
+
+    // Mirror to store.user if admin
+    if (targetUsername === 'n0vemberain' || store.users[userIdx]?.role === 'admin') {
+      store.user = {
+        ...(store.user || defaultUserProfile),
+        ...userData
+      };
+    }
+
     this.writeStore(store);
-    return store.user;
+    return userIdx !== -1 ? store.users[userIdx] : store.user;
   }
 
-  // Task operations
-  getTasks(filterDate = null) {
+  // User Management operations (Multi-User, Guest accounts, Credentials & Session management)
+  getUsers() {
     const store = this.readStore();
-    const tasks = store.tasks || [];
+    return store.users || [];
+  }
+
+  getUserByUsername(username) {
+    if (!username) return null;
+    const store = this.readStore();
+    const clean = username.trim().toLowerCase();
+    return (store.users || []).find(u => u.username.toLowerCase() === clean) || null;
+  }
+
+  getUserById(userId) {
+    if (!userId) return null;
+    const store = this.readStore();
+    return (store.users || []).find(u => u.id === userId) || null;
+  }
+
+  createUser({ username, password, name, role = 'guest', fieldOfStudy = '', skills = [], avatarUrl = '' }) {
+    if (!username || !username.trim()) {
+      throw new Error('Username / Login ID is required.');
+    }
+    if (!password || password.trim().length < 4) {
+      throw new Error('Password must be at least 4 characters long.');
+    }
+    if (!name || !name.trim()) {
+      throw new Error('User full name is required.');
+    }
+
+    const cleanUsername = username.trim().toLowerCase();
+    const store = this.readStore();
+
+    if ((store.users || []).some(u => u.username.toLowerCase() === cleanUsername)) {
+      throw new Error(`Username "${username}" is already registered. Please choose another.`);
+    }
+
+    const newUser = {
+      id: `user-${Date.now()}`,
+      username: cleanUsername,
+      password: password.trim(),
+      name: name.trim(),
+      role: role === 'admin' ? 'admin' : 'guest',
+      fieldOfStudy: (fieldOfStudy || 'General').trim(),
+      skills: Array.isArray(skills) ? skills : [],
+      avatarUrl: avatarUrl || '',
+      isActive: true,
+      sessionVersion: 1,
+      createdAt: new Date().toISOString()
+    };
+
+    store.users = [...(store.users || []), newUser];
+    this.writeStore(store);
+    return newUser;
+  }
+
+  updateUserCredentials(userId, updates) {
+    const store = this.readStore();
+    const userIndex = (store.users || []).findIndex(u => u.id === userId);
+    if (userIndex === -1) {
+      throw new Error('User not found.');
+    }
+
+    const current = store.users[userIndex];
+    let nextUsername = current.username;
+
+    if (updates.username && updates.username.trim().toLowerCase() !== current.username.toLowerCase()) {
+      const cleanNew = updates.username.trim().toLowerCase();
+      if (store.users.some(u => u.id !== userId && u.username.toLowerCase() === cleanNew)) {
+        throw new Error(`Username "${updates.username}" is already taken.`);
+      }
+      nextUsername = cleanNew;
+    }
+
+    const passwordChanged = updates.password && updates.password.trim() !== current.password;
+    const usernameChanged = nextUsername !== current.username;
+
+    const updatedUser = {
+      ...current,
+      name: updates.name !== undefined ? updates.name.trim() : current.name,
+      username: nextUsername,
+      password: updates.password !== undefined && updates.password.trim() ? updates.password.trim() : current.password,
+      role: updates.role !== undefined ? updates.role : current.role,
+      fieldOfStudy: updates.fieldOfStudy !== undefined ? updates.fieldOfStudy : current.fieldOfStudy,
+      skills: updates.skills !== undefined ? updates.skills : current.skills,
+      avatarUrl: updates.avatarUrl !== undefined ? updates.avatarUrl : current.avatarUrl,
+      isActive: updates.isActive !== undefined ? Boolean(updates.isActive) : current.isActive,
+      sessionVersion: (passwordChanged || usernameChanged) ? (current.sessionVersion || 1) + 1 : (current.sessionVersion || 1)
+    };
+
+    store.users[userIndex] = updatedUser;
+
+    // If updating admin, mirror to store.user
+    if (updatedUser.role === 'admin' || updatedUser.username === 'n0vemberain') {
+      store.user = { ...(store.user || {}), ...updatedUser };
+    }
+
+    this.writeStore(store);
+    return updatedUser;
+  }
+
+  forceLogoutUser(userId) {
+    const store = this.readStore();
+    const user = (store.users || []).find(u => u.id === userId);
+    if (!user) {
+      throw new Error('User not found.');
+    }
+
+    user.sessionVersion = (user.sessionVersion || 1) + 1;
+    user.lastForceLogoutAt = new Date().toISOString();
+
+    if (user.role === 'admin' || user.username === 'n0vemberain') {
+      if (store.user) store.user.sessionVersion = user.sessionVersion;
+    }
+
+    this.writeStore(store);
+    return {
+      success: true,
+      message: `Active session for user ${user.username} has been terminated.`,
+      sessionVersion: user.sessionVersion
+    };
+  }
+
+  toggleUserStatus(userId) {
+    const store = this.readStore();
+    const user = (store.users || []).find(u => u.id === userId);
+    if (!user) {
+      throw new Error('User not found.');
+    }
+    if (user.role === 'admin' || user.username === 'n0vemberain') {
+      throw new Error('Cannot deactivate the primary administrator account.');
+    }
+
+    user.isActive = !user.isActive;
+    if (!user.isActive) {
+      user.sessionVersion = (user.sessionVersion || 1) + 1;
+    }
+
+    this.writeStore(store);
+    return user;
+  }
+
+  deleteUser(userId) {
+    const store = this.readStore();
+    const user = (store.users || []).find(u => u.id === userId);
+    if (!user) {
+      throw new Error('User not found.');
+    }
+    if (user.role === 'admin' || user.username === 'n0vemberain') {
+      throw new Error('Cannot delete the primary administrator account.');
+    }
+
+    const username = user.username;
+    // Remove user
+    store.users = (store.users || []).filter(u => u.id !== userId);
+    // Isolate & delete associated tasks and challenges for this user
+    store.tasks = (store.tasks || []).filter(t => (t.userId || 'n0vemberain').toLowerCase() !== username.toLowerCase());
+    store.challenges = (store.challenges || []).filter(c => (c.userId || 'n0vemberain').toLowerCase() !== username.toLowerCase());
+    store.timerSessions = (store.timerSessions || []).filter(s => (s.userId || 'n0vemberain').toLowerCase() !== username.toLowerCase());
+
+    this.writeStore(store);
+    return true;
+  }
+
+  // Task operations with User Isolation
+  getTasks(filterDate = null, username = null) {
+    const store = this.readStore();
+    let tasks = store.tasks || [];
+    if (username) {
+      const cleanUser = username.trim().toLowerCase();
+      tasks = tasks.filter(t => {
+        const itemUser = (t.userId || 'n0vemberain').toLowerCase();
+        return itemUser === cleanUser;
+      });
+    }
     if (filterDate) {
       return tasks.filter(t => t.date === filterDate);
     }
     return tasks;
   }
 
-  createTask(taskData) {
+  createTask(taskData, username = null) {
     const today = formatDate(new Date());
     if (taskData.date && taskData.date < today) {
       throw new Error('Cannot create tasks with past dates. History is locked.');
     }
     const store = this.readStore();
+    const targetUser = (taskData.userId || username || 'n0vemberain').trim().toLowerCase();
     const newTask = {
       id: taskData.id || `task-${Date.now()}`,
+      userId: targetUser,
       title: taskData.title,
       category: taskData.category || 'General',
       priority: taskData.priority || 'Medium',
@@ -360,13 +621,21 @@ class FileStore {
     return store.tasks.length < prevLength;
   }
 
-  // Challenge operations
-  getChallenges() {
+  // Challenge operations with User Isolation
+  getChallenges(username = null) {
     const store = this.readStore();
-    return store.challenges || [];
+    let challenges = store.challenges || [];
+    if (username) {
+      const cleanUser = username.trim().toLowerCase();
+      challenges = challenges.filter(c => {
+        const itemUser = (c.userId || 'n0vemberain').toLowerCase();
+        return itemUser === cleanUser;
+      });
+    }
+    return challenges;
   }
 
-  createChallenge(challengeData) {
+  createChallenge(challengeData, username = null) {
     const store = this.readStore();
     const duration = parseInt(challengeData.durationDays, 10) || 7;
     const addDaysFn = (dStr, days) => {
@@ -383,8 +652,10 @@ class FileStore {
       completedAt: null
     }));
 
+    const targetUser = (challengeData.userId || username || 'n0vemberain').trim().toLowerCase();
     const newChallenge = {
       id: challengeData.id || `ch-${Date.now()}`,
+      userId: targetUser,
       title: challengeData.title,
       description: challengeData.description || '',
       category: challengeData.category || 'Habit',
@@ -442,16 +713,26 @@ class FileStore {
     return true;
   }
 
-  // Timer sessions operations
-  getTimerSessions() {
+  // Timer sessions operations with User Isolation
+  getTimerSessions(username = null) {
     const store = this.readStore();
-    return store.timerSessions || [];
+    let sessions = store.timerSessions || [];
+    if (username) {
+      const cleanUser = username.trim().toLowerCase();
+      sessions = sessions.filter(s => {
+        const itemUser = (s.userId || 'n0vemberain').toLowerCase();
+        return itemUser === cleanUser;
+      });
+    }
+    return sessions;
   }
 
-  addTimerSession(sessionData) {
+  addTimerSession(sessionData, username = null) {
     const store = this.readStore();
+    const targetUser = (sessionData.userId || username || 'n0vemberain').trim().toLowerCase();
     const newSession = {
       id: sessionData.id || `ts-${Date.now()}`,
+      userId: targetUser,
       durationMinutes: parseInt(sessionData.durationMinutes, 10) || 25,
       date: sessionData.date || todayStr,
       timestamp: sessionData.timestamp || new Date().toISOString(),
@@ -471,102 +752,146 @@ class FileStore {
     return true;
   }
 
-  // Full Bi-Directional Intelligent Sync
-  syncAll({ user, tasks, challenges, timerSessions, overwrite = false }) {
+  // Full Bi-Directional Intelligent Sync with Multi-User Isolation & Session Invalidation
+  syncAll({ user, tasks, challenges, timerSessions, username = null, sessionVersion = null, overwrite = false }) {
     const store = this.readStore();
+    const targetUsername = (username || user?.username || 'n0vemberain').trim().toLowerCase();
+
+    // Verify session version & active status
+    const dbUser = this.getUserByUsername(targetUsername);
+    if (dbUser) {
+      if (dbUser.isActive === false) {
+        return {
+          sessionRevoked: true,
+          message: 'This account has been deactivated or suspended by the administrator.'
+        };
+      }
+      if (sessionVersion !== null && sessionVersion !== undefined && parseInt(sessionVersion, 10) < (dbUser.sessionVersion || 1)) {
+        return {
+          sessionRevoked: true,
+          message: 'Active session has been terminated by the administrator. Please log in again.'
+        };
+      }
+    }
 
     if (overwrite) {
       if (user && user.username) {
-        store.user = { ...(store.user || defaultUserProfile), ...user };
+        this.updateUser(user, targetUsername);
       }
-      store.tasks = Array.isArray(tasks) ? tasks : [];
-      store.challenges = Array.isArray(challenges) ? challenges : [];
-      store.timerSessions = Array.isArray(timerSessions) ? timerSessions : [];
-      store.heatmapHistory = {};
+      // Replace only targetUser's items
+      store.tasks = (store.tasks || []).filter(t => (t.userId || 'n0vemberain').toLowerCase() !== targetUsername);
+      if (Array.isArray(tasks)) {
+        store.tasks.push(...tasks.map(t => ({ ...t, userId: targetUsername })));
+      }
+
+      store.challenges = (store.challenges || []).filter(c => (c.userId || 'n0vemberain').toLowerCase() !== targetUsername);
+      if (Array.isArray(challenges)) {
+        store.challenges.push(...challenges.map(c => ({ ...c, userId: targetUsername })));
+      }
+
+      store.timerSessions = (store.timerSessions || []).filter(s => (s.userId || 'n0vemberain').toLowerCase() !== targetUsername);
+      if (Array.isArray(timerSessions)) {
+        store.timerSessions.push(...timerSessions.map(s => ({ ...s, userId: targetUsername })));
+      }
+
       store.lastUpdated = new Date().toISOString();
       this.writeStore(store);
-      return store;
-    }
 
-    // 1. Merge User
-    if (user && user.username) {
-      store.user = {
-        ...(store.user || defaultUserProfile),
-        ...user
+      const updatedUser = this.getUserByUsername(targetUsername) || store.user;
+      return {
+        user: updatedUser,
+        users: (updatedUser.role === 'admin' || targetUsername === 'n0vemberain') ? store.users : undefined,
+        tasks: this.getTasks(null, targetUsername),
+        challenges: this.getChallenges(targetUsername),
+        timerSessions: this.getTimerSessions(targetUsername),
+        heatmapHistory: store.heatmapHistory || {},
+        lastUpdated: store.lastUpdated
       };
     }
 
-    // 2. Merge Tasks: combine existing store tasks with incoming tasks by id / title+date
+    // 1. Merge User Profile
+    if (user && user.username) {
+      this.updateUser(user, targetUsername);
+    }
+
+    // 2. Merge Tasks: isolate by targetUser
     if (Array.isArray(tasks)) {
-      if (tasks.length === 0) {
-        store.tasks = [];
-      } else {
-        const taskMap = new Map();
-        (store.tasks || []).forEach(t => {
+      const userTasksMap = new Map();
+      (store.tasks || [])
+        .filter(t => (t.userId || 'n0vemberain').toLowerCase() === targetUsername)
+        .forEach(t => {
           const key = t.id || `${t.title}_${t.date}`;
-          taskMap.set(key, t);
+          userTasksMap.set(key, t);
         });
-        tasks.forEach(incoming => {
-          const key = incoming.id || `${incoming.title}_${incoming.date}`;
-          if (taskMap.has(key)) {
-            const existing = taskMap.get(key);
-            taskMap.set(key, { ...existing, ...incoming });
-          } else {
-            taskMap.set(key, incoming);
-          }
-        });
-        store.tasks = Array.from(taskMap.values());
-      }
+
+      tasks.forEach(incoming => {
+        const key = incoming.id || `${incoming.title}_${incoming.date}`;
+        const withUser = { ...incoming, userId: targetUsername };
+        if (userTasksMap.has(key)) {
+          const existing = userTasksMap.get(key);
+          userTasksMap.set(key, { ...existing, ...withUser });
+        } else {
+          userTasksMap.set(key, withUser);
+        }
+      });
+
+      const otherUsersTasks = (store.tasks || []).filter(t => (t.userId || 'n0vemberain').toLowerCase() !== targetUsername);
+      store.tasks = [...otherUsersTasks, ...Array.from(userTasksMap.values())];
     }
 
-    // 3. Merge Challenges
+    // 3. Merge Challenges: isolate by targetUser
     if (Array.isArray(challenges)) {
-      if (challenges.length === 0) {
-        store.challenges = [];
-      } else {
-        const chMap = new Map();
-        (store.challenges || []).forEach(c => {
+      const userChMap = new Map();
+      (store.challenges || [])
+        .filter(c => (c.userId || 'n0vemberain').toLowerCase() === targetUsername)
+        .forEach(c => {
           const key = c.id || c.title;
-          chMap.set(key, c);
+          userChMap.set(key, c);
         });
-        challenges.forEach(incoming => {
-          const key = incoming.id || incoming.title;
-          if (chMap.has(key)) {
-            chMap.set(key, { ...chMap.get(key), ...incoming });
-          } else {
-            chMap.set(key, incoming);
-          }
-        });
-        store.challenges = Array.from(chMap.values());
-      }
+
+      challenges.forEach(incoming => {
+        const key = incoming.id || incoming.title;
+        const withUser = { ...incoming, userId: targetUsername };
+        if (userChMap.has(key)) {
+          userChMap.set(key, { ...userChMap.get(key), ...withUser });
+        } else {
+          userChMap.set(key, withUser);
+        }
+      });
+
+      const otherUsersChallenges = (store.challenges || []).filter(c => (c.userId || 'n0vemberain').toLowerCase() !== targetUsername);
+      store.challenges = [...otherUsersChallenges, ...Array.from(userChMap.values())];
     }
 
-    // 4. Merge Timer Sessions
+    // 4. Merge Timer Sessions: isolate by targetUser
     if (Array.isArray(timerSessions)) {
-      if (timerSessions.length === 0) {
-        store.timerSessions = [];
-      } else {
-        const sessMap = new Map();
-        (store.timerSessions || []).forEach(s => {
-          sessMap.set(s.id, s);
+      const userSessMap = new Map();
+      (store.timerSessions || [])
+        .filter(s => (s.userId || 'n0vemberain').toLowerCase() === targetUsername)
+        .forEach(s => {
+          userSessMap.set(s.id, s);
         });
-        timerSessions.forEach(incoming => {
-          if (incoming.id) {
-            sessMap.set(incoming.id, incoming);
-          }
-        });
-        store.timerSessions = Array.from(sessMap.values());
-      }
+
+      timerSessions.forEach(incoming => {
+        if (incoming.id) {
+          userSessMap.set(incoming.id, { ...incoming, userId: targetUsername });
+        }
+      });
+
+      const otherUsersSessions = (store.timerSessions || []).filter(s => (s.userId || 'n0vemberain').toLowerCase() !== targetUsername);
+      store.timerSessions = [...otherUsersSessions, ...Array.from(userSessMap.values())];
     }
 
     store.lastUpdated = new Date().toISOString();
     this.writeStore(store);
 
+    const currentUserObj = this.getUserByUsername(targetUsername) || store.user;
     return {
-      user: store.user,
-      tasks: store.tasks,
-      challenges: store.challenges,
-      timerSessions: store.timerSessions,
+      user: currentUserObj,
+      users: (currentUserObj.role === 'admin' || targetUsername === 'n0vemberain') ? store.users : undefined,
+      tasks: this.getTasks(null, targetUsername),
+      challenges: this.getChallenges(targetUsername),
+      timerSessions: this.getTimerSessions(targetUsername),
       heatmapHistory: store.heatmapHistory || {},
       lastUpdated: store.lastUpdated
     };

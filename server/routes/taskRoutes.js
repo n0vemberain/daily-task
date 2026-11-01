@@ -7,11 +7,11 @@ const router = express.Router();
 
 const isMongoActive = () => mongoose.connection && mongoose.connection.readyState === 1;
 
-// Get all tasks or by date
+// Get all tasks or by date (with optional user isolation)
 router.get('/', async (req, res) => {
   try {
-    const { date } = req.query;
-    const tasks = fileStore.getTasks(date);
+    const { date, username } = req.query;
+    const tasks = fileStore.getTasks(date, username);
     res.json({ success: true, data: tasks });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -44,7 +44,7 @@ router.get('/heatmap', async (req, res) => {
 // Create task
 router.post('/', async (req, res) => {
   try {
-    const { title, category, priority, date, estimatedMinutes, id, challengeId, challengeTitle, dayNumber } = req.body;
+    const { title, category, priority, date, estimatedMinutes, id, challengeId, challengeTitle, dayNumber, userId } = req.body;
     if (!title) {
       return res.status(400).json({ success: false, message: 'Title is required' });
     }
@@ -56,6 +56,7 @@ router.post('/', async (req, res) => {
 
     const task = fileStore.createTask({
       id,
+      userId,
       title,
       category,
       priority,
@@ -64,7 +65,7 @@ router.post('/', async (req, res) => {
       challengeId,
       challengeTitle,
       dayNumber
-    });
+    }, userId);
 
     // Mirror to MongoDB if actively connected
     if (isMongoActive()) {

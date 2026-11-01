@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, User, Eye, EyeOff, AlertCircle, LogIn, CheckSquare, ShieldCheck, Database, Sparkles } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { apiService } from '../services/apiService';
 
 export default function LoginView({ userProfile, onLoginSuccess }) {
   const { theme } = useTheme();
@@ -31,11 +32,44 @@ export default function LoginView({ userProfile, onLoginSuccess }) {
       return;
     }
 
+    // Quick path for active target profile
     if (enteredUsername === targetUsername && enteredPassword === targetPassword) {
-      onLoginSuccess({ rememberMe, username: enteredUsername });
-    } else {
-      setErrorMessage('Invalid username or password. Please verify your credentials.');
+      onLoginSuccess({
+        rememberMe,
+        username: enteredUsername,
+        user: {
+          username: enteredUsername,
+          name: userProfile?.name || 'Fatin Ishraque',
+          role: userProfile?.role || 'admin',
+          sessionVersion: userProfile?.sessionVersion || 1
+        }
+      });
+      return;
     }
+
+    // Default error message immediately for incorrect input
+    setErrorMessage('Invalid username or password. Please verify your credentials.');
+
+    // Multi-user authentication check for guests or remote accounts
+    apiService
+      .login({ username: enteredUsername, password: enteredPassword })
+      .then((result) => {
+        if (result && result.success && result.data && result.data.user) {
+          setErrorMessage('');
+          onLoginSuccess({
+            rememberMe,
+            username: enteredUsername,
+            user: result.data.user
+          });
+        } else if (result && result.sessionRevoked) {
+          setErrorMessage(result.message || 'This account has been suspended or deactivated.');
+        } else if (result && !result.offline && result.message) {
+          setErrorMessage(result.message);
+        }
+      })
+      .catch(() => {
+        // Keeps the invalid credentials error
+      });
   };
 
   const handleQuickDemoFill = () => {

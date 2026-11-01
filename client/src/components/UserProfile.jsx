@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { apiService } from '../services/apiService';
+import UserManagementSection from './UserManagementSection';
 
 export default function UserProfile({
   userProfile,
@@ -596,6 +597,14 @@ export default function UserProfile({
           </div>
         </div>
       </div>
+
+      {/* User & Guest Accounts Management (Admin Only) */}
+      {(userProfile?.role === 'admin' || userProfile?.username === 'n0vemberain') && (
+        <UserManagementSection
+          currentUser={userProfile}
+          theme={theme}
+        />
+      )}
 
       {/* Main Profile Form */}
       <form onSubmit={handleSubmit} className="space-y-6">

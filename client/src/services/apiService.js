@@ -24,12 +24,17 @@ export const apiService = {
     }
   },
 
-  getFullData: async () => {
+  getFullData: async (username = null, sessionVersion = null) => {
     try {
-      const res = await fetch(`${BASE_URL}/sync`, {
+      const params = new URLSearchParams();
+      if (username) params.append('username', username);
+      if (sessionVersion !== null && sessionVersion !== undefined) {
+        params.append('sessionVersion', sessionVersion);
+      }
+      const queryStr = params.toString() ? `?${params.toString()}` : '';
+      const res = await fetch(`${BASE_URL}/sync${queryStr}`, {
         signal: AbortSignal.timeout(6000)
       });
-      if (!res.ok) throw new Error('Failed to fetch full data');
       const data = await res.json();
       return data;
     } catch (e) {
@@ -37,16 +42,122 @@ export const apiService = {
     }
   },
 
-  syncAll: async ({ user, tasks, challenges, timerSessions, heatmapHistory, overwrite = false }) => {
+  syncAll: async ({ user, tasks, challenges, timerSessions, heatmapHistory, username = null, sessionVersion = null, overwrite = false }) => {
     try {
       const res = await fetch(`${BASE_URL}/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user, tasks, challenges, timerSessions, heatmapHistory, overwrite }),
+        body: JSON.stringify({ user, tasks, challenges, timerSessions, heatmapHistory, username, sessionVersion, overwrite }),
         signal: AbortSignal.timeout(8000)
       });
       const data = await res.json();
       return data;
+    } catch (e) {
+      return { success: false, error: e.message, offline: true };
+    }
+  },
+
+  // Authentication & Multi-User Operations
+  login: async ({ username, password }) => {
+    try {
+      const res = await fetch(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+        signal: AbortSignal.timeout(5000)
+      });
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: e.message, offline: true };
+    }
+  },
+
+  verifySession: async ({ username, sessionVersion }) => {
+    try {
+      const res = await fetch(`${BASE_URL}/auth/verify-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, sessionVersion }),
+        signal: AbortSignal.timeout(4000)
+      });
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: e.message, offline: true };
+    }
+  },
+
+  getAllUsers: async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/user/all`, {
+        signal: AbortSignal.timeout(4000)
+      });
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: e.message, offline: true };
+    }
+  },
+
+  createUser: async (userData) => {
+    try {
+      const res = await fetch(`${BASE_URL}/user/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+        signal: AbortSignal.timeout(5000)
+      });
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: e.message, offline: true };
+    }
+  },
+
+  updateUserCredentials: async (userId, data) => {
+    try {
+      const res = await fetch(`${BASE_URL}/user/${userId}/credentials`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        signal: AbortSignal.timeout(5000)
+      });
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: e.message, offline: true };
+    }
+  },
+
+  forceLogoutUser: async (userId) => {
+    try {
+      const res = await fetch(`${BASE_URL}/user/${userId}/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(4000)
+      });
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: e.message, offline: true };
+    }
+  },
+
+  toggleUserStatus: async (userId) => {
+    try {
+      const res = await fetch(`${BASE_URL}/user/${userId}/toggle-status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(4000)
+      });
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: e.message, offline: true };
+    }
+  },
+
+  deleteUser: async (userId) => {
+    try {
+      const res = await fetch(`${BASE_URL}/user/${userId}`, {
+        method: 'DELETE',
+        signal: AbortSignal.timeout(4000)
+      });
+      return await res.json();
     } catch (e) {
       return { success: false, error: e.message, offline: true };
     }
