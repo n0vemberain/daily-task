@@ -1,6 +1,50 @@
-# DailyTask — Personal Daily Activity Dashboard and Goal Matrix
+# DailyTask — Production-Grade Productivity Engineering Platform
 
-A web-based personal daily activity dashboard developed with React 18, Vite, Tailwind CSS, and Node.js/Express with MongoDB. Engineered with an authentic GitHub dark aesthetic and dynamic color theme palettes, this system provides visual productivity analytics, custom-duration habit challenge tracking, individual item editing, manual category creation, comprehensive data cleaning, full-screen authentication protection, and a centered navigation architecture.
+[![CI/CD Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)](https://github.com/n0vemberain/daily-task)
+[![Test Suite](https://img.shields.io/badge/tests-85%2F85%20passing-brightgreen?style=flat-square)](https://github.com/n0vemberain/daily-task)
+[![React](https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-5-purple?style=flat-square&logo=vite)](https://vitejs.dev/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
+[![Express](https://img.shields.io/badge/Express-4.18-gray?style=flat-square&logo=express)](https://expressjs.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Active-green?style=flat-square&logo=mongodb)](https://www.mongodb.com/)
+[![Cloudflare Tunnel](https://img.shields.io/badge/Cloudflare-Tunnel-orange?style=flat-square&logo=cloudflare)](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+
+An enterprise-grade personal productivity and activity engineering platform engineered with React 18, Vite, Tailwind CSS, Express, and dual-layer persistence (FileStore + MongoDB). Designed with an authentic GitHub Dark aesthetic and multi-palette theming, DailyTask integrates high-resolution contribution heatmaps, goal challenge tracking, Pomodoro focus cycles, password-protected historical audits, and isolated multi-tenant guest account management.
+
+---
+
+## About The Project
+
+DailyTask is built for software engineers, researchers, and goal-driven professionals who require immutable activity logging, streak preservation, and multi-device access without vendor lock-in.
+
+### Core Architectural Pillars
+- **Authentic Activity Heatmap:** Proportional SVG-free grid displaying daily task intensity across 1-Year (52 weeks), 6-Months (26 weeks), and 1-Month mobile layouts with outside-click neutralization.
+- **Multi-Tenant User Isolation:** Role-based access control separating primary Administrator privileges from isolated Guest accounts. Guest sessions are strictly partitioned with separate profile metadata, skill sets, and habit histories.
+- **Dual Offline-First Persistence:** Instant local updates via browser `localStorage` mirrored asynchronously with Node.js/Express `FileStore` and MongoDB. Graceful offline fallback guarantees zero data loss during network disruptions.
+- **Protected Historical Integrity:** Critical operational barriers preventing accidental or unauthorized alteration of past records. Status toggling, task editing, and deletions on previous dates require account password verification.
+- **Edge Deployment & Remote Access:** Built-in Cloudflare Tunnel integration provides global encrypted HTTPS ingress and dynamic QR-code pairing without public IP or router port forwarding.
+
+---
+
+## System Architecture
+
+```text
+[ Remote Mobile / Desktop Client ]
+              │ (Encrypted HTTPS)
+              ▼
+   [ Cloudflare Edge Tunnel ]
+              │
+              ▼
+    [ Express API Server :5001 ]
+    ├── Static Production Bundle (/client/dist)
+    ├── Authentication & Role Middleware (/api/auth)
+    ├── Multi-User Management (/api/user)
+    ├── Task & Challenge Sync Routes (/api/sync)
+    └── Dual Persistence Layer
+         ├── Primary FileStore (Atomic JSON Storage)
+         └── MongoDB Database (Mongoose ODM)
+```
 
 ---
 
@@ -91,17 +135,24 @@ A web-based personal daily activity dashboard developed with React 18, Vite, Tai
 
 ## Automated Test Suite
 
-Unit and integration tests are executed using Vitest and React Testing Library:
+DailyTask enforces continuous reliability through 17 automated test suites comprising 85 unit, integration, and stress tests executed via Vitest and React Testing Library:
 
 ```bash
-$ npm test --prefix client
+$ npm test --prefix client -- --run
 
- Test Files  13 passed (13)
-      Tests  62 passed (62)
-   Duration  3.98s
+ Test Files  17 passed (17)
+      Tests  85 passed (85)
+   Duration  6.72s
 ```
 
-Detailed test coverage and audit metrics are documented in [TESTING_REPORT.md](TESTING_REPORT.md).
+Test coverage includes:
+- Component rendering and state transitions
+- Multi-user storage partitioning and profile isolation
+- React Hook ordering and modal lifecycle stability
+- Password verification modal boundary and tamper resistance
+- High-throughput task manipulation stress tests (50 rapid sequential mutations)
+- Fuzzing and injection safety (XSS payloads, SQL/NoSQL injection patterns, Unicode)
+- Corrupted storage recovery and graceful degradation
 
 ---
 

@@ -377,9 +377,18 @@ class FileStore {
   }
 
   // User Management operations (Multi-User, Guest accounts, Credentials & Session management)
+  sanitizeUser(u) {
+    if (!u) return u;
+    if (u.role === 'admin' || u.username?.toLowerCase() === 'n0vemberain') {
+      const { password, ...safe } = u;
+      return safe;
+    }
+    return u;
+  }
+
   getUsers() {
     const store = this.readStore();
-    return store.users || [];
+    return (store.users || []).map(u => this.sanitizeUser(u));
   }
 
   getUserByUsername(username) {
@@ -816,8 +825,8 @@ class FileStore {
 
       const updatedUser = this.getUserByUsername(targetUsername) || store.user;
       return {
-        user: updatedUser,
-        users: (updatedUser.role === 'admin' || targetUsername === 'n0vemberain') ? store.users : undefined,
+        user: this.sanitizeUser(updatedUser),
+        users: (updatedUser.role === 'admin' || targetUsername === 'n0vemberain') ? this.getUsers() : undefined,
         tasks: this.getTasks(null, targetUsername),
         challenges: this.getChallenges(targetUsername),
         timerSessions: this.getTimerSessions(targetUsername),
@@ -904,8 +913,8 @@ class FileStore {
 
     const currentUserObj = this.getUserByUsername(targetUsername) || store.user;
     return {
-      user: currentUserObj,
-      users: (currentUserObj.role === 'admin' || targetUsername === 'n0vemberain') ? store.users : undefined,
+      user: this.sanitizeUser(currentUserObj),
+      users: (currentUserObj.role === 'admin' || targetUsername === 'n0vemberain') ? this.getUsers() : undefined,
       tasks: this.getTasks(null, targetUsername),
       challenges: this.getChallenges(targetUsername),
       timerSessions: this.getTimerSessions(targetUsername),

@@ -43,12 +43,27 @@ router.get('/', async (req, res) => {
     const userSessions = fileStore.getTimerSessions(username);
     const isAdmin = targetUser?.role === 'admin' || (!username) || (username === 'n0vemberain');
 
+    // Protect admin password from being transmitted in sync payloads
+    const safeTargetUser = targetUser && (targetUser.role === 'admin' || targetUser.username?.toLowerCase() === 'n0vemberain')
+      ? (() => { const { password, ...safe } = targetUser; return safe; })()
+      : targetUser;
+
+    const safeUsers = isAdmin
+      ? (data.users || []).map((u) => {
+          if (u.role === 'admin' || u.username?.toLowerCase() === 'n0vemberain') {
+            const { password, ...safe } = u;
+            return safe;
+          }
+          return u;
+        })
+      : undefined;
+
     res.json({
       success: true,
       message: 'Server data retrieved successfully',
       data: {
-        user: targetUser,
-        users: isAdmin ? (data.users || []) : undefined,
+        user: safeTargetUser,
+        users: safeUsers,
         tasks: userTasks,
         challenges: userChallenges,
         timerSessions: userSessions,

@@ -69,7 +69,7 @@ export default function EditTaskModal({
       category: finalCategory || 'General',
       priority,
       date: date || task.date,
-      estimatedMinutes: parseInt(estimatedMinutes, 10) || 30
+      estimatedMinutes: Math.max(5, parseInt(estimatedMinutes, 10) || 30)
     });
     onClose();
   };
