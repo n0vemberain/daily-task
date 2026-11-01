@@ -5,6 +5,13 @@ import SettingsModal from '../components/SettingsModal';
 import { ThemeProvider } from '../context/ThemeContext';
 
 describe('SettingsModal Component', () => {
+  const mockUser = {
+    name: 'Fatin Ishraque',
+    username: 'n0vemberain',
+    role: 'admin',
+    skills: ['React', 'Node.js']
+  };
+
   const mockProps = {
     isOpen: true,
     onClose: vi.fn(),
@@ -12,9 +19,12 @@ describe('SettingsModal Component', () => {
     isSyncing: false,
     lastSyncTime: new Date().toISOString(),
     onManualSync: vi.fn(),
-    data: { user: {}, tasks: [], challenges: [] },
+    data: { user: mockUser, tasks: [], challenges: [] },
     onRestoreData: vi.fn(),
-    onOpenCleanCenter: vi.fn()
+    onOpenCleanCenter: vi.fn(),
+    userProfile: mockUser,
+    currentUser: mockUser,
+    onSaveProfile: vi.fn()
   };
 
   it('does not render when closed', () => {
@@ -35,7 +45,54 @@ describe('SettingsModal Component', () => {
 
     expect(screen.getByText('Application Settings')).toBeInTheDocument();
     expect(screen.getByText('Theme & Preferences')).toBeInTheDocument();
+    expect(screen.getByText('Skills & Badges')).toBeInTheDocument();
+    expect(screen.getByText('Remote Access & QR')).toBeInTheDocument();
+    expect(screen.getByText('User Management')).toBeInTheDocument();
     expect(screen.getByText('Sync & Backup')).toBeInTheDocument();
+  });
+
+  it('switches to Skills & Badges tab and allows adding skills', () => {
+    const onSave = vi.fn();
+    render(
+      <ThemeProvider>
+        <SettingsModal {...mockProps} onSaveProfile={onSave} />
+      </ThemeProvider>
+    );
+
+    const skillsTab = screen.getByText('Skills & Badges');
+    fireEvent.click(skillsTab);
+
+    expect(screen.getByText(/Technical Skills & Competencies/i)).toBeInTheDocument();
+    expect(screen.getByText('React')).toBeInTheDocument();
+    expect(screen.getByText('Node.js')).toBeInTheDocument();
+
+    const input = screen.getByPlaceholderText(/Type a skill/i);
+    const addBtn = screen.getByText('Add Skill');
+
+    fireEvent.change(input, { target: { value: 'Docker' } });
+    fireEvent.click(addBtn);
+
+    expect(screen.getByText('Docker')).toBeInTheDocument();
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skills: expect.arrayContaining(['React', 'Node.js', 'Docker'])
+      })
+    );
+  });
+
+  it('switches to Remote Access & QR tab and renders URLs', () => {
+    render(
+      <ThemeProvider>
+        <SettingsModal {...mockProps} />
+      </ThemeProvider>
+    );
+
+    const networkTab = screen.getByText('Remote Access & QR');
+    fireEvent.click(networkTab);
+
+    expect(screen.getByText('Multi-Device & Remote Network Access')).toBeInTheDocument();
+    expect(screen.getByText('Scan QR Code on Phone')).toBeInTheDocument();
+    expect(screen.getByText('Public Internet Access')).toBeInTheDocument();
   });
 
   it('switches to Sync & Backup tab and displays sync status', () => {

@@ -5,6 +5,7 @@ import ContributionHeatmap from './components/ContributionHeatmap';
 import ChallengeTracker from './components/ChallengeTracker';
 import TaskManager from './components/TaskManager';
 import UserProfile from './components/UserProfile';
+import ProfileModal from './components/ProfileModal';
 import SettingsModal from './components/SettingsModal';
 import DataCleanModal from './components/DataCleanModal';
 import FocusTimer from './components/FocusTimer';
@@ -32,6 +33,7 @@ export default function App() {
 
   // Modals State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isCleanCenterOpen, setIsCleanCenterOpen] = useState(false);
 
   // Core State initialized from LocalStorage (Isolated per active user)
@@ -45,6 +47,14 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('daily_task_auth_session') === 'true';
   });
+
+  // Ensure profile tab redirects to dashboard and opens profile modal
+  useEffect(() => {
+    if (activeTab === 'profile') {
+      setActiveTab('dashboard');
+      setIsProfileModalOpen(true);
+    }
+  }, [activeTab]);
 
   // MongoDB & Sync State
   const [mongoStatus, setMongoStatus] = useState({ connected: false, isMongoConnected: false });
@@ -587,6 +597,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         userProfile={userProfile}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
         onSignOut={handleSignOut}
       />
 
@@ -710,7 +721,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Central Application Settings Modal */}
+      {/* Central Application Settings Modal (Unified Settings, Skills, QR & Users) */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -721,6 +732,17 @@ export default function App() {
         data={{ user: userProfile, tasks, challenges }}
         onRestoreData={handleRestoreData}
         onOpenCleanCenter={() => setIsCleanCenterOpen(true)}
+        userProfile={userProfile}
+        currentUser={currentUser}
+        onSaveProfile={handleSaveProfile}
+      />
+
+      {/* Personal Profile Modal (Avatar, Name, User ID, Password, Field of Study Only) */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        userProfile={userProfile}
+        onSaveProfile={handleSaveProfile}
       />
 
       {/* Standalone Password-Protected Data Clean Center Modal */}
@@ -740,6 +762,7 @@ export default function App() {
       <MobileBottomNav
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         onQuickAdd={() => {
           setActiveTab('tasks');
           window.scrollTo({ top: 0, behavior: 'smooth' });

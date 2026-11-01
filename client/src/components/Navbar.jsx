@@ -16,6 +16,7 @@ export default function Navbar({
   setActiveTab,
   userProfile,
   onOpenSettings,
+  onOpenProfile,
   onSignOut
 }) {
   const { theme } = useTheme();
@@ -28,8 +29,7 @@ export default function Navbar({
     { id: 'dashboard', label: 'Heatmap & Overview', icon: CalendarDays },
     { id: 'challenges', label: 'Goal Challenges', icon: Flame },
     { id: 'tasks', label: 'Daily Tasks', icon: CheckSquare },
-    { id: 'timer', label: 'Focus Timer', icon: Timer },
-    { id: 'profile', label: 'Profile & Skills', icon: User }
+    { id: 'timer', label: 'Focus Timer', icon: Timer }
   ];
 
   return (
@@ -115,12 +115,10 @@ export default function Navbar({
               <span className="hidden sm:inline">Sign Out</span>
             </button>
 
-            {/* Profile Avatar Thumbnail */}
+            {/* Profile Avatar Thumbnail Button (Opens Profile Credentials Modal) */}
             <button
-              onClick={() => handleTabClick('profile')}
-              className={`p-0.5 rounded-full border transition-all ${
-                activeTab === 'profile' ? 'border-white' : 'border-github-border hover:border-github-borderLight'
-              }`}
+              onClick={onOpenProfile}
+              className="p-0.5 rounded-full border border-github-border hover:border-white transition-all hover:scale-105"
               title={`View Profile: ${userProfile?.name || 'User'}`}
             >
               {userProfile?.avatarUrl ? (

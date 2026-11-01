@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import QRCode from 'qrcode';
 import {
   X,
   Settings,
@@ -15,11 +16,25 @@ import {
   CheckCircle2,
   ExternalLink,
   ShieldAlert,
-  Info
+  Info,
+  QrCode,
+  Globe,
+  Smartphone,
+  Laptop,
+  Wifi,
+  Copy,
+  Check,
+  Share2,
+  Plus,
+  Users,
+  Award,
+  Lock
 } from 'lucide-react';
 import GithubIcon from './GithubIcon';
 import { useTheme } from '../context/ThemeContext';
 import { soundEffects } from '../utils/audioFeedback';
+import { apiService } from '../services/apiService';
+import UserManagementSection from './UserManagementSection';
 
 export default function SettingsModal({
   isOpen,
@@ -30,12 +45,94 @@ export default function SettingsModal({
   onManualSync,
   data,
   onRestoreData,
-  onOpenCleanCenter
+  onOpenCleanCenter,
+  userProfile,
+  currentUser,
+  onSaveProfile
 }) {
   const { theme, themeId, setThemeId, availableThemes } = useTheme();
   const [isMuted, setIsMuted] = useState(soundEffects.isMuted());
-  const [activeTab, setActiveTab] = useState('general'); // 'general', 'sync'
+  const [activeTab, setActiveTab] = useState('general'); // 'general', 'skills', 'network', 'users', 'sync'
   const [statusMessage, setStatusMessage] = useState(null);
+
+  // Skills state
+  const [skills, setSkills] = useState(
+    Array.isArray(userProfile?.skills) ? userProfile.skills : []
+  );
+  const [newSkillInput, setNewSkillInput] = useState('');
+
+  // Synchronize skills when userProfile changes
+  useEffect(() => {
+    if (userProfile?.skills) {
+      setSkills(Array.isArray(userProfile.skills) ? userProfile.skills : []);
+    }
+  }, [userProfile]);
+
+  // Network & Remote Access State
+  const [networkInfo, setNetworkInfo] = useState({
+    publicUrl: '',
+    localhostUrl: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5001',
+    localNetworkUrl: '',
+    isTunnelActive: false
+  });
+  const [activeUrlType, setActiveUrlType] = useState('public');
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
+  const [copiedType, setCopiedType] = useState(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let isMounted = true;
+    apiService
+      .getNetworkAccess()
+      .then((res) => {
+        if (isMounted && res && res.success && res.data) {
+          setNetworkInfo(res.data);
+          if (!res.data.publicUrl && res.data.localhostUrl) {
+            setActiveUrlType('localhost');
+          }
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
+
+  const currentSelectedUrl = useMemo(() => {
+    if (activeUrlType === 'public') {
+      return (
+        networkInfo.publicUrl ||
+        (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5001')
+      );
+    }
+    if (activeUrlType === 'lan') {
+      return networkInfo.localNetworkUrl || 'http://localhost:5001';
+    }
+    return networkInfo.localhostUrl || 'http://localhost:5001';
+  }, [activeUrlType, networkInfo]);
+
+  useEffect(() => {
+    if (!isOpen || !currentSelectedUrl) return;
+    let isMounted = true;
+    QRCode.toDataURL(currentSelectedUrl, {
+      width: 240,
+      margin: 1,
+      color: {
+        dark: '#0d1117',
+        light: '#ffffff'
+      }
+    })
+      .then((url) => {
+        if (isMounted) setQrCodeDataUrl(url);
+      })
+      .catch((err) => {
+        console.error('QR code generation error:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, currentSelectedUrl]);
 
   if (!isOpen) return null;
 
@@ -68,9 +165,9 @@ export default function SettingsModal({
       const exportPayload = {
         exportedAt: new Date().toISOString(),
         version: '1.0.0',
-        user: data.user,
-        tasks: data.tasks,
-        challenges: data.challenges
+        user: data?.user || userProfile,
+        tasks: data?.tasks || [],
+        challenges: data?.challenges || []
       };
 
       const blob = new Blob([JSON.stringify(exportPayload, null, 2)], {
@@ -104,11 +201,13 @@ export default function SettingsModal({
           throw new Error('Invalid backup file format');
         }
 
-        onRestoreData({
-          user: parsed.user,
-          tasks: parsed.tasks,
-          challenges: parsed.challenges || []
-        });
+        if (onRestoreData) {
+          onRestoreData({
+            user: parsed.user,
+            tasks: parsed.tasks,
+            challenges: parsed.challenges || []
+          });
+        }
 
         showNotification('Data restored successfully from backup file.');
       } catch (err) {
@@ -118,11 +217,77 @@ export default function SettingsModal({
     reader.readAsText(file);
   };
 
+  // Skills Management Handlers
+  const handleAddSkill = (skillToAdd) => {
+    const target = (skillToAdd || newSkillInput).trim();
+    if (!target) return;
+    if (skills.some((s) => s.toLowerCase() === target.toLowerCase())) {
+      setNewSkillInput('');
+      return;
+    }
+    const updatedSkills = [...skills, target];
+    setSkills(updatedSkills);
+    setNewSkillInput('');
+    if (onSaveProfile && userProfile) {
+      onSaveProfile({
+        ...userProfile,
+        skills: updatedSkills
+      });
+    }
+    showNotification(`Skill added: ${target}`);
+  };
+
+  const handleRemoveSkill = (skillToRemove) => {
+    const updatedSkills = skills.filter((s) => s !== skillToRemove);
+    setSkills(updatedSkills);
+    if (onSaveProfile && userProfile) {
+      onSaveProfile({
+        ...userProfile,
+        skills: updatedSkills
+      });
+    }
+    showNotification(`Skill removed: ${skillToRemove}`);
+  };
+
+  const suggestedSkills = [
+    'React.js',
+    'TypeScript',
+    'Node.js',
+    'Python',
+    'MongoDB',
+    'Tailwind CSS',
+    'Docker',
+    'Next.js',
+    'GraphQL',
+    'Git & GitHub',
+    'System Design',
+    'Linux',
+    'Express.js',
+    'REST APIs',
+    'PostgreSQL',
+    'AWS'
+  ];
+
+  const handleCopy = (text, typeKey) => {
+    if (!text) return;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+      setCopiedType(typeKey);
+      setTimeout(() => setCopiedType(null), 2500);
+      showNotification('Copied to clipboard.');
+    }
+  };
+
   const isMongoOnline = mongoStatus?.isMongoConnected;
+  const activeUser = currentUser || userProfile;
+  const isAdmin =
+    activeUser?.role === 'admin' ||
+    userProfile?.role === 'admin' ||
+    activeUser?.username === 'n0vemberain';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-[#161b22] border border-github-border rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-[#161b22] border border-github-border rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-github-border bg-[#0d1117]">
           <div className="flex items-center gap-2.5">
@@ -139,7 +304,7 @@ export default function SettingsModal({
             <div>
               <h3 className="text-base font-bold text-white">Application Settings</h3>
               <p className="text-xs text-github-muted">
-                Preferences, color theme, dual sync, and data management
+                Preferences, skills, remote access, accounts, and sync
               </p>
             </div>
           </div>
@@ -152,10 +317,10 @@ export default function SettingsModal({
         </div>
 
         {/* Tab navigation inside modal */}
-        <div className="flex border-b border-github-border bg-[#0d1117]/60 px-5 sm:px-6 gap-2 pt-2">
+        <div className="flex border-b border-github-border bg-[#0d1117]/60 px-5 sm:px-6 gap-2 pt-2 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('general')}
-            className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all ${
+            className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
               activeTab === 'general'
                 ? 'border-white text-white'
                 : 'border-transparent text-github-muted hover:text-white'
@@ -166,9 +331,54 @@ export default function SettingsModal({
           >
             Theme &amp; Preferences
           </button>
+
+          <button
+            onClick={() => setActiveTab('skills')}
+            className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+              activeTab === 'skills'
+                ? 'border-white text-white'
+                : 'border-transparent text-github-muted hover:text-white'
+            }`}
+            style={{
+              borderColor: activeTab === 'skills' ? theme.accent : 'transparent'
+            }}
+          >
+            Skills &amp; Badges
+          </button>
+
+          <button
+            onClick={() => setActiveTab('network')}
+            className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+              activeTab === 'network'
+                ? 'border-white text-white'
+                : 'border-transparent text-github-muted hover:text-white'
+            }`}
+            style={{
+              borderColor: activeTab === 'network' ? theme.accent : 'transparent'
+            }}
+          >
+            Remote Access &amp; QR
+          </button>
+
+          {isAdmin && (
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+                activeTab === 'users'
+                  ? 'border-white text-white'
+                  : 'border-transparent text-github-muted hover:text-white'
+              }`}
+              style={{
+                borderColor: activeTab === 'users' ? theme.accent : 'transparent'
+              }}
+            >
+              User Management
+            </button>
+          )}
+
           <button
             onClick={() => setActiveTab('sync')}
-            className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all ${
+            className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
               activeTab === 'sync'
                 ? 'border-white text-white'
                 : 'border-transparent text-github-muted hover:text-white'
@@ -205,8 +415,8 @@ export default function SettingsModal({
         )}
 
         {/* Body Content */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 text-xs">
-          {/* TAB 1: General (Theme & Sound) */}
+        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 text-xs flex-1">
+          {/* TAB 1: General (Theme, Sound, Repo) */}
           {activeTab === 'general' && (
             <div className="space-y-6">
               {/* Theme Selection */}
@@ -258,7 +468,6 @@ export default function SettingsModal({
                           </div>
                         </div>
 
-                        {/* Color level swatches */}
                         <div className="flex gap-1">
                           {t.hexLevels.slice(1).map((hex, i) => (
                             <span
@@ -274,7 +483,7 @@ export default function SettingsModal({
                 </div>
               </div>
 
-              {/* Sound Effects Controls */}
+              {/* Sound Feedback Controls */}
               <div className="pt-4 border-t border-github-border space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -344,7 +553,307 @@ export default function SettingsModal({
             </div>
           )}
 
-          {/* TAB 2: Sync & Data Portability */}
+          {/* TAB 2: Skills & Badges */}
+          {activeTab === 'skills' && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Award className="w-4 h-4" style={{ color: theme.accent }} />
+                    <span>Technical Skills &amp; Competencies ({skills.length})</span>
+                  </h4>
+                  <p className="text-github-muted text-xs mt-0.5">
+                    Manage your active engineering skills, tools, and technical competencies.
+                  </p>
+                </div>
+              </div>
+
+              {/* Active Skills Badges */}
+              <div className="flex flex-wrap gap-2 min-h-12 p-3.5 bg-[#0d1117] border border-github-border rounded-xl">
+                {skills.length === 0 ? (
+                  <span className="text-xs text-github-muted italic">
+                    No skills listed yet. Add some below.
+                  </span>
+                ) : (
+                  skills.map((skill) => (
+                    <span
+                      key={skill}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border shadow-sm transition-all"
+                      style={{
+                        backgroundColor: theme.accentDark,
+                        borderColor: theme.accent + '40',
+                        color: theme.accentLight
+                      }}
+                    >
+                      <span>{skill}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSkill(skill)}
+                        className="hover:text-red-400 p-0.5 rounded-full transition-colors"
+                        title={`Remove ${skill}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))
+                )}
+              </div>
+
+              {/* Input to Add Custom Skill */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newSkillInput}
+                  onChange={(e) => setNewSkillInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddSkill();
+                    }
+                  }}
+                  placeholder="Type a skill (e.g. Next.js, Redis, Docker) and press Enter..."
+                  className="flex-1 px-3.5 py-2.5 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted outline-none focus:border-white/40"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleAddSkill()}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-semibold ${theme.primaryBtn} transition-colors whitespace-nowrap`}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Skill</span>
+                </button>
+              </div>
+
+              {/* Suggested Skill Quick-add Pills */}
+              <div className="pt-2">
+                <span className="text-[11px] text-github-muted">Quick Add Suggestions:</span>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {suggestedSkills
+                    .filter((s) => !skills.includes(s))
+                    .slice(0, 10)
+                    .map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => handleAddSkill(s)}
+                        className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-md bg-[#0d1117] hover:bg-[#21262d] text-github-muted hover:text-white border border-github-border transition-colors"
+                      >
+                        <Plus className="w-3 h-3 text-github-muted" />
+                        <span>{s}</span>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: Remote Access & QR Code */}
+          {activeTab === 'network' && (
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3 border-b border-github-border">
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <QrCode className="w-4 h-4" style={{ color: theme.accent }} />
+                    <span>Multi-Device &amp; Remote Network Access</span>
+                  </h4>
+                  <p className="text-xs text-github-muted mt-0.5">
+                    Access DailyTask from other devices (smartphones, laptops, tablets) or any external network.
+                  </p>
+                </div>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full font-mono bg-blue-950/60 text-blue-300 border border-blue-800/50 flex items-center gap-1 whitespace-nowrap">
+                  <Globe className="w-2.5 h-2.5 text-blue-400" />
+                  Remote &amp; Local
+                </span>
+              </div>
+
+              {/* QR Code and URLs Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                {/* QR Code Card */}
+                <div className="md:col-span-5 flex flex-col items-center text-center p-4 rounded-xl bg-[#0d1117] border border-github-border">
+                  <div className="text-xs font-semibold text-github-text uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Smartphone className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+                    <span>Scan QR Code on Phone</span>
+                  </div>
+
+                  <div className="p-2.5 bg-white rounded-xl shadow-lg border border-white/20 my-2 flex items-center justify-center">
+                    {qrCodeDataUrl ? (
+                      <img
+                        src={qrCodeDataUrl}
+                        alt="DailyTask Mobile Access QR Code"
+                        className="w-40 h-40 object-contain rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-40 h-40 flex items-center justify-center text-gray-500 font-mono text-xs">
+                        Generating QR Code...
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-[11px] text-github-muted mt-1 max-w-[220px]">
+                    Scan with phone camera to open DailyTask on mobile browser.
+                  </p>
+
+                  {/* Active URL selector tabs */}
+                  <div className="flex items-center gap-1 mt-3 w-full bg-[#161b22] p-1 rounded-lg border border-github-border text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setActiveUrlType('public')}
+                      className={`flex-1 py-1 rounded text-center font-medium transition-all ${
+                        activeUrlType === 'public'
+                          ? 'bg-white text-black font-semibold shadow-sm'
+                          : 'text-github-muted hover:text-white'
+                      }`}
+                    >
+                      Public
+                    </button>
+                    {networkInfo.localNetworkUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveUrlType('lan')}
+                        className={`flex-1 py-1 rounded text-center font-medium transition-all ${
+                          activeUrlType === 'lan'
+                            ? 'bg-white text-black font-semibold shadow-sm'
+                            : 'text-github-muted hover:text-white'
+                        }`}
+                      >
+                        LAN Wi-Fi
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setActiveUrlType('localhost')}
+                      className={`flex-1 py-1 rounded text-center font-medium transition-all ${
+                        activeUrlType === 'localhost'
+                          ? 'bg-white text-black font-semibold shadow-sm'
+                          : 'text-github-muted hover:text-white'
+                      }`}
+                    >
+                      Localhost
+                    </button>
+                  </div>
+                </div>
+
+                {/* Direct Links Column */}
+                <div className="md:col-span-7 space-y-3">
+                  {/* Public Link */}
+                  <div className="p-3 rounded-xl bg-[#0d1117] border border-github-border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 font-semibold text-white text-xs">
+                        <Globe className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Public Internet Access</span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-emerald-950/60 text-emerald-300 border border-emerald-800/40">
+                        {networkInfo.isTunnelActive ? 'Active Tunnel' : 'Remote'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={networkInfo.publicUrl || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5001')}
+                        className="flex-1 bg-[#161b22] border border-github-border rounded-lg px-2.5 py-1.5 text-xs text-white font-mono outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(networkInfo.publicUrl || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5001'), 'public')}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-white border border-github-border transition-colors flex items-center gap-1"
+                        title="Copy Public URL"
+                      >
+                        {copiedType === 'public' ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5 text-github-muted" />
+                        )}
+                        <span>{copiedType === 'public' ? 'Copied' : 'Copy'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Wi-Fi LAN Link */}
+                  {networkInfo.localNetworkUrl && (
+                    <div className="p-3 rounded-xl bg-[#0d1117] border border-github-border space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-semibold text-white text-xs">
+                          <Wifi className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Same Wi-Fi Network (LAN)</span>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-blue-950/60 text-blue-300 border border-blue-800/40">
+                          Local IP
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={networkInfo.localNetworkUrl}
+                          className="flex-1 bg-[#161b22] border border-github-border rounded-lg px-2.5 py-1.5 text-xs text-white font-mono outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(networkInfo.localNetworkUrl, 'lan')}
+                          className="px-2.5 py-1.5 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-white border border-github-border transition-colors flex items-center gap-1"
+                          title="Copy LAN URL"
+                        >
+                          {copiedType === 'lan' ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5 text-github-muted" />
+                          )}
+                          <span>{copiedType === 'lan' ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Localhost Link */}
+                  <div className="p-3 rounded-xl bg-[#0d1117] border border-github-border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 font-semibold text-white text-xs">
+                        <Laptop className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Localhost Machine</span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-purple-950/60 text-purple-300 border border-purple-800/40">
+                        Loopback
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={networkInfo.localhostUrl}
+                        className="flex-1 bg-[#161b22] border border-github-border rounded-lg px-2.5 py-1.5 text-xs text-white font-mono outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(networkInfo.localhostUrl, 'localhost')}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-white border border-github-border transition-colors flex items-center gap-1"
+                        title="Copy Localhost URL"
+                      >
+                        {copiedType === 'localhost' ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5 text-github-muted" />
+                        )}
+                        <span>{copiedType === 'localhost' ? 'Copied' : 'Copy'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: User Management (Admin Only) */}
+          {activeTab === 'users' && isAdmin && (
+            <div className="space-y-4">
+              <UserManagementSection
+                currentUser={currentUser || userProfile}
+                theme={theme}
+              />
+            </div>
+          )}
+
+          {/* TAB 5: Sync & Data Portability */}
           {activeTab === 'sync' && (
             <div className="space-y-6">
               {/* Persistence & Database Sync */}

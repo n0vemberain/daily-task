@@ -1,11 +1,12 @@
 import React from 'react';
-import { CalendarDays, Flame, CheckSquare, User, Plus, Timer } from 'lucide-react';
+import { CalendarDays, Flame, CheckSquare, Settings, Timer } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 export default function MobileBottomNav({
   activeTab,
   setActiveTab,
-  onQuickAdd
+  onQuickAdd,
+  onOpenSettings
 }) {
   const { theme } = useTheme();
 
@@ -14,7 +15,7 @@ export default function MobileBottomNav({
     { id: 'challenges', label: 'Goals', icon: Flame },
     { id: 'tasks', label: 'Tasks', icon: CheckSquare },
     { id: 'timer', label: 'Timer', icon: Timer },
-    { id: 'profile', label: 'Profile', icon: User }
+    { id: 'settings', label: 'Settings', icon: Settings, action: onOpenSettings }
   ];
 
   return (
@@ -26,7 +27,13 @@ export default function MobileBottomNav({
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                if (tab.action) {
+                  tab.action();
+                } else {
+                  setActiveTab(tab.id);
+                }
+              }}
               className={`flex-1 flex flex-col items-center justify-center min-h-[44px] rounded-lg transition-colors py-1 ${
                 isActive ? 'font-bold' : 'text-github-muted hover:text-white'
               }`}
