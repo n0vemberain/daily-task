@@ -9,7 +9,8 @@ import {
   Lock,
   Eye,
   EyeOff,
-  ShieldCheck
+  ShieldCheck,
+  ArrowLeft
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -22,7 +23,8 @@ export default function DataCleanModal({
   onResetDemoData,
   tasksCount = 0,
   challengesCount = 0,
-  userProfile
+  userProfile,
+  returnToSettings = false
 }) {
   const { theme } = useTheme();
   const [authPassword, setAuthPassword] = useState('');
@@ -85,8 +87,14 @@ export default function DataCleanModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-github-border bg-[#0d1117]">
           <div className="flex items-center gap-2.5">
@@ -98,12 +106,25 @@ export default function DataCleanModal({
               <p className="text-[11px] text-github-muted">Password-protected data cleaning and reset operations</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-md text-github-muted hover:text-white hover:bg-[#21262d] transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-github-muted hover:text-white bg-[#21262d] hover:bg-[#30363d] border border-github-border transition-colors"
+              title={returnToSettings ? 'Back to Settings' : 'Go Back'}
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded-md text-github-muted hover:text-white hover:bg-[#21262d] transition-colors"
+              title="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -258,10 +279,12 @@ export default function DataCleanModal({
         {/* Footer */}
         <div className="px-5 py-3 bg-[#0d1117] border-t border-github-border flex justify-end">
           <button
+            type="button"
             onClick={onClose}
-            className="px-4 py-1.5 text-xs font-medium text-github-muted hover:text-white transition-colors"
+            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white bg-[#21262d] hover:bg-[#30363d] rounded-lg border border-github-border transition-colors"
           >
-            Close
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>{returnToSettings ? 'Back to Settings' : 'Close'}</span>
           </button>
         </div>
       </div>

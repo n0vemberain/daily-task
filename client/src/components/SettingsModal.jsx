@@ -48,12 +48,19 @@ export default function SettingsModal({
   onOpenCleanCenter,
   userProfile,
   currentUser,
-  onSaveProfile
+  onSaveProfile,
+  initialTab = 'general'
 }) {
   const { theme, themeId, setThemeId, availableThemes } = useTheme();
   const [isMuted, setIsMuted] = useState(soundEffects.isMuted());
-  const [activeTab, setActiveTab] = useState('general'); // 'general', 'skills', 'network', 'users', 'sync'
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [statusMessage, setStatusMessage] = useState(null);
+
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   // Skills state
   const [skills, setSkills] = useState(
@@ -295,8 +302,14 @@ export default function SettingsModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-[#161b22] border border-github-border rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[88vh]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#161b22] border border-github-border rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[88vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
         <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-github-border bg-[#0d1117] flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -312,9 +325,6 @@ export default function SettingsModal({
             </div>
             <div>
               <h3 className="text-base font-bold text-white tracking-tight">Application Settings</h3>
-              <p className="text-xs text-github-muted mt-0.5">
-                Preferences, skills, remote access, accounts, and sync
-              </p>
             </div>
           </div>
           <button

@@ -19,7 +19,8 @@ import {
   X,
   RefreshCw,
   User,
-  GraduationCap
+  GraduationCap,
+  ArrowLeft
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { soundEffects } from '../utils/audioFeedback';
@@ -633,8 +634,14 @@ export default function UserManagementSection({ currentUser, theme, embedded = f
 
       {/* MODAL 1: Add New User */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => setIsAddModalOpen(false)}
+        >
+          <div
+            className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-5 py-4 border-b border-github-border bg-[#0d1117]">
               <div className="flex items-center gap-2.5">
                 <div
@@ -652,12 +659,25 @@ export default function UserManagementSection({ currentUser, theme, embedded = f
                   <p className="text-[11px] text-github-muted">Data will be isolated to this user</p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1 text-github-muted hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-github-muted hover:text-white bg-[#21262d] hover:bg-[#30363d] border border-github-border transition-colors"
+                  title="Go Back"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="p-1.5 text-github-muted hover:text-white rounded-lg hover:bg-[#21262d] transition-colors"
+                  title="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleCreateUser} className="p-5 space-y-4">
@@ -752,9 +772,10 @@ export default function UserManagementSection({ currentUser, theme, embedded = f
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-github-muted hover:text-white transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-github-muted hover:text-white transition-colors"
                 >
-                  Cancel
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back to Settings</span>
                 </button>
                 <button
                   type="submit"
@@ -772,8 +793,14 @@ export default function UserManagementSection({ currentUser, theme, embedded = f
 
       {/* MODAL 2: Edit User Credentials */}
       {isEditModalOpen && targetUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => setIsEditModalOpen(false)}
+        >
+          <div
+            className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-5 py-4 border-b border-github-border bg-[#0d1117]">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-amber-950/50 border border-amber-800/50 flex items-center justify-center text-amber-400">
@@ -784,12 +811,25 @@ export default function UserManagementSection({ currentUser, theme, embedded = f
                   <p className="text-[11px] text-github-muted">Modifying @{targetUser.username}</p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="p-1 text-github-muted hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-github-muted hover:text-white bg-[#21262d] hover:bg-[#30363d] border border-github-border transition-colors"
+                  title="Go Back"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="p-1.5 text-github-muted hover:text-white rounded-lg hover:bg-[#21262d] transition-colors"
+                  title="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleUpdateCredentials} className="p-5 space-y-4">
@@ -938,9 +978,10 @@ export default function UserManagementSection({ currentUser, theme, embedded = f
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-github-muted hover:text-white transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-github-muted hover:text-white transition-colors"
                 >
-                  Cancel
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back to Settings</span>
                 </button>
                 <button
                   type="submit"
@@ -958,8 +999,14 @@ export default function UserManagementSection({ currentUser, theme, embedded = f
 
       {/* MODAL 3: Delete User Confirmation */}
       {isDeleteModalOpen && targetUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-[#161b22] border border-red-900/50 rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => setIsDeleteModalOpen(false)}
+        >
+          <div
+            className="bg-[#161b22] border border-red-900/50 rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-5 py-4 border-b border-github-border bg-red-950/20">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-red-950 border border-red-800 text-red-400 flex items-center justify-center">
@@ -970,12 +1017,25 @@ export default function UserManagementSection({ currentUser, theme, embedded = f
                   <p className="text-[11px] text-red-300">Irreversible Action</p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="p-1 text-github-muted hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-github-muted hover:text-white bg-[#21262d] hover:bg-[#30363d] border border-github-border transition-colors"
+                  title="Go Back"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="p-1.5 text-github-muted hover:text-white rounded-lg hover:bg-[#21262d] transition-colors"
+                  title="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleDeleteUser} className="p-5 space-y-4">
@@ -1008,9 +1068,10 @@ export default function UserManagementSection({ currentUser, theme, embedded = f
                 <button
                   type="button"
                   onClick={() => setIsDeleteModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-github-muted hover:text-white transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-github-muted hover:text-white transition-colors"
                 >
-                  Cancel
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back to Settings</span>
                 </button>
                 <button
                   type="submit"

@@ -33,8 +33,10 @@ export default function App() {
 
   // Modals State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState('general');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isCleanCenterOpen, setIsCleanCenterOpen] = useState(false);
+  const [returnToSettingsFromClean, setReturnToSettingsFromClean] = useState(false);
 
   // Core State initialized from LocalStorage (Isolated per active user)
   const [currentUser, setCurrentUser] = useState(() => storageService.getCurrentUser());
@@ -596,7 +598,10 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         userProfile={userProfile}
-        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenSettings={() => {
+          setSettingsInitialTab('general');
+          setIsSettingsOpen(true);
+        }}
         onOpenProfile={() => setIsProfileModalOpen(true)}
         onSignOut={handleSignOut}
       />
@@ -731,7 +736,13 @@ export default function App() {
         onManualSync={() => performSync()}
         data={{ user: userProfile, tasks, challenges }}
         onRestoreData={handleRestoreData}
-        onOpenCleanCenter={() => setIsCleanCenterOpen(true)}
+        onOpenCleanCenter={() => {
+          setReturnToSettingsFromClean(true);
+          setSettingsInitialTab('sync');
+          setIsSettingsOpen(false);
+          setIsCleanCenterOpen(true);
+        }}
+        initialTab={settingsInitialTab}
         userProfile={userProfile}
         currentUser={currentUser}
         onSaveProfile={handleSaveProfile}
@@ -748,7 +759,14 @@ export default function App() {
       {/* Standalone Password-Protected Data Clean Center Modal */}
       <DataCleanModal
         isOpen={isCleanCenterOpen}
-        onClose={() => setIsCleanCenterOpen(false)}
+        returnToSettings={returnToSettingsFromClean}
+        onClose={() => {
+          setIsCleanCenterOpen(false);
+          if (returnToSettingsFromClean) {
+            setIsSettingsOpen(true);
+            setReturnToSettingsFromClean(false);
+          }
+        }}
         onClearAllData={handleClearAllData}
         onClearCompletedTasks={handleClearCompletedTasks}
         onClearChallenges={handleClearChallenges}
@@ -762,7 +780,10 @@ export default function App() {
       <MobileBottomNav
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenSettings={() => {
+          setSettingsInitialTab('general');
+          setIsSettingsOpen(true);
+        }}
         onQuickAdd={() => {
           setActiveTab('tasks');
           window.scrollTo({ top: 0, behavior: 'smooth' });
