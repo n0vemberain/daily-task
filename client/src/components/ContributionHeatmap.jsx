@@ -15,10 +15,10 @@ export const HEATMAP_THEMES = {
       1: 'bg-[#263b19] border-[#384f27] hover:border-[#4d6b2c]',
       2: 'bg-[#3d5c24] border-[#4e7430] hover:border-[#63923c]',
       3: 'bg-[#5a8533] border-[#6ea03f] hover:border-[#83bd4b]',
-      4: 'bg-[#7eb644] border-[#92ce52] hover:border-[#abeb64]'
+      4: 'bg-[#7eb644] border-[#92ce52] hover:border-[#abeb64] shadow-sm shadow-olive-600/40'
     },
     hexLevels: ['#161b22', '#263b19', '#3d5c24', '#5a8533', '#7eb644'],
-    selectedRing: 'border-white ring-1 ring-white/80',
+    selectedRing: 'bg-olive-500 border-white ring-2 ring-olive-400 shadow-md shadow-olive-600/50',
     badgeClass: 'bg-olive-950 text-olive-300 border-olive-700/40',
     activeBtn: 'bg-olive-800 text-white border-olive-600/50 shadow-sm'
   },
@@ -32,10 +32,10 @@ export const HEATMAP_THEMES = {
       1: 'bg-[#0e4429] border-[#165b38] hover:border-[#1d784b]',
       2: 'bg-[#006d32] border-[#108c43] hover:border-[#1ca853]',
       3: 'bg-[#26a641] border-[#34c453] hover:border-[#42dd64]',
-      4: 'bg-[#39d353] border-[#55ea6f] hover:border-[#76f08c]'
+      4: 'bg-[#39d353] border-[#55ea6f] hover:border-[#76f08c] shadow-sm shadow-emerald-600/40'
     },
     hexLevels: ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'],
-    selectedRing: 'border-white ring-1 ring-white/80',
+    selectedRing: 'bg-emerald-500 border-white ring-2 ring-emerald-400 shadow-md shadow-emerald-600/50',
     badgeClass: 'bg-emerald-950 text-emerald-300 border-emerald-700/40',
     activeBtn: 'bg-emerald-800 text-white border-emerald-600/50 shadow-sm'
   },
@@ -49,10 +49,10 @@ export const HEATMAP_THEMES = {
       1: 'bg-[#0b3c49] border-[#115769] hover:border-[#16728a]',
       2: 'bg-[#0e6075] border-[#15819e] hover:border-[#1da5c9]',
       3: 'bg-[#189cb5] border-[#25c4e3] hover:border-[#41d2f0]',
-      4: 'bg-[#38d8f5] border-[#67e4fa] hover:border-[#96eefa]'
+      4: 'bg-[#38d8f5] border-[#67e4fa] hover:border-[#96eefa] shadow-sm shadow-cyan-600/40'
     },
     hexLevels: ['#161b22', '#0b3c49', '#0e6075', '#189cb5', '#38d8f5'],
-    selectedRing: 'border-white ring-1 ring-white/80',
+    selectedRing: 'bg-cyan-500 border-white ring-2 ring-cyan-400 shadow-md shadow-cyan-600/50',
     badgeClass: 'bg-cyan-950 text-cyan-300 border-cyan-700/40',
     activeBtn: 'bg-cyan-800 text-white border-cyan-600/50 shadow-sm'
   },
@@ -66,10 +66,10 @@ export const HEATMAP_THEMES = {
       1: 'bg-[#452607] border-[#61360a] hover:border-[#7e470e]',
       2: 'bg-[#783c07] border-[#9c4f09] hover:border-[#bf610c]',
       3: 'bg-[#b86209] border-[#e0770b] hover:border-[#f58d1b]',
-      4: 'bg-[#f59e0b] border-[#fbbf24] hover:border-[#fcd34d]'
+      4: 'bg-[#f59e0b] border-[#fbbf24] hover:border-[#fcd34d] shadow-sm shadow-amber-600/40'
     },
     hexLevels: ['#161b22', '#452607', '#783c07', '#b86209', '#f59e0b'],
-    selectedRing: 'border-white ring-1 ring-white/80',
+    selectedRing: 'bg-amber-500 border-white ring-2 ring-amber-400 shadow-md shadow-amber-600/50',
     badgeClass: 'bg-amber-950 text-amber-300 border-amber-700/40',
     activeBtn: 'bg-amber-800 text-white border-amber-600/50 shadow-sm'
   },
@@ -83,10 +83,10 @@ export const HEATMAP_THEMES = {
       1: 'bg-[#341948] border-[#4b2469] hover:border-[#632f8a]',
       2: 'bg-[#58207c] border-[#762ca6] hover:border-[#9637d4]',
       3: 'bg-[#8736bf] border-[#a948ee] hover:border-[#c26df5]',
-      4: 'bg-[#b366f5] border-[#c884fa] hover:border-[#dcabfc]'
+      4: 'bg-[#b366f5] border-[#c884fa] hover:border-[#dcabfc] shadow-sm shadow-purple-600/40'
     },
     hexLevels: ['#161b22', '#341948', '#58207c', '#8736bf', '#b366f5'],
-    selectedRing: 'border-white ring-1 ring-white/80',
+    selectedRing: 'bg-purple-500 border-white ring-2 ring-purple-400 shadow-md shadow-purple-600/50',
     badgeClass: 'bg-purple-950 text-purple-300 border-purple-700/40',
     activeBtn: 'bg-purple-800 text-white border-purple-600/50 shadow-sm'
   }
@@ -295,11 +295,22 @@ export default function ContributionHeatmap({
     }
   }, [timeRange]);
 
-  // Click outside listener: neutralizes heatmap selection when clicking anywhere outside
+  // Click outside listener: when any box is selected, clicking anywhere other than the heatmap cells unselects it
   useEffect(() => {
-    const handleOutsideClick = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        if (selectedDate && onSelectDate) {
+    const handleGlobalClick = (e) => {
+      // If clicking inside a heatmap cell, let handleCellClick handle selection/toggle
+      if (e.target.closest('.heatmap-cell') || e.target.closest('[data-heatmap-cell="true"]')) {
+        return;
+      }
+
+      // If clicking inside the active mobile drawer (e.g. interacting with drawer), do not auto-unselect
+      if (e.target.closest('[data-heatmap-drawer="true"]')) {
+        return;
+      }
+
+      // If user clicks anywhere else on the page or outside, unselect the active box
+      if (selectedDate || mobileSelectedDay) {
+        if (onSelectDate) {
           onSelectDate(null);
         }
         setMobileSelectedDay(null);
@@ -307,42 +318,46 @@ export default function ContributionHeatmap({
       }
     };
 
-    document.addEventListener('mousedown', handleOutsideClick);
-    document.addEventListener('touchstart', handleOutsideClick);
+    document.addEventListener('pointerdown', handleGlobalClick);
     return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-      document.removeEventListener('touchstart', handleOutsideClick);
+      document.removeEventListener('pointerdown', handleGlobalClick);
     };
-  }, [selectedDate, onSelectDate]);
+  }, [selectedDate, mobileSelectedDay, onSelectDate]);
 
-  // Color resolver based on completed task count and current theme - purely shows activity without glow
+  // Color resolver based on completed task count and current theme
   const getThemeLevelClass = (count, isFuture, isSelected) => {
     if (isFuture) {
       return 'bg-[#12161b]/50 border-[#1f242c] opacity-40 cursor-not-allowed';
     }
 
-    let baseLevel = currentTheme.levels[0];
-    if (count === 1) {
-      baseLevel = currentTheme.levels[1];
-    } else if (count === 2) {
-      baseLevel = currentTheme.levels[2];
-    } else if (count <= 4) {
-      baseLevel = currentTheme.levels[3];
-    } else if (count > 4) {
-      baseLevel = currentTheme.levels[4];
+    if (isSelected) {
+      return currentTheme.selectedRing;
     }
 
-    if (isSelected) {
-      return `${baseLevel} ${currentTheme.selectedRing}`;
+    if (count === 0) {
+      return currentTheme.levels[0];
     }
-    return baseLevel;
+    if (count === 1) {
+      return currentTheme.levels[1];
+    }
+    if (count === 2) {
+      return currentTheme.levels[2];
+    }
+    if (count <= 4) {
+      return currentTheme.levels[3];
+    }
+    return currentTheme.levels[4];
   };
 
   const handleCellClick = (day) => {
     if (day.isFuture) return;
-    setMobileSelectedDay(day);
-    if (onSelectDate) {
-      onSelectDate(day.date === selectedDate ? null : day.date);
+    const isCurrentlySelected = selectedDate === day.date || mobileSelectedDay?.date === day.date;
+    if (isCurrentlySelected) {
+      setMobileSelectedDay(null);
+      if (onSelectDate) onSelectDate(null);
+    } else {
+      setMobileSelectedDay(day);
+      if (onSelectDate) onSelectDate(day.date);
     }
   };
 
@@ -529,11 +544,12 @@ export default function ContributionHeatmap({
                     return (
                       <button
                         key={dIdx}
+                        data-heatmap-cell="true"
                         onClick={() => handleCellClick(day)}
                         onMouseEnter={(e) => handleCellHover(e, day)}
                         onMouseLeave={handleCellLeave}
                         disabled={day.isFuture}
-                        className={`aspect-square min-h-[38px] sm:min-h-[46px] rounded-lg border flex flex-col items-center justify-center p-1 transition-all ${levelClass} focus:outline-none`}
+                        className={`aspect-square min-h-[38px] sm:min-h-[46px] rounded-lg border flex flex-col items-center justify-center p-1 transition-all heatmap-cell ${levelClass} focus:outline-none`}
                         aria-label={`${day.formattedDate}: ${day.count} tasks completed`}
                       >
                         <span className="text-[11px] font-mono leading-none font-medium">
@@ -620,6 +636,7 @@ export default function ContributionHeatmap({
                       return (
                         <button
                           key={dIdx}
+                          data-heatmap-cell="true"
                           onClick={() => handleCellClick(day)}
                           onMouseEnter={(e) => handleCellHover(e, day)}
                           onMouseLeave={handleCellLeave}
@@ -639,7 +656,7 @@ export default function ContributionHeatmap({
 
       {/* Mobile Active Day Detail Drawer */}
       {mobileSelectedDay && (
-        <div className="sm:hidden mt-3 p-3.5 rounded-xl bg-[#0d1117] border border-github-border flex flex-col gap-2.5 animate-in fade-in">
+        <div data-heatmap-drawer="true" className="sm:hidden mt-3 p-3.5 rounded-xl bg-[#0d1117] border border-github-border flex flex-col gap-2.5 animate-in fade-in">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-xs text-white">

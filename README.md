@@ -97,8 +97,8 @@ Unit and integration tests are executed using Vitest and React Testing Library:
 $ npm test --prefix client
 
  Test Files  13 passed (13)
-      Tests  61 passed (61)
-   Duration  3.73s
+      Tests  62 passed (62)
+   Duration  3.98s
 ```
 
 Detailed test coverage and audit metrics are documented in [TESTING_REPORT.md](TESTING_REPORT.md).

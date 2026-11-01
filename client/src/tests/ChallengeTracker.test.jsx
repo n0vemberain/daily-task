@@ -88,4 +88,45 @@ describe('ChallengeTracker Component', () => {
     expect(screen.getByText(/Day 3 Check-in & Daily Tasks/i)).toBeInTheDocument();
     expect(screen.getByText('Binary Tree Traversal')).toBeInTheDocument();
   });
+
+  it('requires password authorization when deleting a challenge', () => {
+    const handleDeleteChallenge = vi.fn();
+    const mockProfile = {
+      username: 'testuser',
+      password: 'ChallengeSecret123!'
+    };
+
+    render(
+      <ChallengeTracker
+        challenges={mockChallenges}
+        onDeleteChallenge={handleDeleteChallenge}
+        userProfile={mockProfile}
+      />
+    );
+
+    // Click delete challenge button
+    const deleteBtn = screen.getByTitle('Delete Challenge (Requires password)');
+    fireEvent.click(deleteBtn);
+
+    // Password prompt opens
+    expect(screen.getByText('Authorize Challenge Deletion')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Deleting goal challenge "30-Day LeetCode Challenge" and its progress requires your account password\./i)
+    ).toBeInTheDocument();
+
+    const passwordInput = screen.getByPlaceholderText('Enter your account password...');
+
+    // Enter wrong password
+    fireEvent.change(passwordInput, { target: { value: 'WrongPass' } });
+    fireEvent.click(screen.getByRole('button', { name: /Authorize & Proceed/i }));
+
+    expect(screen.getByText(/Incorrect password\. Authorization failed\./i)).toBeInTheDocument();
+    expect(handleDeleteChallenge).not.toHaveBeenCalled();
+
+    // Enter correct password
+    fireEvent.change(passwordInput, { target: { value: 'ChallengeSecret123!' } });
+    fireEvent.click(screen.getByRole('button', { name: /Authorize & Proceed/i }));
+
+    expect(handleDeleteChallenge).toHaveBeenCalledWith('ch-1');
+  });
 });

@@ -68,7 +68,7 @@ describe('ContributionHeatmap Component', () => {
     expect(screen.getByText(/Emerald Mint Shades/i)).toBeInTheDocument();
   });
 
-  it('neutralizes selection when clicking outside the heatmap', () => {
+  it('unselects and returns to neutral state when clicking anywhere outside or elsewhere', () => {
     const handleSelectDate = vi.fn();
     const today = formatDateStr(new Date());
 
@@ -83,29 +83,35 @@ describe('ContributionHeatmap Component', () => {
       </div>
     );
 
-    // Simulate clicking outside the heatmap container
+    // Simulate clicking elsewhere on the page
     const outsideEl = screen.getByTestId('outside-element');
-    fireEvent.mouseDown(outsideEl);
+    fireEvent.pointerDown(outsideEl);
 
     expect(handleSelectDate).toHaveBeenCalledWith(null);
   });
 
-  it('keeps clean activity level appearance without glowing shadow halos when selected', () => {
+  it('renders neutral dark color for 0 tasks and bright radiant glow for higher task activity', () => {
     const today = formatDateStr(new Date());
+    const manyTasks = Array.from({ length: 6 }, (_, i) => ({
+      id: `task-high-${i}`,
+      title: `Intense task ${i}`,
+      date: today,
+      completed: true
+    }));
 
     const { container } = render(
       <ContributionHeatmap
-        tasks={sampleTasks}
-        selectedDate={today}
+        tasks={manyTasks}
+        selectedDate={null}
       />
     );
 
-    // Any cell with selectedRing should have border-white and ring-1 without glowing shadow-md
-    const selectedCells = container.querySelectorAll('.ring-1.ring-white\\/80');
-    expect(selectedCells.length).toBeGreaterThan(0);
-    selectedCells.forEach((cell) => {
-      expect(cell.className).not.toMatch(/shadow-md/);
-      expect(cell.className).not.toMatch(/shadow-olive/);
-    });
+    // Check that 0-task cells have neutral background bg-[#161b22]
+    const zeroTaskCells = container.querySelectorAll('.bg-\\[\\#161b22\\]');
+    expect(zeroTaskCells.length).toBeGreaterThan(0);
+
+    // Check that Level 4 high activity day has radiant shadow glow
+    const highActivityCell = container.querySelectorAll('.shadow-sm');
+    expect(highActivityCell.length).toBeGreaterThan(0);
   });
 });

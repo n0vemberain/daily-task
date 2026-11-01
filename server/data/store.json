@@ -16,7 +16,21 @@
     ],
     "avatarUrl": ""
   },
-  "tasks": [],
+  "tasks": [
+    {
+      "id": "task-1793533433153",
+      "title": "okay",
+      "category": "Coding",
+      "priority": "Medium",
+      "date": "2026-11-02",
+      "estimatedMinutes": 30,
+      "completed": true,
+      "completedAt": "2026-11-01T11:44:09.702Z",
+      "challengeId": "ch-1",
+      "challengeTitle": "30-Day Full-Stack & LeetCode Sprint",
+      "dayNumber": 10
+    }
+  ],
   "challenges": [],
   "timerSessions": [
     {
@@ -60,5 +74,5 @@
       "label": "Computer Networks"
     }
   ],
-  "lastUpdated": "2026-10-31T20:33:54.760Z"
+  "lastUpdated": "2026-11-01T11:48:46.145Z"
 }

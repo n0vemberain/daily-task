@@ -15,6 +15,7 @@ import {
 import ChallengeModal from './ChallengeModal';
 import CheckInModal from './CheckInModal';
 import EditChallengeModal from './EditChallengeModal';
+import PasswordPromptModal from './PasswordPromptModal';
 import { formatDateStr } from '../data/initialData';
 import { useTheme } from '../context/ThemeContext';
 
@@ -35,8 +36,20 @@ export default function ChallengeTracker({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedDayCheckIn, setSelectedDayCheckIn] = useState(null); // { challenge, dayItem }
   const [editingChallenge, setEditingChallenge] = useState(null);
+  const [challengeToDelete, setChallengeToDelete] = useState(null);
 
   const todayStr = formatDateStr(new Date());
+
+  const handleDeleteClick = (challenge) => {
+    setChallengeToDelete(challenge);
+  };
+
+  const handleConfirmDeleteChallenge = () => {
+    if (challengeToDelete && onDeleteChallenge) {
+      onDeleteChallenge(challengeToDelete.id || challengeToDelete._id);
+      setChallengeToDelete(null);
+    }
+  };
 
   const filteredChallenges = challenges.filter((c) => {
     if (filter === 'active') return c.status === 'active';
@@ -234,9 +247,9 @@ export default function ChallengeTracker({
 
                     {/* Delete Challenge */}
                     <button
-                      onClick={() => onDeleteChallenge(challenge.id || challenge._id)}
+                      onClick={() => handleDeleteClick(challenge)}
                       className="p-1.5 rounded-md text-github-muted hover:text-red-400 hover:bg-[#21262d] transition-colors"
-                      title="Delete Challenge"
+                      title="Delete Challenge (Requires password)"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -409,6 +422,20 @@ export default function ChallengeTracker({
         onClose={() => setEditingChallenge(null)}
         challenge={editingChallenge}
         onSaveChallenge={onEditChallenge}
+      />
+
+      {/* Password Authorization Modal for Deleting Challenge */}
+      <PasswordPromptModal
+        isOpen={Boolean(challengeToDelete)}
+        onClose={() => setChallengeToDelete(null)}
+        onSuccess={handleConfirmDeleteChallenge}
+        userProfile={userProfile}
+        title="Authorize Challenge Deletion"
+        description={
+          challengeToDelete
+            ? `Deleting goal challenge "${challengeToDelete.title}" and its progress requires your account password.`
+            : 'Deleting a goal challenge requires your account password.'
+        }
       />
     </div>
   );
