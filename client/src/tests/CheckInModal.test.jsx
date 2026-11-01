@@ -207,4 +207,87 @@ describe('CheckInModal Component', () => {
     // Now quick add task form is accessible
     expect(screen.getByPlaceholderText(/What will you study\/do on Day 1\?/i)).toBeInTheDocument();
   });
+
+  it('locks status selection on future days while allowing task planning', () => {
+    const futureDate = '2099-12-31';
+    const mockDayItemFuture = {
+      dayNumber: 25,
+      date: futureDate,
+      status: 'pending',
+      note: ''
+    };
+
+    const handleAddTask = vi.fn();
+
+    render(
+      <CheckInModal
+        isOpen={true}
+        challenge={mockChallenge}
+        dayItem={mockDayItemFuture}
+        tasks={[]}
+        onAddTask={handleAddTask}
+        onClose={vi.fn()}
+        onSaveCheckIn={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Planning Mode \(Future\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Check-in Locked \(Future Day\)/i)).toBeInTheDocument();
+
+    // Check status buttons are disabled
+    const completedBtn = screen.getByRole('button', { name: /Completed/i });
+    expect(completedBtn).toBeDisabled();
+
+    // But planning tasks for this future day is fully enabled!
+    const taskInput = screen.getByPlaceholderText(/What will you study\/do on Day 25\?/i);
+    expect(taskInput).toBeInTheDocument();
+
+    fireEvent.change(taskInput, { target: { value: 'Future System Design Reading' } });
+    const addBtn = screen.getByRole('button', { name: /Add Task/i });
+    fireEvent.click(addBtn);
+
+    expect(handleAddTask).toHaveBeenCalledTimes(1);
+    expect(handleAddTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Future System Design Reading',
+        dayNumber: 25,
+        date: futureDate
+      })
+    );
+  });
+
+  it('renders rollover badge for tasks carried over from previous challenge days', () => {
+    const rolledOverTasks = [
+      {
+        id: 'rollover-task-1',
+        title: 'Unfinished Dynamic Programming',
+        challengeId: 'ch-1',
+        dayNumber: 5,
+        date: todayStr,
+        completed: false,
+        priority: 'High',
+        estimatedMinutes: 45,
+        rolledOverFrom: {
+          dayNumber: 4,
+          date: '2026-11-01',
+          originalTaskId: 'task-orig-4'
+        }
+      }
+    ];
+
+    render(
+      <CheckInModal
+        isOpen={true}
+        challenge={mockChallenge}
+        dayItem={mockDayItemToday}
+        tasks={rolledOverTasks}
+        onClose={vi.fn()}
+        onSaveCheckIn={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByText(/Pending from Day 4 \(2026-11-01\)/i)
+    ).toBeInTheDocument();
+  });
 });

@@ -12,7 +12,15 @@ import LoginView from './components/LoginView';
 import MobileBottomNav from './components/MobileBottomNav';
 import { storageService } from './services/storageService';
 import { apiService } from './services/apiService';
-import { formatDateStr, initialUserProfile, initialTasks, initialChallenges, initialTimerSessions } from './data/initialData';
+import {
+  formatDateStr,
+  initialUserProfile,
+  initialTasks,
+  sampleDemoTasks,
+  initialChallenges,
+  initialTimerSessions
+} from './data/initialData';
+import { processChallengeTaskRollovers } from './utils/challengeRollover';
 import { Calendar, Flame, CheckSquare, Database, Quote, Timer } from 'lucide-react';
 import GithubIcon from './components/GithubIcon';
 import { useTheme } from './context/ThemeContext';
@@ -67,15 +75,7 @@ export default function App() {
         user: storageService.getUserProfile(),
         tasks: storageService.getTasks(),
         challenges: storageService.getChallenges(),
-        timerSessions: storageService.getTimerSessions(),
-        heatmapHistory: (() => {
-          try {
-            const h = localStorage.getItem('daily_task_heatmap_history_v1');
-            return h ? JSON.parse(h) : {};
-          } catch (e) {
-            return {};
-          }
-        })()
+        timerSessions: storageService.getTimerSessions()
       };
 
       const result = await apiService.syncAll(dataToSync);
@@ -86,33 +86,17 @@ export default function App() {
           setUserProfile(result.data.user);
           storageService.saveUserProfile(result.data.user);
         }
-        if (Array.isArray(result.data.tasks) && result.data.tasks.length > 0) {
+        if (Array.isArray(result.data.tasks)) {
           setTasks(result.data.tasks);
           storageService.saveTasks(result.data.tasks);
         }
-        if (Array.isArray(result.data.challenges) && result.data.challenges.length > 0) {
+        if (Array.isArray(result.data.challenges)) {
           setChallenges(result.data.challenges);
           storageService.saveChallenges(result.data.challenges);
         }
-        if (Array.isArray(result.data.timerSessions) && result.data.timerSessions.length > 0) {
+        if (Array.isArray(result.data.timerSessions)) {
           setTimerSessions(result.data.timerSessions);
           storageService.saveTimerSessions(result.data.timerSessions);
-        }
-        if (result.data.heatmapHistory) {
-          try {
-            const localH = JSON.parse(localStorage.getItem('daily_task_heatmap_history_v1') || '{}');
-            const merged = { ...localH };
-            Object.entries(result.data.heatmapHistory).forEach(([d, val]) => {
-              const exCount = merged[d]?.count || 0;
-              const inCount = typeof val === 'number' ? val : (val?.count || 0);
-              merged[d] = {
-                count: Math.max(exCount, inCount),
-                tasks: Array.from(new Set([...(merged[d]?.tasks || []), ...(val?.tasks || [])])),
-                isLocked: true
-              };
-            });
-            localStorage.setItem('daily_task_heatmap_history_v1', JSON.stringify(merged));
-          } catch (e) {}
         }
         setMongoStatus({ connected: true, isMongoConnected: !!result.data.isMongoConnected });
       }
@@ -132,33 +116,17 @@ export default function App() {
           setUserProfile(res.data.user);
           storageService.saveUserProfile(res.data.user);
         }
-        if (Array.isArray(res.data.tasks) && res.data.tasks.length > 0) {
+        if (Array.isArray(res.data.tasks)) {
           setTasks(res.data.tasks);
           storageService.saveTasks(res.data.tasks);
         }
-        if (Array.isArray(res.data.challenges) && res.data.challenges.length > 0) {
+        if (Array.isArray(res.data.challenges)) {
           setChallenges(res.data.challenges);
           storageService.saveChallenges(res.data.challenges);
         }
-        if (Array.isArray(res.data.timerSessions) && res.data.timerSessions.length > 0) {
+        if (Array.isArray(res.data.timerSessions)) {
           setTimerSessions(res.data.timerSessions);
           storageService.saveTimerSessions(res.data.timerSessions);
-        }
-        if (res.data.heatmapHistory) {
-          try {
-            const localH = JSON.parse(localStorage.getItem('daily_task_heatmap_history_v1') || '{}');
-            const merged = { ...localH };
-            Object.entries(res.data.heatmapHistory).forEach(([d, val]) => {
-              const exCount = merged[d]?.count || 0;
-              const inCount = typeof val === 'number' ? val : (val?.count || 0);
-              merged[d] = {
-                count: Math.max(exCount, inCount),
-                tasks: Array.from(new Set([...(merged[d]?.tasks || []), ...(val?.tasks || [])])),
-                isLocked: true
-              };
-            });
-            localStorage.setItem('daily_task_heatmap_history_v1', JSON.stringify(merged));
-          } catch (e) {}
         }
       }
       checkServerStatus();
@@ -173,6 +141,19 @@ export default function App() {
 
     return () => clearInterval(interval);
   }, [checkServerStatus, performSync]);
+
+  // Automatic Challenge Task Carryover / Rollover for uncompleted tasks on past challenge days
+  useEffect(() => {
+    if (tasks.length > 0 && challenges.length > 0) {
+      const today = formatDateStr(new Date());
+      const { updatedTasks, hasChanges } = processChallengeTaskRollovers(tasks, challenges, today);
+      if (hasChanges) {
+        setTasks(updatedTasks);
+        storageService.saveTasks(updatedTasks);
+        performSync({ user: userProfile, tasks: updatedTasks, challenges });
+      }
+    }
+  }, [challenges, tasks, userProfile, performSync]);
 
   // Handlers for Authentication
   const handleLoginSuccess = ({ rememberMe, username }) => {
@@ -234,24 +215,6 @@ export default function App() {
   };
 
   const handleDeleteTask = async (taskId) => {
-    const taskToDelete = tasks.find((t) => t.id === taskId || t._id === taskId);
-    // Lock the past day's contribution count into heatmapHistory before deleting task,
-    // so deleting a task NEVER deletes or changes previous heatmap blocks!
-    if (taskToDelete && taskToDelete.completed && taskToDelete.date) {
-      try {
-        const stored = JSON.parse(localStorage.getItem('daily_task_heatmap_history_v1') || '{}');
-        const d = taskToDelete.date;
-        const tasksOnDate = tasks.filter(t => t.completed && t.date === d);
-        const lockedCount = Math.max(stored[d]?.count || 0, tasksOnDate.length);
-        stored[d] = {
-          count: lockedCount,
-          tasks: stored[d]?.tasks || tasksOnDate.map(t => t.title),
-          isLocked: true
-        };
-        localStorage.setItem('daily_task_heatmap_history_v1', JSON.stringify(stored));
-      } catch (e) {}
-    }
-
     const updated = tasks.filter((t) => t.id !== taskId && t._id !== taskId);
     setTasks(updated);
     storageService.saveTasks(updated);
@@ -357,18 +320,77 @@ export default function App() {
     await apiService.deleteChallenge(challengeId);
   };
 
-  // Individual Challenge Edit Handler
+  // Individual Challenge Edit Handler with schedule and linked task adaptation
   const handleEditChallenge = async (challengeId, updatedFields) => {
+    const addDays = (dStr, days) => {
+      const d = new Date(dStr);
+      d.setDate(d.getDate() + days);
+      return formatDateStr(d);
+    };
+
+    let targetUpdatedChallenge = null;
+
     const updated = challenges.map((ch) => {
       if (ch.id === challengeId || ch._id === challengeId) {
-        return { ...ch, ...updatedFields };
+        const newStartDate = updatedFields.startDate || ch.startDate || formatDateStr(new Date());
+        const newDuration = updatedFields.durationDays
+          ? parseInt(updatedFields.durationDays, 10)
+          : ch.durationDays || ch.totalDays || 30;
+        const newEndDate = addDays(newStartDate, newDuration - 1);
+
+        // Adapt checkIns for the new duration and dates while preserving existing day status & notes
+        const prevCheckIns = ch.checkIns || [];
+        const newCheckIns = Array.from({ length: newDuration }, (_, i) => {
+          const dayNumber = i + 1;
+          const dayDate = addDays(newStartDate, i);
+          const existing = prevCheckIns.find((ci) => ci.dayNumber === dayNumber);
+          return {
+            dayNumber,
+            date: dayDate,
+            status: existing?.status || 'pending',
+            note: existing?.note || '',
+            completedAt: existing?.completedAt || null
+          };
+        });
+
+        const merged = {
+          ...ch,
+          ...updatedFields,
+          startDate: newStartDate,
+          endDate: newEndDate,
+          durationDays: newDuration,
+          totalDays: newDuration,
+          checkIns: newCheckIns
+        };
+        targetUpdatedChallenge = merged;
+        return merged;
       }
       return ch;
     });
 
     setChallenges(updated);
     storageService.saveChallenges(updated);
-    performSync({ user: userProfile, tasks, challenges: updated });
+
+    // Sync dates for any tasks linked to this challenge's days
+    let updatedTasks = tasks;
+    if (targetUpdatedChallenge && targetUpdatedChallenge.checkIns) {
+      updatedTasks = tasks.map((t) => {
+        if ((t.challengeId === challengeId || t.challengeId === targetUpdatedChallenge.id) && t.dayNumber) {
+          const matchingDay = targetUpdatedChallenge.checkIns.find((d) => d.dayNumber === t.dayNumber);
+          if (matchingDay && matchingDay.date !== t.date) {
+            return { ...t, date: matchingDay.date };
+          }
+        }
+        return t;
+      });
+
+      if (updatedTasks !== tasks) {
+        setTasks(updatedTasks);
+        storageService.saveTasks(updatedTasks);
+      }
+    }
+
+    performSync({ user: userProfile, tasks: updatedTasks, challenges: updated });
   };
 
   // Focus Timer Session Handlers
@@ -392,35 +414,41 @@ export default function App() {
     storageService.saveTasks([]);
     storageService.saveChallenges([]);
     storageService.saveTimerSessions([]);
-    await performSync({ user: userProfile, tasks: [], challenges: [] });
+    try {
+      localStorage.removeItem('daily_task_heatmap_history_v1');
+      localStorage.setItem('daily_task_initialized', 'true');
+    } catch (e) {}
+    await apiService.resetAll();
   };
 
   const handleClearCompletedTasks = async () => {
     const remaining = tasks.filter((t) => !t.completed);
     setTasks(remaining);
     storageService.saveTasks(remaining);
-    await performSync({ user: userProfile, tasks: remaining, challenges });
+    await performSync({ user: userProfile, tasks: remaining, challenges, overwrite: true });
   };
 
   const handleClearChallenges = async () => {
     setChallenges([]);
     storageService.saveChallenges([]);
-    await performSync({ user: userProfile, tasks, challenges: [] });
+    await performSync({ user: userProfile, tasks, challenges: [], overwrite: true });
   };
 
   const handleResetDemoData = () => {
     setUserProfile(initialUserProfile);
-    setTasks(initialTasks);
+    setTasks(sampleDemoTasks);
     setChallenges(initialChallenges);
     setTimerSessions(initialTimerSessions);
     storageService.saveUserProfile(initialUserProfile);
-    storageService.saveTasks(initialTasks);
+    storageService.saveTasks(sampleDemoTasks);
     storageService.saveChallenges(initialChallenges);
     storageService.saveTimerSessions(initialTimerSessions);
     performSync({
       user: initialUserProfile,
-      tasks: initialTasks,
-      challenges: initialChallenges
+      tasks: sampleDemoTasks,
+      challenges: initialChallenges,
+      timerSessions: initialTimerSessions,
+      overwrite: true
     });
   };
 

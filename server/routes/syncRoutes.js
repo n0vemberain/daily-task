@@ -31,10 +31,10 @@ router.get('/', async (req, res) => {
 // POST /api/sync - Bi-directional intelligent full sync
 router.post('/', async (req, res) => {
   try {
-    const { user, tasks, challenges, timerSessions, heatmapHistory } = req.body;
+    const { user, tasks, challenges, timerSessions, heatmapHistory, overwrite } = req.body;
 
     // 1. Sync into persistent file store (Guarantees cross-device data persistence)
-    const syncedData = fileStore.syncAll({ user, tasks, challenges, timerSessions, heatmapHistory });
+    const syncedData = fileStore.syncAll({ user, tasks, challenges, timerSessions, heatmapHistory, overwrite });
 
     // 2. If MongoDB is actively connected (readyState === 1), mirror to Mongo
     if (mongoose.connection && mongoose.connection.readyState === 1) {
@@ -60,6 +60,29 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('[Sync Error]:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/sync/reset - Complete Factory Reset
+router.post('/reset', async (req, res) => {
+  try {
+    const freshData = fileStore.factoryReset();
+    if (mongoose.connection && mongoose.connection.readyState === 1) {
+      try {
+        if (Task?.deleteMany) await Task.deleteMany({});
+        if (Challenge?.deleteMany) await Challenge.deleteMany({});
+      } catch (mErr) {
+        // Ignore Mongo mirror error
+      }
+    }
+    res.json({
+      success: true,
+      message: 'Factory reset completed successfully',
+      data: freshData
+    });
+  } catch (error) {
+    console.error('[Reset Error]:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });

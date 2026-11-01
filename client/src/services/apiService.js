@@ -25,12 +25,26 @@ export const apiService = {
     }
   },
 
-  syncAll: async ({ user, tasks, challenges, timerSessions, heatmapHistory }) => {
+  syncAll: async ({ user, tasks, challenges, timerSessions, heatmapHistory, overwrite = false }) => {
     try {
       const res = await fetch(`${BASE_URL}/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user, tasks, challenges, timerSessions, heatmapHistory }),
+        body: JSON.stringify({ user, tasks, challenges, timerSessions, heatmapHistory, overwrite }),
+        signal: AbortSignal.timeout(8000)
+      });
+      const data = await res.json();
+      return data;
+    } catch (e) {
+      return { success: false, error: e.message, offline: true };
+    }
+  },
+
+  resetAll: async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/sync/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         signal: AbortSignal.timeout(8000)
       });
       const data = await res.json();

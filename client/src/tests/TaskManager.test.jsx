@@ -260,4 +260,42 @@ describe('TaskManager Component', () => {
 
     expect(screen.getByText(/Day 3 • 30-Day LeetCode Grind/i)).toBeInTheDocument();
   });
+
+  it('displays rollover badge when a task was carried over from previous day', () => {
+    const rolledOverTasks = [
+      {
+        id: 'rollover-task-2',
+        title: 'Review System Design Microservices',
+        category: 'Study',
+        priority: 'High',
+        estimatedMinutes: 45,
+        date: todayStr,
+        completed: false,
+        challengeId: 'ch-1',
+        challengeTitle: '30-Day LeetCode Grind',
+        dayNumber: 2,
+        rolledOverFrom: {
+          dayNumber: 1,
+          date: '2026-11-01',
+          originalTaskId: 'task-orig-1'
+        }
+      }
+    ];
+
+    render(
+      <ThemeProvider>
+        <TaskManager
+          tasks={rolledOverTasks}
+          onAddTask={vi.fn()}
+          onToggleTask={vi.fn()}
+          onDeleteTask={vi.fn()}
+          onEditTask={vi.fn()}
+        />
+      </ThemeProvider>
+    );
+
+    expect(
+      screen.getByText(/Pending from Day 1 \(2026-11-01\)/i)
+    ).toBeInTheDocument();
+  });
 });

@@ -73,8 +73,11 @@ export const initialTasks = [
     completedAt: null,
     date: todayStr,
     estimatedMinutes: 30
-  },
-  // Past tasks to populate heatmap realistically
+  }
+];
+
+export const sampleDemoTasks = [
+  ...initialTasks,
   {
     id: 'task-p1',
     title: 'Review System Design Microservices Patterns',
@@ -115,7 +118,6 @@ export const initialTasks = [
     date: getPastDateStr(1),
     estimatedMinutes: 20
   },
-  // Days 2 to 60 with realistic activity
   ...generateHistoricalTasks()
 ];
 

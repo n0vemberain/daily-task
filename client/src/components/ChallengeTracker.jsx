@@ -422,6 +422,7 @@ export default function ChallengeTracker({
         onClose={() => setEditingChallenge(null)}
         challenge={editingChallenge}
         onSaveChallenge={onEditChallenge}
+        userProfile={userProfile}
       />
 
       {/* Password Authorization Modal for Deleting Challenge */}

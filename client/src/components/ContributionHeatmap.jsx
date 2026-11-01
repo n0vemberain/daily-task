@@ -136,18 +136,10 @@ export default function ContributionHeatmap({
 
   const todayDateStr = formatDateStr(new Date());
 
-  // Map task completions by date with locked past contribution history
+  // Map task completions dynamically by date
+  // Reflects task additions, completions, and deletions in real-time
   const activityMap = useMemo(() => {
-    // 1. Retrieve locked history from localStorage if available
-    let savedHistory = {};
-    try {
-      const stored = localStorage.getItem('daily_task_heatmap_history_v1');
-      if (stored) savedHistory = JSON.parse(stored);
-    } catch (e) {}
-
     const map = {};
-
-    // 2. Aggregate current tasks
     (tasks || []).forEach(t => {
       if (t.completed && t.date) {
         if (!map[t.date]) {
@@ -159,35 +151,8 @@ export default function ContributionHeatmap({
         }
       }
     });
-
-    // 3. For any past date (d < todayDateStr), preserve and lock historical contributions
-    // Ensuring the heatmap block count NEVER decreases or deletes even if a task is deleted
-    const allDates = new Set([...Object.keys(savedHistory), ...Object.keys(map)]);
-    allDates.forEach(d => {
-      const isPastDate = d < todayDateStr;
-      const currentEntry = map[d] || { count: 0, tasks: [] };
-      const savedEntry = savedHistory[d] || { count: 0, tasks: [] };
-
-      if (isPastDate) {
-        const lockedCount = Math.max(savedEntry.count || 0, currentEntry.count || 0);
-        const mergedTasks = Array.from(new Set([...(savedEntry.tasks || []), ...(currentEntry.tasks || [])]));
-        map[d] = {
-          count: lockedCount,
-          tasks: mergedTasks,
-          isLocked: true
-        };
-      } else {
-        map[d] = currentEntry;
-      }
-    });
-
-    // 4. Save updated history so past blocks stay permanently locked
-    try {
-      localStorage.setItem('daily_task_heatmap_history_v1', JSON.stringify(map));
-    } catch (e) {}
-
     return map;
-  }, [tasks, todayDateStr]);
+  }, [tasks]);
 
   // Compute weeks & days based on selected timeRange (year=52, half=26, month=5)
   const { weeks, monthLabels, totalTasksCount, activeDaysCount, timeRangeLabel } = useMemo(() => {

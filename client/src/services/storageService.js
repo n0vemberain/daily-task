@@ -32,10 +32,14 @@ export const storageService = {
   getTasks: () => {
     try {
       const data = localStorage.getItem(KEYS.TASKS);
-      return data ? JSON.parse(data) : initialTasks;
+      if (data !== null) return JSON.parse(data);
+      if (localStorage.getItem('daily_task_initialized') === 'true') {
+        return [];
+      }
+      return initialTasks;
     } catch (e) {
       console.error('Error reading tasks from localStorage', e);
-      return initialTasks;
+      return [];
     }
   },
 

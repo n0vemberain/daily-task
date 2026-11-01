@@ -472,8 +472,21 @@ class FileStore {
   }
 
   // Full Bi-Directional Intelligent Sync
-  syncAll({ user, tasks, challenges, timerSessions }) {
+  syncAll({ user, tasks, challenges, timerSessions, overwrite = false }) {
     const store = this.readStore();
+
+    if (overwrite) {
+      if (user && user.username) {
+        store.user = { ...(store.user || defaultUserProfile), ...user };
+      }
+      store.tasks = Array.isArray(tasks) ? tasks : [];
+      store.challenges = Array.isArray(challenges) ? challenges : [];
+      store.timerSessions = Array.isArray(timerSessions) ? timerSessions : [];
+      store.heatmapHistory = {};
+      store.lastUpdated = new Date().toISOString();
+      this.writeStore(store);
+      return store;
+    }
 
     // 1. Merge User
     if (user && user.username) {
@@ -484,75 +497,69 @@ class FileStore {
     }
 
     // 2. Merge Tasks: combine existing store tasks with incoming tasks by id / title+date
-    if (Array.isArray(tasks) && tasks.length > 0) {
-      const taskMap = new Map();
-      // First put server tasks
-      (store.tasks || []).forEach(t => {
-        const key = t.id || `${t.title}_${t.date}`;
-        taskMap.set(key, t);
-      });
-      // Then merge incoming tasks (incoming overrides if newer or completed)
-      tasks.forEach(incoming => {
-        const key = incoming.id || `${incoming.title}_${incoming.date}`;
-        if (taskMap.has(key)) {
-          const existing = taskMap.get(key);
-          // If incoming is completed or modified, keep incoming
-          taskMap.set(key, { ...existing, ...incoming });
-        } else {
-          taskMap.set(key, incoming);
-        }
-      });
-      store.tasks = Array.from(taskMap.values());
+    if (Array.isArray(tasks)) {
+      if (tasks.length === 0) {
+        store.tasks = [];
+      } else {
+        const taskMap = new Map();
+        (store.tasks || []).forEach(t => {
+          const key = t.id || `${t.title}_${t.date}`;
+          taskMap.set(key, t);
+        });
+        tasks.forEach(incoming => {
+          const key = incoming.id || `${incoming.title}_${incoming.date}`;
+          if (taskMap.has(key)) {
+            const existing = taskMap.get(key);
+            taskMap.set(key, { ...existing, ...incoming });
+          } else {
+            taskMap.set(key, incoming);
+          }
+        });
+        store.tasks = Array.from(taskMap.values());
+      }
     }
 
     // 3. Merge Challenges
-    if (Array.isArray(challenges) && challenges.length > 0) {
-      const chMap = new Map();
-      (store.challenges || []).forEach(c => {
-        const key = c.id || c.title;
-        chMap.set(key, c);
-      });
-      challenges.forEach(incoming => {
-        const key = incoming.id || incoming.title;
-        if (chMap.has(key)) {
-          chMap.set(key, { ...chMap.get(key), ...incoming });
-        } else {
-          chMap.set(key, incoming);
-        }
-      });
-      store.challenges = Array.from(chMap.values());
+    if (Array.isArray(challenges)) {
+      if (challenges.length === 0) {
+        store.challenges = [];
+      } else {
+        const chMap = new Map();
+        (store.challenges || []).forEach(c => {
+          const key = c.id || c.title;
+          chMap.set(key, c);
+        });
+        challenges.forEach(incoming => {
+          const key = incoming.id || incoming.title;
+          if (chMap.has(key)) {
+            chMap.set(key, { ...chMap.get(key), ...incoming });
+          } else {
+            chMap.set(key, incoming);
+          }
+        });
+        store.challenges = Array.from(chMap.values());
+      }
     }
 
     // 4. Merge Timer Sessions
-    if (Array.isArray(timerSessions) && timerSessions.length > 0) {
-      const sessMap = new Map();
-      (store.timerSessions || []).forEach(s => {
-        sessMap.set(s.id, s);
-      });
-      timerSessions.forEach(incoming => {
-        if (incoming.id) {
-          sessMap.set(incoming.id, incoming);
-        }
-      });
-      store.timerSessions = Array.from(sessMap.values());
+    if (Array.isArray(timerSessions)) {
+      if (timerSessions.length === 0) {
+        store.timerSessions = [];
+      } else {
+        const sessMap = new Map();
+        (store.timerSessions || []).forEach(s => {
+          sessMap.set(s.id, s);
+        });
+        timerSessions.forEach(incoming => {
+          if (incoming.id) {
+            sessMap.set(incoming.id, incoming);
+          }
+        });
+        store.timerSessions = Array.from(sessMap.values());
+      }
     }
 
-    // 5. Merge Heatmap History (Locked Past Contributions)
-    if (heatmapHistory && typeof heatmapHistory === 'object') {
-      const currentHistory = store.heatmapHistory || {};
-      const merged = { ...currentHistory };
-      Object.entries(heatmapHistory).forEach(([d, val]) => {
-        const exCount = merged[d]?.count || 0;
-        const inCount = typeof val === 'number' ? val : (val?.count || 0);
-        merged[d] = {
-          count: Math.max(exCount, inCount),
-          tasks: Array.from(new Set([...(merged[d]?.tasks || []), ...(val?.tasks || [])])),
-          isLocked: true
-        };
-      });
-      store.heatmapHistory = merged;
-    }
-
+    store.lastUpdated = new Date().toISOString();
     this.writeStore(store);
 
     return {
@@ -563,6 +570,19 @@ class FileStore {
       heatmapHistory: store.heatmapHistory || {},
       lastUpdated: store.lastUpdated
     };
+  }
+
+  factoryReset() {
+    const fresh = {
+      user: defaultUserProfile,
+      tasks: [],
+      challenges: [],
+      timerSessions: [],
+      heatmapHistory: {},
+      lastUpdated: new Date().toISOString()
+    };
+    this.writeStore(fresh);
+    return fresh;
   }
 }
 

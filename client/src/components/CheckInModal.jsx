@@ -36,7 +36,11 @@ export default function CheckInModal({
   const { theme } = useTheme();
   const todayStr = formatDateStr(new Date());
 
-  const [status, setStatus] = useState(dayItem?.status || 'completed');
+  const isPast = dayItem?.date ? dayItem.date < todayStr : false;
+  const isFuture = dayItem?.date ? dayItem.date > todayStr : false;
+  const isToday = dayItem?.date ? dayItem.date === todayStr : false;
+
+  const [status, setStatus] = useState(dayItem?.status || (isPast ? 'pending' : 'completed'));
   const [note, setNote] = useState(dayItem?.note || '');
 
   // Password authorization for past history modification
@@ -44,13 +48,12 @@ export default function CheckInModal({
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
 
+  const isLocked = isPast && !isUnlocked;
+
   // Form state for adding daily tasks to this day
   const [taskTitle, setTaskTitle] = useState('');
   const [taskPriority, setTaskPriority] = useState('Medium');
   const [taskMinutes, setTaskMinutes] = useState(30);
-
-  const isPast = dayItem?.date ? dayItem.date < todayStr : false;
-  const isLocked = isPast && !isUnlocked;
 
   // Filter tasks specific to this challenge and day
   const dayTasks = useMemo(() => {
@@ -151,6 +154,7 @@ export default function CheckInModal({
   };
 
   const handleStatusSelect = (selectedStatus) => {
+    if (isFuture) return;
     if (isLocked) {
       setPendingAction(() => () => setStatus(selectedStatus));
       setIsPasswordModalOpen(true);
@@ -178,6 +182,7 @@ export default function CheckInModal({
   };
 
   const handleSave = (selectedStatus) => {
+    if (isFuture) return;
     const finalStatus = selectedStatus || status;
 
     if (isLocked) {
@@ -261,7 +266,7 @@ export default function CheckInModal({
                   </button>
                 </div>
               )
-            ) : dayItem.date === todayStr ? (
+            ) : isToday ? (
               <span
                 className="text-[10px] px-2 py-0.5 rounded font-bold border"
                 style={{
@@ -272,25 +277,50 @@ export default function CheckInModal({
               >
                 Today
               </span>
-            ) : null}
+            ) : (
+              <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-blue-950/40 text-blue-300 border border-blue-800/40 flex items-center gap-1">
+                <Clock className="w-2.5 h-2.5" />
+                Planning Mode (Future)
+              </span>
+            )}
           </div>
 
           {/* Status Selection Buttons */}
           <div>
-            <label className="block text-xs font-semibold text-github-text uppercase tracking-wider mb-2">
-              Select Status
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-semibold text-github-text uppercase tracking-wider">
+                Select Status
+              </label>
+              {isFuture && (
+                <span className="text-[10px] text-blue-300 font-mono">
+                  Unlocks on {formattedDate}
+                </span>
+              )}
+            </div>
+
+            {isFuture && (
+              <div className="p-2.5 rounded-lg bg-[#0d1117] border border-blue-900/40 text-xs text-blue-300 flex items-center gap-2 mb-2.5">
+                <Clock className="w-4 h-4 flex-shrink-0 text-blue-400" />
+                <span>
+                  Future Day Planning Mode: Completion status can only be recorded on this date. You can add and plan daily tasks below!
+                </span>
+              </div>
+            )}
+
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
+                disabled={isFuture}
                 onClick={() => handleStatusSelect('completed')}
                 className={`p-3 rounded-lg border flex flex-col items-center gap-1.5 transition-all text-xs font-medium ${
-                  status === 'completed'
+                  isFuture
+                    ? 'opacity-50 cursor-not-allowed bg-[#0d1117] border-github-border text-github-muted'
+                    : status === 'completed'
                     ? 'shadow-sm font-semibold'
                     : 'bg-[#0d1117] border-github-border text-github-muted hover:text-white'
                 }`}
                 style={
-                  status === 'completed'
+                  !isFuture && status === 'completed'
                     ? {
                         backgroundColor: theme.accentDark,
                         borderColor: theme.accent,
@@ -301,34 +331,40 @@ export default function CheckInModal({
               >
                 <CheckCircle2
                   className="w-5 h-5"
-                  style={{ color: status === 'completed' ? theme.accentLight : undefined }}
+                  style={{ color: !isFuture && status === 'completed' ? theme.accentLight : undefined }}
                 />
                 <span>Completed</span>
               </button>
 
               <button
                 type="button"
+                disabled={isFuture}
                 onClick={() => handleStatusSelect('skipped')}
                 className={`p-3 rounded-lg border flex flex-col items-center gap-1.5 transition-all text-xs font-medium ${
-                  status === 'skipped'
+                  isFuture
+                    ? 'opacity-50 cursor-not-allowed bg-[#0d1117] border-github-border text-github-muted'
+                    : status === 'skipped'
                     ? 'bg-amber-950/60 border-amber-500 text-white shadow-sm font-semibold'
                     : 'bg-[#0d1117] border-github-border text-github-muted hover:text-white hover:border-amber-800'
                 }`}
               >
-                <XCircle className={`w-5 h-5 ${status === 'skipped' ? 'text-amber-400' : 'text-github-muted'}`} />
+                <XCircle className={`w-5 h-5 ${!isFuture && status === 'skipped' ? 'text-amber-400' : 'text-github-muted'}`} />
                 <span>Skipped / Rest</span>
               </button>
 
               <button
                 type="button"
+                disabled={isFuture}
                 onClick={() => handleStatusSelect('pending')}
                 className={`p-3 rounded-lg border flex flex-col items-center gap-1.5 transition-all text-xs font-medium ${
-                  status === 'pending'
+                  isFuture
+                    ? 'opacity-50 cursor-not-allowed bg-[#0d1117] border-github-border text-github-muted'
+                    : status === 'pending'
                     ? 'bg-[#21262d] border-github-borderLight text-white shadow-sm font-semibold'
                     : 'bg-[#0d1117] border-github-border text-github-muted hover:text-white'
                 }`}
               >
-                <RotateCcw className={`w-5 h-5 ${status === 'pending' ? 'text-white' : 'text-github-muted'}`} />
+                <RotateCcw className={`w-5 h-5 ${!isFuture && status === 'pending' ? 'text-white' : 'text-github-muted'}`} />
                 <span>Pending</span>
               </button>
             </div>
@@ -395,13 +431,24 @@ export default function CheckInModal({
                             <Circle className="w-4 h-4 text-github-muted hover:text-white" />
                           )}
                         </button>
-                        <span
-                          className={`truncate font-medium ${
-                            task.completed ? 'line-through text-github-muted' : 'text-white'
-                          }`}
-                        >
-                          {task.title}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                          <span
+                            className={`truncate font-medium ${
+                              task.completed ? 'line-through text-github-muted' : 'text-white'
+                            }`}
+                          >
+                            {task.title}
+                          </span>
+                          {task.rolledOverFrom && (
+                            <span
+                              className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-rose-950/50 text-rose-300 border border-rose-800/50 flex items-center gap-1 select-none"
+                              title={`Carried over from Day ${task.rolledOverFrom.dayNumber} (${task.rolledOverFrom.date})`}
+                            >
+                              <RotateCcw className="w-2.5 h-2.5 text-rose-400" />
+                              <span>Pending from Day {task.rolledOverFrom.dayNumber} ({task.rolledOverFrom.date})</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-2 flex-shrink-0">
@@ -534,14 +581,26 @@ export default function CheckInModal({
             >
               Cancel
             </button>
-            <button
-              type="button"
-              onClick={() => handleSave()}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold ${theme.primaryBtn} shadow-md transition-all`}
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Save Check-in</span>
-            </button>
+            {isFuture ? (
+              <button
+                type="button"
+                disabled
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-[#21262d] text-github-muted border border-github-border cursor-not-allowed opacity-60"
+                title={`Check-in unlocks on ${formattedDate}`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>Check-in Locked (Future Day)</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleSave()}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold ${theme.primaryBtn} shadow-md transition-all`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Save Check-in</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

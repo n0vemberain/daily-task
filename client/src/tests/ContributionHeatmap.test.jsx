@@ -114,4 +114,12 @@ describe('ContributionHeatmap Component', () => {
     const highActivityCell = container.querySelectorAll('.shadow-sm');
     expect(highActivityCell.length).toBeGreaterThan(0);
   });
+
+  it('renders completely clean heatmap (0 completed tasks, 0 active days) when tasks array is empty', () => {
+    render(<ContributionHeatmap tasks={[]} />);
+    expect(screen.getByText(/completed tasks in/i)).toBeInTheDocument();
+    expect(screen.getByText(/active days/i)).toBeInTheDocument();
+    const zeros = screen.getAllByText('0');
+    expect(zeros.length).toBeGreaterThanOrEqual(2);
+  });
 });

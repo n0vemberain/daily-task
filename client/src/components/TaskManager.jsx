@@ -15,7 +15,8 @@ import {
   Tag,
   Lock,
   Flame,
-  ShieldCheck
+  ShieldCheck,
+  RotateCcw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatDateStr } from '../data/initialData';
@@ -749,6 +750,15 @@ export default function TaskManager({
                         >
                           <Flame className="w-3 h-3 text-amber-400" />
                           <span>Day {task.dayNumber || 1} • {task.challengeTitle}</span>
+                        </span>
+                      )}
+                      {task.rolledOverFrom && (
+                        <span
+                          className="text-[10px] px-2 py-0.5 rounded font-mono bg-rose-950/50 text-rose-300 border border-rose-800/50 flex items-center gap-1"
+                          title={`Pending task carried over from Day ${task.rolledOverFrom.dayNumber} (${task.rolledOverFrom.date})`}
+                        >
+                          <RotateCcw className="w-3 h-3 text-rose-400" />
+                          <span>Pending from Day {task.rolledOverFrom.dayNumber} ({task.rolledOverFrom.date})</span>
                         </span>
                       )}
                     </div>
