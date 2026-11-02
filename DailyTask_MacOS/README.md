@@ -12,7 +12,7 @@
 
 ---
 
-## ✨ Features
+## Features
 
 - **Native macOS Experience:** Beautiful dark mode interface, custom app icon, keyboard shortcuts, standard menu, and native dock integration.
 - **Optimized for Apple Silicon:** Built natively for `arm64` (Apple Silicon M1, M2, M3, M4) with instantaneous startup and low memory usage.
@@ -24,7 +24,7 @@
 
 ---
 
-## 🚀 Quick Install on macOS (.dmg)
+## Quick Install on macOS (.dmg)
 
 1. Download or locate `DailyTask-1.0.0-arm64.dmg` in the `release/` folder.
 2. Double-click the `.dmg` file to open the installer.
@@ -40,7 +40,7 @@
 
 ---
 
-## 🛠️ Development & Building
+## Development & Building
 
 ### Prerequisites
 - Node.js (v18+)
@@ -79,7 +79,7 @@ npm run dev
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 DailyTaskApp/
@@ -95,7 +95,7 @@ DailyTaskApp/
 
 ---
 
-## 👤 Author & License
+## Author & License
 
 - **Author:** Fatin Ishraque ([@n0vemberain](https://github.com/n0vemberain))
 - **License:** MIT
