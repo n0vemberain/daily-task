@@ -155,7 +155,7 @@ function createMainWindow(port) {
     minHeight: 650,
     backgroundColor: '#0d1117',
     icon: iconPath,
-    title: 'DailyTask - Personal Activity Dashboard',
+    title: 'Daily Task',
     show: false, // reveal gracefully when ready
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),

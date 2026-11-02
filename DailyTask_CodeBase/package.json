@@ -1,6 +1,6 @@
 {
   "name": "daily-task",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "private": true,
   "description": "Personal daily activity dashboard with GitHub-style olive green heatmap, challenge tracker, user profile, and dual MongoDB/localStorage persistence.",
   "scripts": {

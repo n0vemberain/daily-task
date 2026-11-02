@@ -1,7 +1,7 @@
 {
   "name": "daily-task-app",
-  "productName": "DailyTask",
-  "version": "1.0.0",
+  "productName": "Daily Task",
+  "version": "1.0.2",
   "private": true,
   "description": "Personal Daily Activity Dashboard & Habit Tracker for macOS and Desktop",
   "main": "electron/main.cjs",
@@ -40,7 +40,7 @@
   },
   "build": {
     "appId": "com.fatinishraque.dailytask",
-    "productName": "DailyTask",
+    "productName": "Daily Task",
     "copyright": "Copyright © 2026 Fatin Ishraque",
     "directories": {
       "output": "release"
