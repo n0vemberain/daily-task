@@ -39,47 +39,19 @@ You can run DailyTask as a native Mac app without opening any terminal or instal
 
 ---
 
-## 📸 Screenshots & UI Showcase
+## 📸 Screenshots & UI Preview
 
-<div align="center">
-
-| 1. Dashboard Overview & Contribution Heatmap | 2. Task Manager & Priority Filters |
+| | |
 | :---: | :---: |
-| ![Dashboard Overview](DailyTask_CodeBase/images/01.png) | ![Task Manager](DailyTask_CodeBase/images/02.png) |
-
-| 3. Goal Challenges & Habit Tracker | 4. Focus Timer (Pomodoro) |
-| :---: | :---: |
-| ![Goal Challenges](DailyTask_CodeBase/images/03.png) | ![Focus Timer](DailyTask_CodeBase/images/04.png) |
-
-| 5. Daily Check-In & Notes Modal | 6. User Profile & Engineering Skills |
-| :---: | :---: |
-| ![Check-In Modal](DailyTask_CodeBase/images/05.png) | ![User Profile](DailyTask_CodeBase/images/06.png) |
-
-| 7. Consolidated Settings & Heatmap Themes | 8. Multi-Tenant User Management |
-| :---: | :---: |
-| ![Settings](DailyTask_CodeBase/images/07.png) | ![User Management](DailyTask_CodeBase/images/08.png) |
-
-| 9. Data Clean & Purge Center | 10. Data Backup & JSON Restore |
-| :---: | :---: |
-| ![Data Clean](DailyTask_CodeBase/images/09.png) | ![Backup Modal](DailyTask_CodeBase/images/10.png) |
-
-| 11. Protected History Password Authorization | 12. Mobile Responsive Navigation |
-| :---: | :---: |
-| ![Password Prompt](DailyTask_CodeBase/images/11.png) | ![Mobile View](DailyTask_CodeBase/images/12.png) |
-
-| 13. Remote Access & Cloudflare Tunnel QR | 14. Authentication & Login Screen |
-| :---: | :---: |
-| ![Network Access](DailyTask_CodeBase/images/13.png) | ![Login Screen](DailyTask_CodeBase/images/14.png) |
-
-| 15. Day-by-Day Challenge Roadmap | 16. Interactive Confetti Celebration |
-| :---: | :---: |
-| ![Challenge Roadmap](DailyTask_CodeBase/images/15.png) | ![Confetti Effect](DailyTask_CodeBase/images/16.png) |
-
-| 17. Dual-Persistence Offline Sync Indicator | 18. Comprehensive Activity Breakdown |
-| :---: | :---: |
-| ![Sync Indicator](DailyTask_CodeBase/images/17.png) | ![Activity Breakdown](DailyTask_CodeBase/images/18.png) |
-
-</div>
+| ![](DailyTask_CodeBase/images/01.png) | ![](DailyTask_CodeBase/images/02.png) |
+| ![](DailyTask_CodeBase/images/03.png) | ![](DailyTask_CodeBase/images/04.png) |
+| ![](DailyTask_CodeBase/images/05.png) | ![](DailyTask_CodeBase/images/06.png) |
+| ![](DailyTask_CodeBase/images/07.png) | ![](DailyTask_CodeBase/images/08.png) |
+| ![](DailyTask_CodeBase/images/09.png) | ![](DailyTask_CodeBase/images/10.png) |
+| ![](DailyTask_CodeBase/images/11.png) | ![](DailyTask_CodeBase/images/12.png) |
+| ![](DailyTask_CodeBase/images/13.png) | ![](DailyTask_CodeBase/images/14.png) |
+| ![](DailyTask_CodeBase/images/15.png) | ![](DailyTask_CodeBase/images/16.png) |
+| ![](DailyTask_CodeBase/images/17.png) | ![](DailyTask_CodeBase/images/18.png) |
 
 ---
 
