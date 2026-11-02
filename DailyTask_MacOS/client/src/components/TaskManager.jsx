@@ -502,10 +502,10 @@ export default function TaskManager({
             <div className="flex items-center gap-1 bg-[#0d1117] p-1 rounded-lg border border-github-border text-xs overflow-x-auto scrollbar-none">
               <button
                 onClick={() => setFilter('today')}
-                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
+                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap border ${
                   filter === 'today'
-                    ? 'text-white border shadow-sm'
-                    : 'text-github-muted hover:text-white'
+                    ? 'text-white shadow-sm'
+                    : 'border-transparent text-github-muted hover:text-white'
                 }`}
                 style={
                   filter === 'today'
@@ -521,10 +521,10 @@ export default function TaskManager({
               </button>
               <button
                 onClick={() => setFilter('pending')}
-                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
+                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap border ${
                   filter === 'pending'
-                    ? 'text-white border shadow-sm'
-                    : 'text-github-muted hover:text-white'
+                    ? 'text-white shadow-sm'
+                    : 'border-transparent text-github-muted hover:text-white'
                 }`}
                 style={
                   filter === 'pending'
@@ -540,10 +540,10 @@ export default function TaskManager({
               </button>
               <button
                 onClick={() => setFilter('completed')}
-                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
+                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap border ${
                   filter === 'completed'
-                    ? 'text-white border shadow-sm'
-                    : 'text-github-muted hover:text-white'
+                    ? 'text-white shadow-sm'
+                    : 'border-transparent text-github-muted hover:text-white'
                 }`}
                 style={
                   filter === 'completed'
@@ -559,10 +559,10 @@ export default function TaskManager({
               </button>
               <button
                 onClick={() => setFilter('all')}
-                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap transition-all ${
+                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap border ${
                   filter === 'all'
-                    ? 'text-white border shadow-sm'
-                    : 'text-github-muted hover:text-white'
+                    ? 'text-white shadow-sm'
+                    : 'border-transparent text-github-muted hover:text-white'
                 }`}
                 style={
                   filter === 'all'
