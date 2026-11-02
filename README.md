@@ -1,7 +1,7 @@
 # DailyTask
 
 [![macOS DMG Release](https://img.shields.io/badge/Download-macOS%20(.dmg)%20v1.0.2-success?style=for-the-badge&logo=apple)](https://github.com/n0vemberain/daily-task/releases/latest)
-[![Windows Setup Release](https://img.shields.io/badge/Download-Windows%20Setup%20(.exe)%20v1.0.2-0078D6?style=for-the-badge&logo=windows)](https://github.com/n0vemberain/daily-task/releases/latest)
+[![Windows Setup Release](https://img.shields.io/badge/Download-Windows%20Setup%20(.exe)%20v0.0.1-0078D6?style=for-the-badge&logo=windows)](https://github.com/n0vemberain/daily-task/releases/latest)
 [![CI/CD Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)](https://github.com/n0vemberain/daily-task)
 [![Test Suite](https://img.shields.io/badge/tests-91%2F91%20passing-brightgreen?style=flat-square)](https://github.com/n0vemberain/daily-task)
 [![React](https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react)](https://react.dev/)
@@ -11,60 +11,53 @@
 [![Express](https://img.shields.io/badge/Express-4.21-gray?style=flat-square&logo=express)](https://expressjs.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-DailyTask is a personal productivity platform inspired by the GitHub aesthetic. It unites daily task management, multi-day habit challenges, and an interactive contribution heatmap into an offline-first desktop (macOS & Windows) and web experience with dual-persistence storage and remote access support.
+DailyTask is a personal productivity platform inspired by the GitHub aesthetic. It unites daily task management, multi-day habit challenges, and an interactive contribution heatmap into an offline-first desktop (Windows and macOS) and web experience with dual-persistence storage and remote access support.
 
 ---
 
-## 📥 Download Desktop Apps
+## Desktop Downloads and Releases
 
-### 🪟 Windows Desktop App (Setup Installer)
+| Operating System | Package Type | Architecture | Version | Binary File | Direct Download Link |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Windows** | NSIS Installer (`.exe`) | x64 (64-bit) | v0.0.1 | `Daily Task Setup 0.0.1.exe` | [Download for Windows](https://github.com/n0vemberain/daily-task/releases/latest) |
+| **macOS** | Disk Image (`.dmg`) | Apple Silicon (`arm64`) | v1.0.2 | `Daily Task-1.0.2-arm64.dmg` | [Download for macOS](https://github.com/n0vemberain/daily-task/releases/latest) |
 
-Run DailyTask natively on any Windows 10 or Windows 11 PC without opening any terminal or installing Node.js:
+Local binary locations in repository:
+- Windows installer: `DailyTask_Windows/release/Daily Task Setup 0.0.1.exe`
+- macOS disk image: `DailyTask_MacOS/release/Daily Task-1.0.2-arm64.dmg`
 
-[![Download for Windows](https://img.shields.io/badge/Download%20for%20Windows-Daily%20Task%20Setup%201.0.2%20(.exe)-0078D6?style=for-the-badge&logo=windows)](https://github.com/n0vemberain/daily-task/releases/latest)
+---
 
-> **Direct Release Link:** [Download Daily Task Setup 1.0.2.exe](https://github.com/n0vemberain/daily-task/releases/latest)  
-> *(Local binary also located at: `DailyTask_Windows/release/Daily Task Setup 1.0.2.exe`)*
+## Installation Instructions
 
-#### Windows Installation Steps:
-1. Download **`Daily Task Setup 1.0.2.exe`**.
+### Windows Installation Steps
+1. Download `Daily Task Setup 0.0.1.exe`.
 2. Double-click the `.exe` file to open the setup wizard.
-3. Choose your installation location (or accept default).
-4. Select Desktop & Start Menu shortcuts, then click **Install**.
+3. Choose the target destination folder or keep the default.
+4. Select Desktop and Start Menu shortcuts, then click **Install**.
 5. Launch **Daily Task** from your Desktop or Start Menu.
 
 > [!NOTE]
 > **Windows Defender SmartScreen Notice:**  
-> Since this app is independently compiled without a paid corporate certificate, Windows SmartScreen may show an informational message (*"Windows protected your PC"*).  
-> Click **"More info"** and then **"Run anyway"**. The application is 100% offline, secure, and open-source.
+> Since this app is independently compiled without a commercial Microsoft EV certificate, Windows SmartScreen may show an informational notice ("Windows protected your PC").  
+> Click **More info** and then click **Run anyway**. The app is completely offline, open-source, and self-contained.
 
----
-
-### 🍏 macOS Desktop App (.dmg)
-
-Run DailyTask as a native Mac app optimized for Apple Silicon:
-
-[![Download for macOS](https://img.shields.io/badge/Download%20for%20macOS-Apple%20Silicon%20(M1%2FM2%2FM3%2FM4)-black?style=for-the-badge&logo=apple)](https://github.com/n0vemberain/daily-task/releases/latest)
-
-> **Direct Release Link:** [Download Daily Task-1.0.2-arm64.dmg](https://github.com/n0vemberain/daily-task/releases/latest)  
-> *(Local binary also located at: `DailyTask_MacOS/release/Daily Task-1.0.2-arm64.dmg`)*
-
-#### macOS Installation Steps:
-1. Download **`Daily Task-1.0.2-arm64.dmg`**.
+### macOS Installation Steps
+1. Download `Daily Task-1.0.2-arm64.dmg`.
 2. Double-click the `.dmg` file to open the installer window.
 3. Drag **Daily Task** into your **Applications** folder.
 4. Launch **Daily Task** from Launchpad or Spotlight.
 
 > [!NOTE]
-> **First-Time macOS Gatekeeper Notice:**  
-> Simply **Right-Click** (or Control-Click) `Daily Task.app` in your Applications folder and select **Open**, or run this one-time command in Terminal:
+> **macOS Gatekeeper Notice:**  
+> On first launch, right-click (or Control-click) `Daily Task.app` in your Applications folder and select **Open**, or run this one-time command in Terminal:
 > ```bash
 > xattr -cr "/Applications/Daily Task.app"
 > ```
 
 ---
 
-## 📸 Screenshots & UI Preview
+## Screenshots and UI Preview
 
 | | |
 | :---: | :---: |
@@ -80,23 +73,23 @@ Run DailyTask as a native Mac app optimized for Apple Silicon:
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
-- **GitHub-Inspired Activity Heatmap:** Visualizes daily productivity with 1-Year, 6-Month, and 1-Month views across 5 color themes (Emerald Olive, Oceanic Blue, Royal Purple, Sunset Orange, Monochrome Dark).
-- **Multi-Day Goal Challenges:** Structured habit tracking (7, 14, 21, 30 days) with day-by-day task planning that syncs directly with your daily task list.
-- **Task Management & Priorities:** Flexible task CRUD with priority levels (High, Medium, Low), duration estimates, custom categories, and status filters (Today, Pending, Completed).
+- **GitHub-Inspired Activity Heatmap:** Visualizes daily productivity with 1-Year, 6-Month, and 1-Month views across 5 color themes (Emerald Olive, Oceanic Blue, Royal Purple, Sunset Orange, and Monochrome Dark).
+- **Multi-Day Goal Challenges:** Structured habit tracking (7, 14, 21, and 30 days) with day-by-day task planning that syncs directly with your daily task list.
+- **Task Management and Priorities:** Flexible task CRUD operations with priority levels (High, Medium, Low), duration estimates, custom categories, and status filters (Today, Pending, Completed).
 - **Protected History Mode:** Password authorization required to modify, mark, or delete tasks and check-ins from past dates to prevent accidental tampering.
-- **Multi-User Isolation & Security:** Administrator panel with isolated guest accounts, password management, and session control.
-- **Offline-First Persistence:** Instant local updates with background sync to Express FileStore. Safe persistent storage location prevents data wipe upon app reinstallation.
-- **Consolidated Settings:** Unified control center for themes, audio feedback chimes, data backup & export, clean center, and account security.
-- **Remote Access via Cloudflare Tunnel:** Built-in secure HTTPS remote access for mobile devices without opening router ports or exposing IP addresses.
+- **Multi-User Isolation and Security:** Administrator panel with isolated guest accounts, credential management, and session control.
+- **Offline-First Persistence:** Instant local updates with background sync to an embedded Express FileStore. Safe persistent storage locations prevent data loss on app reinstallation or updates.
+- **Consolidated Settings:** Unified control center for themes, audio feedback chimes, data backup and JSON export, clean center, and account security.
+- **Remote Access via Cloudflare Tunnel:** Built-in secure HTTPS remote access for mobile devices without opening router ports or exposing local network addresses.
 
 ---
 
-## 🚀 Execution & Build Options
+## Execution and Build Options
 
 ### Option 1: Windows Desktop App (.exe Installer)
-Use the pre-built installer in `DailyTask_Windows/release/Daily Task Setup 1.0.2.exe` or build from source:
+Use the pre-built installer in `DailyTask_Windows/release/Daily Task Setup 0.0.1.exe` or build from source:
 ```bash
 cd DailyTask_Windows
 npm install
@@ -112,7 +105,7 @@ npm run dist:mac
 ```
 
 ### Option 3: Local Web Server (Full-Stack Dev Mode)
-If you want to run or develop the web version:
+To run or develop the full-stack web version:
 
 1. **Navigate to codebase:**
    ```bash
@@ -131,14 +124,14 @@ If you want to run or develop the web version:
    - Frontend UI: `http://localhost:5173`
    - Express API: `http://localhost:5001`
 
-4. **Production Build & Start:**
+4. **Production Build and Start:**
    ```bash
    npm run build
    npm start
    ```
 
 ### Option 4: Remote Access via Cloudflare Tunnel
-To access your dashboard from your smartphone securely over HTTPS:
+To access your dashboard from your smartphone or tablet securely over HTTPS:
 ```bash
 cd DailyTask_CodeBase
 npm run tunnel
@@ -149,19 +142,19 @@ Execute the unit, integration, and stress test suites:
 ```bash
 cd DailyTask_CodeBase/client && npm test -- --run
 ```
-*(All 18 test suites, 91 unit/integration tests passing)*
+*(All 18 test suites, 91 unit and integration tests passing)*
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 DailyTask/
 ├── DailyTask_CodeBase/      # Full-stack web application (React 18 + Express 4)
 │   ├── client/              # React 18 frontend (Vite, Tailwind CSS, Lucide)
-│   ├── server/              # Express backend with FileStore & MongoDB
-│   ├── images/              # Application screenshots & UI showcases (01.png - 18.png)
-│   ├── scripts/             # Cloudflare Tunnel runner & automation
+│   ├── server/              # Express backend with FileStore and MongoDB
+│   ├── images/              # Application screenshots and UI showcases (01.png - 18.png)
+│   ├── scripts/             # Cloudflare Tunnel runner and automation
 │   ├── TESTING_REPORT.md    # Detailed stress and reliability report
 │   └── package.json         # Workspace scripts
 │
@@ -176,16 +169,16 @@ DailyTask/
 │   ├── electron/            # Main process, preload, and Windows icon.ico
 │   ├── client/              # React desktop view bundle
 │   ├── server/              # Embedded backend runner
-│   ├── release/             # Built Windows Setup .exe installer
-│   └── package.json         # Windows Electron & NSIS configuration
+│   ├── release/             # Built Windows Setup .exe installer (v0.0.1)
+│   └── package.json         # Windows Electron and NSIS configuration
 │
-└── README.md                # Project documentation & download portal
+└── README.md                # Project documentation and download portal
 ```
 
 ---
 
-## 👤 Author & License
+## Author and License
 
 - **Author:** Fatin Ishraque ([@n0vemberain](https://github.com/n0vemberain))
 - **Repository:** [https://github.com/n0vemberain/daily-task](https://github.com/n0vemberain/daily-task)
-- **License:** MIT
+- **License:** MIT License
