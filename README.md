@@ -1,40 +1,65 @@
 # DailyTask
 
-[![macOS DMG Release](https://img.shields.io/badge/Download-macOS%20(.dmg)%20v1.0.0-success?style=for-the-badge&logo=apple)](https://github.com/n0vemberain/daily-task/releases/latest)
+[![macOS DMG Release](https://img.shields.io/badge/Download-macOS%20(.dmg)%20v1.0.2-success?style=for-the-badge&logo=apple)](https://github.com/n0vemberain/daily-task/releases/latest)
+[![Windows Setup Release](https://img.shields.io/badge/Download-Windows%20Setup%20(.exe)%20v1.0.2-0078D6?style=for-the-badge&logo=windows)](https://github.com/n0vemberain/daily-task/releases/latest)
 [![CI/CD Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)](https://github.com/n0vemberain/daily-task)
 [![Test Suite](https://img.shields.io/badge/tests-91%2F91%20passing-brightgreen?style=flat-square)](https://github.com/n0vemberain/daily-task)
 [![React](https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react)](https://react.dev/)
-[![Electron](https://img.shields.io/badge/Electron-macOS%20Desktop-47848F?style=flat-square&logo=electron)](https://www.electronjs.org/)
+[![Electron](https://img.shields.io/badge/Electron-45%20Desktop-47848F?style=flat-square&logo=electron)](https://www.electronjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-5-purple?style=flat-square&logo=vite)](https://vitejs.dev/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
 [![Express](https://img.shields.io/badge/Express-4.21-gray?style=flat-square&logo=express)](https://expressjs.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-DailyTask is a personal productivity platform inspired by the GitHub aesthetic. It unites daily task management, multi-day habit challenges, and a contribution heatmap into an offline-first desktop and web experience with dual-persistence storage and remote access support.
+DailyTask is a personal productivity platform inspired by the GitHub aesthetic. It unites daily task management, multi-day habit challenges, and an interactive contribution heatmap into an offline-first desktop (macOS & Windows) and web experience with dual-persistence storage and remote access support.
 
 ---
 
-## 📥 Download Desktop App (macOS)
+## 📥 Download Desktop Apps
 
-You can run DailyTask as a native Mac app without opening any terminal or installing Node.js:
+### 🪟 Windows Desktop App (Setup Installer)
+
+Run DailyTask natively on any Windows 10 or Windows 11 PC without opening any terminal or installing Node.js:
+
+[![Download for Windows](https://img.shields.io/badge/Download%20for%20Windows-Daily%20Task%20Setup%201.0.2%20(.exe)-0078D6?style=for-the-badge&logo=windows)](https://github.com/n0vemberain/daily-task/releases/latest)
+
+> **Direct Release Link:** [Download Daily Task Setup 1.0.2.exe](https://github.com/n0vemberain/daily-task/releases/latest)  
+> *(Local binary also located at: `DailyTask_Windows/release/Daily Task Setup 1.0.2.exe`)*
+
+#### Windows Installation Steps:
+1. Download **`Daily Task Setup 1.0.2.exe`**.
+2. Double-click the `.exe` file to open the setup wizard.
+3. Choose your installation location (or accept default).
+4. Select Desktop & Start Menu shortcuts, then click **Install**.
+5. Launch **Daily Task** from your Desktop or Start Menu.
+
+> [!NOTE]
+> **Windows Defender SmartScreen Notice:**  
+> Since this app is independently compiled without a paid corporate certificate, Windows SmartScreen may show an informational message (*"Windows protected your PC"*).  
+> Click **"More info"** and then **"Run anyway"**. The application is 100% offline, secure, and open-source.
+
+---
+
+### 🍏 macOS Desktop App (.dmg)
+
+Run DailyTask as a native Mac app optimized for Apple Silicon:
 
 [![Download for macOS](https://img.shields.io/badge/Download%20for%20macOS-Apple%20Silicon%20(M1%2FM2%2FM3%2FM4)-black?style=for-the-badge&logo=apple)](https://github.com/n0vemberain/daily-task/releases/latest)
 
-> **Direct Release Link:** [Download DailyTask-1.0.0-arm64.dmg](https://github.com/n0vemberain/daily-task/releases/latest)  
-> *(Local binary also located at: `DailyTask_MacOS/release/DailyTask-1.0.0-arm64.dmg`)*
+> **Direct Release Link:** [Download Daily Task-1.0.2-arm64.dmg](https://github.com/n0vemberain/daily-task/releases/latest)  
+> *(Local binary also located at: `DailyTask_MacOS/release/Daily Task-1.0.2-arm64.dmg`)*
 
-### macOS Installation Steps:
-1. Download **`DailyTask-1.0.0-arm64.dmg`**.
+#### macOS Installation Steps:
+1. Download **`Daily Task-1.0.2-arm64.dmg`**.
 2. Double-click the `.dmg` file to open the installer window.
-3. Drag **DailyTask** into your **Applications** folder.
-4. Launch **DailyTask** from Launchpad or Spotlight.
+3. Drag **Daily Task** into your **Applications** folder.
+4. Launch **Daily Task** from Launchpad or Spotlight.
 
 > [!NOTE]
 > **First-Time macOS Gatekeeper Notice:**  
-> Since this application is self-built without an Apple Developer paid certificate (\$99/year), macOS may display an "unidentified developer" prompt on first launch.  
-> Simply **Right-Click** (or Control-Click) `DailyTask.app` in your Applications folder and select **Open**, or run this one-time command in Terminal:
+> Simply **Right-Click** (or Control-Click) `Daily Task.app` in your Applications folder and select **Open**, or run this one-time command in Terminal:
 > ```bash
-> xattr -cr /Applications/DailyTask.app
+> xattr -cr "/Applications/Daily Task.app"
 > ```
 
 ---
@@ -57,31 +82,36 @@ You can run DailyTask as a native Mac app without opening any terminal or instal
 
 ## 🌟 Key Features
 
-- **Activity Heatmap:** Visualizes daily productivity with 1-Year, 6-Month, and 1-Month views across 5 color themes (Olive, Blue, Purple, Orange, Dark).
-- **Goal Challenges:** Structured multi-day habit tracking with day-by-day task planning that syncs with your daily task list.
-- **Task Management:** Flexible task CRUD with priorities, duration estimates, filters, and custom categories.
-- **Protected History:** Password authorization required to modify, mark, or delete tasks and check-ins from previous dates.
-- **Multi-User Isolation:** Administrator panel with isolated guest accounts, credential management, and session control.
-- **Offline-First Persistence:** Instant local updates via `localStorage` with background sync to Express FileStore and MongoDB.
-- **Consolidated Settings:** Unified control center for themes, audio feedback, data backup/restore, clean center, and account security.
-- **Remote Access:** Built-in Cloudflare Tunnel support for secure HTTPS access from mobile devices without port forwarding.
+- **GitHub-Inspired Activity Heatmap:** Visualizes daily productivity with 1-Year, 6-Month, and 1-Month views across 5 color themes (Emerald Olive, Oceanic Blue, Royal Purple, Sunset Orange, Monochrome Dark).
+- **Multi-Day Goal Challenges:** Structured habit tracking (7, 14, 21, 30 days) with day-by-day task planning that syncs directly with your daily task list.
+- **Task Management & Priorities:** Flexible task CRUD with priority levels (High, Medium, Low), duration estimates, custom categories, and status filters (Today, Pending, Completed).
+- **Protected History Mode:** Password authorization required to modify, mark, or delete tasks and check-ins from past dates to prevent accidental tampering.
+- **Multi-User Isolation & Security:** Administrator panel with isolated guest accounts, password management, and session control.
+- **Offline-First Persistence:** Instant local updates with background sync to Express FileStore. Safe persistent storage location prevents data wipe upon app reinstallation.
+- **Consolidated Settings:** Unified control center for themes, audio feedback chimes, data backup & export, clean center, and account security.
+- **Remote Access via Cloudflare Tunnel:** Built-in secure HTTPS remote access for mobile devices without opening router ports or exposing IP addresses.
 
 ---
 
-## 🚀 Execution Options
+## 🚀 Execution & Build Options
 
-### Option 1: Native macOS Desktop App
-Use the pre-built `.dmg` in `DailyTask_MacOS/release/DailyTask-1.0.0-arm64.dmg` or build it from source:
+### Option 1: Windows Desktop App (.exe Installer)
+Use the pre-built installer in `DailyTask_Windows/release/Daily Task Setup 1.0.2.exe` or build from source:
+```bash
+cd DailyTask_Windows
+npm install
+npm run dist:win
+```
+
+### Option 2: Native macOS Desktop App (.dmg)
+Use the pre-built `.dmg` in `DailyTask_MacOS/release/Daily Task-1.0.2-arm64.dmg` or build from source:
 ```bash
 cd DailyTask_MacOS
 npm install
 npm run dist:mac
 ```
-The app embeds the Express backend, automatically sets up persistent storage at `~/Library/Application Support/DailyTask/data/store.json`, and runs completely offline.
 
----
-
-### Option 2: Local Web Server (Full-Stack Dev Mode)
+### Option 3: Local Web Server (Full-Stack Dev Mode)
 If you want to run or develop the web version:
 
 1. **Navigate to codebase:**
@@ -107,24 +137,19 @@ If you want to run or develop the web version:
    npm start
    ```
 
----
-
-### Option 3: Remote Access via Cloudflare Tunnel
-To access your dashboard from your smartphone or outside network securely over HTTPS:
+### Option 4: Remote Access via Cloudflare Tunnel
+To access your dashboard from your smartphone securely over HTTPS:
 ```bash
 cd DailyTask_CodeBase
 npm run tunnel
 ```
-This builds the client, starts the local server, spins up `cloudflared`, and generates a secure public HTTPS URL and in-app QR code.
 
----
-
-### Option 4: Run Automated Tests
+### Option 5: Run Automated Tests
 Execute the unit, integration, and stress test suites:
 ```bash
 cd DailyTask_CodeBase/client && npm test -- --run
 ```
-*(All 17 test suites, 85 unit/integration tests passing)*
+*(All 18 test suites, 91 unit/integration tests passing)*
 
 ---
 
@@ -140,12 +165,19 @@ DailyTask/
 │   ├── TESTING_REPORT.md    # Detailed stress and reliability report
 │   └── package.json         # Workspace scripts
 │
-├── DailyTask_MacOS/         # Standalone desktop application (Electron + macOS)
-│   ├── electron/            # Main process, preload, and custom retina .icns icon
+├── DailyTask_MacOS/         # Standalone desktop application for macOS (Electron DMG)
+│   ├── electron/            # Main process, preload, and retina icon.icns
 │   ├── client/              # React desktop view bundle
 │   ├── server/              # Embedded backend runner
-│   ├── release/             # Built macOS .dmg and .app binaries
+│   ├── release/             # Built macOS .dmg and .zip binaries
 │   └── package.json         # Electron packaging configuration
+│
+├── DailyTask_Windows/       # Standalone desktop application for Windows (Electron NSIS .exe)
+│   ├── electron/            # Main process, preload, and Windows icon.ico
+│   ├── client/              # React desktop view bundle
+│   ├── server/              # Embedded backend runner
+│   ├── release/             # Built Windows Setup .exe installer
+│   └── package.json         # Windows Electron & NSIS configuration
 │
 └── README.md                # Project documentation & download portal
 ```

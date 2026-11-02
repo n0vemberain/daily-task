@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production / Build
+dist/
+dist-electron/
+release/
+build/
+out/
+bin/
+*.dmg
+*.zip
+*.exe
+*.app
+*.blockmap
+
+# Environment & Logs
+.env
+.env.local
+.env.*.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+tunnel-url.txt
+
+# OS Files
+.DS_Store
+Thumbs.db

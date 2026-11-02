@@ -1,0 +1,114 @@
+{
+  "name": "daily-task-app",
+  "productName": "Daily Task",
+  "version": "1.0.2",
+  "private": true,
+  "description": "Personal Daily Activity Dashboard & Habit Tracker for Windows and Desktop",
+  "main": "electron/main.cjs",
+  "homepage": "https://github.com/n0vemberain/DailyTaskApp",
+  "author": {
+    "name": "Fatin Ishraque",
+    "email": "155258978+n0vemberain@users.noreply.github.com"
+  },
+  "scripts": {
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "client": "cd client && npm run dev",
+    "client:build": "cd client && npm run build",
+    "server": "cd server && npm run dev",
+    "electron:start": "electron .",
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,green\" \"npm run server\" \"npm run client\"",
+    "build": "npm run client:build",
+    "start": "cd server && npm start",
+    "tunnel": "npm run build && node scripts/start-tunnel.js",
+    "dist": "npm run dist:win",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:win:portable": "npm run build && electron-builder --win portable"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0",
+    "wait-on": "^9.5.1"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "mongoose": "^9.11.4",
+    "morgan": "^1.12.1"
+  },
+  "build": {
+    "appId": "com.fatinishraque.dailytask",
+    "productName": "Daily Task",
+    "copyright": "Copyright © 2026 Fatin Ishraque",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "client/dist/**/*",
+      "server/**/*",
+      "electron/**/*",
+      "package.json",
+      "!server/data/store.json.bak*",
+      "!server/**/*.test.js"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "electron/assets/icon.icns",
+      "darkModeSupport": true,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "DailyTask Installer",
+      "icon": "electron/assets/icon.icns",
+      "contents": [
+        {
+          "x": 130,
+          "y": 200
+        },
+        {
+          "x": 410,
+          "y": 200,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "electron/assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

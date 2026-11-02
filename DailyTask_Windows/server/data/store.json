@@ -1,0 +1,460 @@
+{
+  "user": {
+    "name": "Fatin Ishraque",
+    "username": "n0vemberain",
+    "password": "Password123!",
+    "fieldOfStudy": "Computer Science & Engineering",
+    "skills": [
+      "React.js",
+      "JavaScript (ES6+)",
+      "Node.js & Express",
+      "MongoDB & Mongoose",
+      "Tailwind CSS",
+      "Git & GitHub",
+      "REST APIs",
+      "Data Structures & Algorithms"
+    ],
+    "avatarUrl": "",
+    "role": "admin"
+  },
+  "tasks": [
+    {
+      "id": "task-1793560245444",
+      "userId": "admin",
+      "title": "1",
+      "category": "Coding",
+      "priority": "Medium",
+      "date": "2026-11-02",
+      "estimatedMinutes": 30,
+      "completed": true,
+      "completedAt": "2026-11-01T19:10:55.451Z",
+      "challengeId": null,
+      "challengeTitle": null,
+      "dayNumber": null
+    },
+    {
+      "id": "task-1793560238089",
+      "userId": "admin",
+      "title": "1",
+      "category": "Coding",
+      "priority": "Medium",
+      "date": "2026-11-02",
+      "estimatedMinutes": 30,
+      "completed": true,
+      "completedAt": "2026-11-01T19:11:43.482Z",
+      "challengeId": null,
+      "challengeTitle": null,
+      "dayNumber": null
+    },
+    {
+      "id": "task-1793560232695",
+      "userId": "admin",
+      "title": "1",
+      "category": "Coding",
+      "priority": "Medium",
+      "date": "2026-11-02",
+      "estimatedMinutes": 30,
+      "completed": true,
+      "completedAt": "2026-11-01T19:11:44.493Z",
+      "challengeId": null,
+      "challengeTitle": null,
+      "dayNumber": null
+    },
+    {
+      "id": "task-1793560212728",
+      "userId": "admin",
+      "title": "Day 1",
+      "category": "Study",
+      "priority": "High",
+      "date": "2026-11-02",
+      "estimatedMinutes": 30,
+      "completed": true,
+      "completedAt": "2026-11-01T19:11:45.695Z",
+      "challengeId": null,
+      "challengeTitle": null,
+      "dayNumber": null
+    },
+    {
+      "id": "task-1793564381988",
+      "userId": "n0vemberain",
+      "title": "okay",
+      "category": "Coding",
+      "priority": "Medium",
+      "date": "2026-11-02",
+      "estimatedMinutes": 30,
+      "completed": true,
+      "completedAt": "2026-11-01T20:19:53.888Z",
+      "challengeId": null,
+      "challengeTitle": null,
+      "dayNumber": null
+    },
+    {
+      "id": "task-1793560977983",
+      "userId": "n0vemberain",
+      "title": "okay",
+      "category": "Coding",
+      "priority": "Medium",
+      "date": "2026-11-01",
+      "estimatedMinutes": 30,
+      "completed": true,
+      "completedAt": "2026-11-01T19:23:08.483Z",
+      "challengeId": "ch-1793534197438",
+      "challengeTitle": "30",
+      "dayNumber": 3
+    },
+    {
+      "id": "task-1793554840746",
+      "title": "Okay",
+      "category": "Coding",
+      "priority": "Medium",
+      "date": "2026-11-01",
+      "estimatedMinutes": 30,
+      "completed": true,
+      "completedAt": "2026-11-01T19:52:19.361Z",
+      "challengeId": null,
+      "challengeTitle": null,
+      "dayNumber": null,
+      "userId": "n0vemberain"
+    },
+    {
+      "id": "task-1793535815631",
+      "title": "okay123",
+      "category": "Coding",
+      "priority": "Medium",
+      "date": "2026-11-03",
+      "estimatedMinutes": 30,
+      "completed": true,
+      "completedAt": "2026-11-01T19:22:05.473Z",
+      "challengeId": "ch-1793534197438",
+      "challengeTitle": "30",
+      "dayNumber": 2,
+      "userId": "n0vemberain"
+    },
+    {
+      "id": "task-1793533433153",
+      "title": "okay",
+      "category": "Coding",
+      "priority": "Medium",
+      "date": "2026-11-02",
+      "estimatedMinutes": 30,
+      "completed": true,
+      "completedAt": "2026-11-01T12:05:15.787Z",
+      "challengeId": "ch-1",
+      "challengeTitle": "30-Day Full-Stack & LeetCode Sprint",
+      "dayNumber": 10,
+      "userId": "n0vemberain"
+    },
+    {
+      "id": "task-1793558354003",
+      "userId": "n0vemberain",
+      "title": "Rahims Private Task",
+      "category": "Study",
+      "priority": "Medium",
+      "date": "2026-11-02",
+      "estimatedMinutes": 30,
+      "completed": true,
+      "completedAt": "2026-11-01T19:22:06.466Z",
+      "challengeId": null,
+      "challengeTitle": null,
+      "dayNumber": null
+    }
+  ],
+  "challenges": [
+    {
+      "id": "ch-1793534197438",
+      "title": "30",
+      "description": "",
+      "category": "Coding",
+      "durationDays": 30,
+      "startDate": "2026-11-01",
+      "endDate": "2026-11-30",
+      "status": "active",
+      "checkIns": [
+        {
+          "dayNumber": 1,
+          "date": "2026-11-01",
+          "status": "completed",
+          "note": "",
+          "completedAt": "2026-11-01T19:22:39.751Z"
+        },
+        {
+          "dayNumber": 2,
+          "date": "2026-11-02",
+          "status": "completed",
+          "note": "",
+          "completedAt": "2026-11-01T19:22:46.566Z"
+        },
+        {
+          "dayNumber": 3,
+          "date": "2026-11-03",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 4,
+          "date": "2026-11-04",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 5,
+          "date": "2026-11-05",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 6,
+          "date": "2026-11-06",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 7,
+          "date": "2026-11-07",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 8,
+          "date": "2026-11-08",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 9,
+          "date": "2026-11-09",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 10,
+          "date": "2026-11-10",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 11,
+          "date": "2026-11-11",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 12,
+          "date": "2026-11-12",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 13,
+          "date": "2026-11-13",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 14,
+          "date": "2026-11-14",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 15,
+          "date": "2026-11-15",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 16,
+          "date": "2026-11-16",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 17,
+          "date": "2026-11-17",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 18,
+          "date": "2026-11-18",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 19,
+          "date": "2026-11-19",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 20,
+          "date": "2026-11-20",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 21,
+          "date": "2026-11-21",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 22,
+          "date": "2026-11-22",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 23,
+          "date": "2026-11-23",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 24,
+          "date": "2026-11-24",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 25,
+          "date": "2026-11-25",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 26,
+          "date": "2026-11-26",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 27,
+          "date": "2026-11-27",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 28,
+          "date": "2026-11-28",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 29,
+          "date": "2026-11-29",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        },
+        {
+          "dayNumber": 30,
+          "date": "2026-11-30",
+          "status": "pending",
+          "note": "",
+          "completedAt": null
+        }
+      ],
+      "userId": "n0vemberain"
+    }
+  ],
+  "timerSessions": [
+    {
+      "id": "ts-1",
+      "durationMinutes": 25,
+      "date": "2026-10-27",
+      "timestamp": "2026-10-26T18:38:45.614Z",
+      "category": "Study",
+      "label": "Algorithms & Data Structures",
+      "userId": "n0vemberain"
+    },
+    {
+      "id": "ts-2",
+      "durationMinutes": 20,
+      "date": "2026-10-27",
+      "timestamp": "2026-10-26T18:38:45.614Z",
+      "category": "Coding",
+      "label": "React Component Optimization",
+      "userId": "n0vemberain"
+    },
+    {
+      "id": "ts-3",
+      "durationMinutes": 45,
+      "date": "2026-10-26",
+      "timestamp": "2026-10-25T18:38:45.614Z",
+      "category": "Study",
+      "label": "Database Systems Architecture",
+      "userId": "n0vemberain"
+    },
+    {
+      "id": "ts-4",
+      "durationMinutes": 30,
+      "date": "2026-10-25",
+      "timestamp": "2026-10-24T18:38:45.614Z",
+      "category": "Coding",
+      "label": "Tailwind UI Polish",
+      "userId": "n0vemberain"
+    },
+    {
+      "id": "ts-5",
+      "durationMinutes": 60,
+      "date": "2026-10-22",
+      "timestamp": "2026-10-21T18:38:45.614Z",
+      "category": "Study",
+      "label": "Computer Networks",
+      "userId": "n0vemberain"
+    }
+  ],
+  "heatmapHistory": {},
+  "lastUpdated": "2026-11-02T10:27:39.829Z",
+  "users": [
+    {
+      "id": "user-admin",
+      "username": "n0vemberain",
+      "password": "Password123!",
+      "name": "Fatin Ishraque",
+      "role": "admin",
+      "fieldOfStudy": "Computer Science & Engineering",
+      "skills": [
+        "React.js",
+        "JavaScript (ES6+)",
+        "Node.js & Express",
+        "MongoDB & Mongoose",
+        "Tailwind CSS",
+        "Git & GitHub",
+        "REST APIs",
+        "Data Structures & Algorithms"
+      ],
+      "avatarUrl": "",
+      "isActive": true,
+      "sessionVersion": 1,
+      "createdAt": "2026-11-01T19:15:16.159Z"
+    }
+  ]
+}
