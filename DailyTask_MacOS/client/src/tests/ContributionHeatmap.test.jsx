@@ -20,10 +20,9 @@ describe('ContributionHeatmap Component', () => {
     }
   ];
 
-  it('renders heatmap title and default olive shades indicator', () => {
+  it('renders heatmap title', () => {
     render(<ContributionHeatmap tasks={sampleTasks} />);
     expect(screen.getByText(/Activity Contribution Heatmap/i)).toBeInTheDocument();
-    expect(screen.getByText(/Olive Green Shades/i)).toBeInTheDocument();
   });
 
   it('renders month labels and day of week labels', () => {
@@ -64,8 +63,8 @@ describe('ContributionHeatmap Component', () => {
     const emeraldOption = screen.getByText('Emerald Mint');
     fireEvent.click(emeraldOption);
 
-    // Verify theme badge updated
-    expect(screen.getByText(/Emerald Mint Shades/i)).toBeInTheDocument();
+    // Verify theme selector button is rendered
+    expect(screen.getByTitle('Select Heatmap Color Theme')).toBeInTheDocument();
   });
 
   it('unselects and returns to neutral state when clicking anywhere outside or elsewhere', () => {

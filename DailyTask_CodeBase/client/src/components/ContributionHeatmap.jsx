@@ -347,18 +347,13 @@ export default function ContributionHeatmap({
     >
       {/* Header & Controls */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-4 pb-3 border-b border-github-border">
-        {/* Title and Active Theme Badge */}
+        {/* Title */}
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
               <Calendar className="w-4 h-4" style={{ color: currentTheme.accent }} />
               Activity Contribution Heatmap
             </h2>
-            <span
-              className={`text-[11px] px-2.5 py-0.5 rounded-full border font-mono transition-colors ${currentTheme.badgeClass}`}
-            >
-              {currentTheme.badge}
-            </span>
           </div>
           <p className="text-xs text-github-muted mt-0.5">
             Visual record of daily task completions and productive streaks
