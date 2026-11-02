@@ -155,7 +155,6 @@ DailyTask/
 │   ├── server/              # Express backend with FileStore and MongoDB
 │   ├── images/              # Application screenshots and UI showcases (01.png - 18.png)
 │   ├── scripts/             # Cloudflare Tunnel runner and automation
-│   ├── TESTING_REPORT.md    # Detailed stress and reliability report
 │   └── package.json         # Workspace scripts
 │
 ├── DailyTask_MacOS/         # Standalone desktop application for macOS (Electron DMG)
