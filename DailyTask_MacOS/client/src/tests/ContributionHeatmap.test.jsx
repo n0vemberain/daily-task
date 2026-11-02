@@ -52,19 +52,11 @@ describe('ContributionHeatmap Component', () => {
     expect(screen.getByText(/Focused 30-Day Activity Grid/i)).toBeInTheDocument();
   });
 
-  it('allows switching color theme', () => {
+  it('reflects selected theme styling on active timeframe buttons', () => {
     render(<ContributionHeatmap tasks={sampleTasks} />);
-
-    // Open theme picker
-    const themeBtn = screen.getByTitle('Select Heatmap Color Theme');
-    fireEvent.click(themeBtn);
-
-    // Select Emerald Mint
-    const emeraldOption = screen.getByText('Emerald Mint');
-    fireEvent.click(emeraldOption);
-
-    // Verify theme selector button is rendered
-    expect(screen.getByTitle('Select Heatmap Color Theme')).toBeInTheDocument();
+    const halfYearBtn = screen.getByText('Last 6 Months');
+    fireEvent.click(halfYearBtn);
+    expect(halfYearBtn).toHaveClass('bg-olive-800');
   });
 
   it('unselects and returns to neutral state when clicking anywhere outside or elsewhere', () => {

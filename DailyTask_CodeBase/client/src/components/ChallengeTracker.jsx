@@ -88,10 +88,10 @@ export default function ChallengeTracker({
           <div className="flex items-center gap-1 bg-[#0d1117] p-1 rounded-lg border border-github-border text-xs">
             <button
               onClick={() => setFilter('active')}
-              className={`px-3 py-1 rounded-md font-medium transition-all ${
+              className={`px-3 py-1 rounded-md font-medium border ${
                 filter === 'active'
-                  ? 'border shadow-sm'
-                  : 'text-github-muted hover:text-white'
+                  ? 'shadow-sm'
+                  : 'border-transparent text-github-muted hover:text-white'
               }`}
               style={
                 filter === 'active'
@@ -107,10 +107,10 @@ export default function ChallengeTracker({
             </button>
             <button
               onClick={() => setFilter('completed')}
-              className={`px-3 py-1 rounded-md font-medium transition-all ${
+              className={`px-3 py-1 rounded-md font-medium border ${
                 filter === 'completed'
-                  ? 'border shadow-sm'
-                  : 'text-github-muted hover:text-white'
+                  ? 'shadow-sm'
+                  : 'border-transparent text-github-muted hover:text-white'
               }`}
               style={
                 filter === 'completed'
@@ -126,10 +126,10 @@ export default function ChallengeTracker({
             </button>
             <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-1 rounded-md font-medium transition-all ${
+              className={`px-3 py-1 rounded-md font-medium border ${
                 filter === 'all'
-                  ? 'border shadow-sm'
-                  : 'text-github-muted hover:text-white'
+                  ? 'shadow-sm'
+                  : 'border-transparent text-github-muted hover:text-white'
               }`}
               style={
                 filter === 'all'

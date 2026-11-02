@@ -360,63 +360,8 @@ export default function ContributionHeatmap({
           </p>
         </div>
 
-        {/* Controls: Timeframe Selector & Theme Switcher */}
-        <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto justify-between lg:justify-end">
-          {/* Theme Selector Button & Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowThemePicker(!showThemePicker)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0d1117] border border-github-border text-xs font-medium text-github-text hover:text-white transition-colors"
-              title="Select Heatmap Color Theme"
-            >
-              <span
-                className="w-3 h-3 rounded-full border border-white/20"
-                style={{ backgroundColor: currentTheme.accent }}
-              />
-              <span className="hidden sm:inline">{currentTheme.name}</span>
-              <Palette className="w-3.5 h-3.5 text-github-muted ml-0.5" />
-            </button>
-
-            {/* Dropdown Menu */}
-            {showThemePicker && (
-              <div className="absolute right-0 mt-2 w-48 bg-[#0d1117] border border-github-border rounded-xl shadow-2xl p-2 z-50 animate-in fade-in">
-                <div className="text-[10px] font-semibold text-github-muted uppercase tracking-wider px-2 py-1">
-                  Color Themes
-                </div>
-                <div className="space-y-1">
-                  {Object.values(HEATMAP_THEMES).map((theme) => (
-                    <button
-                      key={theme.id}
-                      onClick={() => handleSelectTheme(theme.id)}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        activeThemeId === theme.id
-                          ? 'bg-[#161b22] text-white border border-github-border'
-                          : 'text-github-muted hover:text-white hover:bg-[#161b22]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-3 h-3 rounded-full border border-white/20"
-                          style={{ backgroundColor: theme.accent }}
-                        />
-                        <span>{theme.name}</span>
-                      </div>
-                      <div className="flex gap-0.5">
-                        {theme.hexLevels.slice(1).map((hex, idx) => (
-                          <span
-                            key={idx}
-                            className="w-1.5 h-3 rounded-[1px]"
-                            style={{ backgroundColor: hex }}
-                          />
-                        ))}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
+        {/* Controls: Timeframe Selector */}
+        <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto justify-end">
           {/* Time Range Selector (1 Year, Last 6 Months, 1 Month) */}
           <div className="flex items-center gap-1 bg-[#0d1117] p-1 rounded-lg border border-github-border text-xs">
             {/* 1 Year */}
