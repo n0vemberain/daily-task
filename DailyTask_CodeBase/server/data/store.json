@@ -432,7 +432,7 @@
     }
   ],
   "heatmapHistory": {},
-  "lastUpdated": "2026-11-01T21:02:39.820Z",
+  "lastUpdated": "2026-11-02T10:27:39.829Z",
   "users": [
     {
       "id": "user-admin",
@@ -455,19 +455,6 @@
       "isActive": true,
       "sessionVersion": 1,
       "createdAt": "2026-11-01T19:15:16.159Z"
-    },
-    {
-      "id": "user-1793560722365",
-      "username": "okay",
-      "password": "123456",
-      "name": "okay",
-      "role": "guest",
-      "fieldOfStudy": "General",
-      "skills": [],
-      "avatarUrl": "",
-      "isActive": true,
-      "sessionVersion": 1,
-      "createdAt": "2026-11-01T19:18:42.365Z"
     }
   ]
 }

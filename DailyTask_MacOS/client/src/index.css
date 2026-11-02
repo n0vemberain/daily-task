@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Base Body Styles */
+body {
+  background-color: #0d1117;
+  color: #c9d1d9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Smooth Touch Scrolling on iOS & Safari */
+.-webkit-overflow-scrolling-touch {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom Scrollbars across Webkit & Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #30363d #0d1117;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0d1117;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+
+/* Contribution Heatmap Cells micro-transitions */
+.heatmap-cell {
+  transition: transform 0.12s ease-in-out, outline 0.12s ease-in-out;
+  touch-action: manipulation;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .heatmap-cell:hover {
+    transform: scale(1.25);
+    z-index: 10;
+    outline: 1.5px solid #c9d1d9;
+  }
+}
+
+/* Mobile tap target usability */
+button, input, select, textarea {
+  touch-action: manipulation;
+}
