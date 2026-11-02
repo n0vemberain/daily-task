@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   CalendarDays,
   Flame,
@@ -7,8 +7,7 @@ import {
   Settings,
   LogOut,
   Sparkles,
-  Timer,
-  LayoutGrid
+  Timer
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -21,16 +20,6 @@ export default function Navbar({
   onSignOut
 }) {
   const { theme } = useTheme();
-  const [showWidgetsMenu, setShowWidgetsMenu] = useState(false);
-
-  const openWidget = (type) => {
-    if (window.electronAPI?.openWidget) {
-      window.electronAPI.openWidget(type);
-    } else {
-      window.open(`?widget=${type}`, `widget_${type}`, 'width=660,height=300');
-    }
-    setShowWidgetsMenu(false);
-  };
 
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
@@ -104,49 +93,8 @@ export default function Navbar({
             </div>
           </nav>
 
-          {/* Right: Widgets, Settings, Sign Out & Profile Avatar */}
+          {/* Right: Settings, Sign Out & Profile Avatar */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Desktop Widgets Menu Button */}
-            <div className="relative">
-              <button
-                onClick={() => setShowWidgetsMenu(!showWidgetsMenu)}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-github-border bg-[#161b22] hover:bg-[#21262d] text-xs font-semibold text-white transition-colors shadow-sm"
-                title="Open macOS Desktop Widgets"
-              >
-                <LayoutGrid className="w-3.5 h-3.5 text-lime-400" />
-                <span className="hidden sm:inline">Widgets</span>
-              </button>
-
-              {showWidgetsMenu && (
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-[#161b22]/95 border border-white/15 p-2 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in space-y-1">
-                  <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider px-2 py-1 border-b border-white/10">
-                    macOS Desktop Widgets
-                  </div>
-                  <button
-                    onClick={() => openWidget('heatmap')}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-white/10 text-xs text-white text-left transition-colors"
-                  >
-                    <span className="font-semibold">Heatmap Widget</span>
-                    <span className="text-[10px] text-white/40 font-mono">6 Months</span>
-                  </button>
-                  <button
-                    onClick={() => openWidget('challenges')}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-white/10 text-xs text-white text-left transition-colors"
-                  >
-                    <span className="font-semibold">Goal Challenges</span>
-                    <span className="text-[10px] text-white/40 font-mono">Square</span>
-                  </button>
-                  <button
-                    onClick={() => openWidget('daily-tasks')}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-white/10 text-xs text-white text-left transition-colors"
-                  >
-                    <span className="font-semibold">Daily Tasks</span>
-                    <span className="text-[10px] text-white/40 font-mono">Today</span>
-                  </button>
-                </div>
-              )}
-            </div>
-
             {/* Settings Button */}
             <button
               onClick={onOpenSettings}

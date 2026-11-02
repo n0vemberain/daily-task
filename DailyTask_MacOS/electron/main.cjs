@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell, utilityProcess, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, shell, utilityProcess } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -7,8 +7,6 @@ const { fork } = require('child_process');
 
 let mainWindow = null;
 let serverProcess = null;
-let activeBackendPort = 5001;
-const widgetWindows = new Map();
 const DEFAULT_PORT = 5001;
 
 // Helper: Check if a TCP port is in use
@@ -192,89 +190,6 @@ function createMainWindow(port) {
   });
 }
 
-// Widget Window Management
-const WIDGET_CONFIGS = {
-  'heatmap': {
-    width: 680,
-    height: 310,
-    title: 'DailyTask - Heatmap Widget'
-  },
-  'challenges': {
-    width: 320,
-    height: 400,
-    title: 'DailyTask - Goal Challenges Widget'
-  },
-  'daily-tasks': {
-    width: 400,
-    height: 420,
-    title: 'DailyTask - Daily Tasks Widget'
-  }
-};
-
-function createWidgetWindow(type) {
-  const config = WIDGET_CONFIGS[type];
-  if (!config) return;
-
-  // If already open, bring to front
-  if (widgetWindows.has(type)) {
-    const existingWin = widgetWindows.get(type);
-    if (!existingWin.isDestroyed()) {
-      existingWin.show();
-      existingWin.focus();
-      return;
-    }
-  }
-
-  const widgetWin = new BrowserWindow({
-    width: config.width,
-    height: config.height,
-    resizable: true,
-    frame: false,
-    transparent: true,
-    hasShadow: false,
-    title: config.title,
-    backgroundColor: '#00000000',
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.cjs'),
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: false
-    }
-  });
-
-  const devUrl = process.env.ELECTRON_START_URL;
-  const baseUrl = devUrl || `http://127.0.0.1:${activeBackendPort}`;
-  const targetUrl = `${baseUrl}?widget=${type}`;
-
-  console.log(`[Electron] Launching widget [${type}] from: ${targetUrl}`);
-  widgetWin.loadURL(targetUrl);
-
-  widgetWin.on('closed', () => {
-    widgetWindows.delete(type);
-  });
-
-  widgetWindows.set(type, widgetWin);
-}
-
-function closeWidgetWindow(type) {
-  if (widgetWindows.has(type)) {
-    const win = widgetWindows.get(type);
-    if (!win.isDestroyed()) {
-      win.close();
-    }
-    widgetWindows.delete(type);
-  }
-}
-
-// IPC Handlers for Widgets
-ipcMain.on('widget:open', (event, type) => {
-  createWidgetWindow(type);
-});
-
-ipcMain.on('widget:close', (event, type) => {
-  closeWidgetWindow(type);
-});
-
 function setupApplicationMenu() {
   const isMac = process.platform === 'darwin';
 
@@ -324,35 +239,6 @@ function setupApplicationMenu() {
       ]
     },
     {
-      label: 'Widgets',
-      submenu: [
-        {
-          label: 'Heatmap Widget',
-          accelerator: 'CmdOrCtrl+Shift+H',
-          click: () => createWidgetWindow('heatmap')
-        },
-        {
-          label: 'Goal Challenges Widget',
-          accelerator: 'CmdOrCtrl+Shift+G',
-          click: () => createWidgetWindow('challenges')
-        },
-        {
-          label: 'Daily Tasks Widget',
-          accelerator: 'CmdOrCtrl+Shift+D',
-          click: () => createWidgetWindow('daily-tasks')
-        },
-        { type: 'separator' },
-        {
-          label: 'Close All Widgets',
-          click: () => {
-            closeWidgetWindow('heatmap');
-            closeWidgetWindow('challenges');
-            closeWidgetWindow('daily-tasks');
-          }
-        }
-      ]
-    },
-    {
       label: 'Window',
       submenu: [
         { role: 'minimize' },
@@ -396,7 +282,6 @@ app.whenReady().then(async () => {
   setupApplicationMenu();
 
   const port = await getAvailablePort(DEFAULT_PORT);
-  activeBackendPort = port;
 
   try {
     await startBackendServer(port);
