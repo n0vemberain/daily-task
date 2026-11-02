@@ -798,7 +798,7 @@ export default function App() {
               className="w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: theme.accent }}
             />
-            <span>Personal Daily Activity Dashboard • {theme.name} Palette</span>
+            <span>Personal Daily Activity Dashboard</span>
           </div>
           <div className="flex items-center gap-4">
             <a

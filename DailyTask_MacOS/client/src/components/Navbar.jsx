@@ -52,16 +52,6 @@ export default function Navbar({
                 <span className="font-extrabold text-white text-sm sm:text-base tracking-tight">
                   DailyTask
                 </span>
-                <span
-                  className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded border hidden sm:inline-block"
-                  style={{
-                    backgroundColor: theme.accentDark,
-                    borderColor: theme.accent + '40',
-                    color: theme.accentLight
-                  }}
-                >
-                  {theme.name}
-                </span>
               </div>
             </div>
           </div>
