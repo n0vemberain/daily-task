@@ -115,8 +115,8 @@ app.use('/api/challenges', challengeRoutes);
 app.use('/api/sync', syncRoutes);
 
 // SPA fallback for non-API client routes
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api')) {
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api') || req.method !== 'GET') {
     return next();
   }
   const indexPath = path.join(clientDistPath, 'index.html');

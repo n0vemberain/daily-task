@@ -1,7 +1,7 @@
 # Daily Task Windows Desktop App
 
-[![Platform: Windows](https://img.shields.io/badge/Platform-Windows%20(x64%20Installer)-0078D6?style=for-the-badge&logo=windows)](https://github.com/n0vemberain/daily-task/releases/latest)
-[![Windows Setup](https://img.shields.io/badge/Download-Daily%20Task%20Setup%200.0.1.exe-success?style=for-the-badge&logo=windows)](https://github.com/n0vemberain/daily-task/releases/latest)
+[![Platform: Windows](https://img.shields.io/badge/Platform-Windows%20(x64%20Installer)-0078D6?style=for-the-badge&logo=windows)](https://github.com/n0vemberain/daily-task/releases/download/v1.0.2/Daily.Task.Setup.0.0.1.exe)
+[![Windows Setup](https://img.shields.io/badge/Download-Daily%20Task%20Setup%200.0.1.exe-success?style=for-the-badge&logo=windows)](https://github.com/n0vemberain/daily-task/releases/download/v1.0.2/Daily.Task.Setup.0.0.1.exe)
 [![Electron](https://img.shields.io/badge/Electron-45-47848F?style=flat-square&logo=electron)](https://www.electronjs.org/)
 [![React](https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react)](https://react.dev/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
@@ -16,7 +16,7 @@ Daily Task for Windows is the standalone native Windows desktop application for 
 
 | Platform | Installer Format | Architecture | Version | Installer Binary | Download Link |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| Windows 10 / 11 | NSIS Setup (`.exe`) | x64 (64-bit) | v0.0.1 | `Daily Task Setup 0.0.1.exe` | [Download Daily Task Setup 0.0.1.exe](https://github.com/n0vemberain/daily-task/releases/latest) |
+| Windows 10 / 11 | NSIS Setup (`.exe`) | x64 (64-bit) | v0.0.1 | `Daily Task Setup 0.0.1.exe` | [Direct Download (.exe)](https://github.com/n0vemberain/daily-task/releases/download/v1.0.2/Daily.Task.Setup.0.0.1.exe) |
 
 Local binary location in repository:
 - `DailyTask_Windows/release/Daily Task Setup 0.0.1.exe`

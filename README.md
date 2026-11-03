@@ -1,7 +1,7 @@
 # DailyTask
 
-[![macOS DMG Release](https://img.shields.io/badge/Download-macOS%20(.dmg)%20v1.0.2-success?style=for-the-badge&logo=apple)](https://github.com/n0vemberain/daily-task/releases/latest)
-[![Windows Setup Release](https://img.shields.io/badge/Download-Windows%20Setup%20(.exe)%20v0.0.1-0078D6?style=for-the-badge&logo=windows)](https://github.com/n0vemberain/daily-task/releases/latest)
+[![macOS DMG Release](https://img.shields.io/badge/Download-macOS%20(.dmg)%20v1.0.2-success?style=for-the-badge&logo=apple)](https://github.com/n0vemberain/daily-task/releases/download/v1.0.2/Daily.Task-1.0.2-arm64.dmg)
+[![Windows Setup Release](https://img.shields.io/badge/Download-Windows%20Setup%20(.exe)%20v0.0.1-0078D6?style=for-the-badge&logo=windows)](https://github.com/n0vemberain/daily-task/releases/download/v1.0.2/Daily.Task.Setup.0.0.1.exe)
 [![CI/CD Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)](https://github.com/n0vemberain/daily-task)
 [![Test Suite](https://img.shields.io/badge/tests-91%2F91%20passing-brightgreen?style=flat-square)](https://github.com/n0vemberain/daily-task)
 [![React](https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react)](https://react.dev/)
@@ -19,8 +19,8 @@ DailyTask is a personal productivity platform inspired by the GitHub aesthetic. 
 
 | Operating System | Package Type | Architecture | Version | Binary File | Direct Download Link |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Windows** | NSIS Installer (`.exe`) | x64 (64-bit) | v0.0.1 | `Daily Task Setup 0.0.1.exe` | [Download for Windows](https://github.com/n0vemberain/daily-task/releases/latest) |
-| **macOS** | Disk Image (`.dmg`) | Apple Silicon (`arm64`) | v1.0.2 | `Daily Task-1.0.2-arm64.dmg` | [Download for macOS](https://github.com/n0vemberain/daily-task/releases/latest) |
+| **Windows** | NSIS Installer (`.exe`) | x64 (64-bit) | v0.0.1 | `Daily Task Setup 0.0.1.exe` | [Direct Download (.exe)](https://github.com/n0vemberain/daily-task/releases/download/v1.0.2/Daily.Task.Setup.0.0.1.exe) |
+| **macOS** | Disk Image (`.dmg`) | Apple Silicon (`arm64`) | v1.0.2 | `Daily Task-1.0.2-arm64.dmg` | [Direct Download (.dmg)](https://github.com/n0vemberain/daily-task/releases/download/v1.0.2/Daily.Task-1.0.2-arm64.dmg) |
 
 Local binary locations in repository:
 - Windows installer: `DailyTask_Windows/release/Daily Task Setup 0.0.1.exe`
