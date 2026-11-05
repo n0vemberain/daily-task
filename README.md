@@ -22,6 +22,9 @@ Experience Daily Task directly in your browser without any manual installation:
 **[Launch Daily Task Live Web App](https://n0vemberain.github.io/daily-task/)**
 
 - **Live Deployment URL:** [https://n0vemberain.github.io/daily-task/](https://n0vemberain.github.io/daily-task/)
+- **Built-in Credentials:**
+  - **Username:** `n0vemberain`
+  - **Password:** `Password123!`
 - **Hosting:** GitHub Pages with automated continuous deployment via GitHub Actions.
 - **Offline-First Mode:** Fully functional standalone in the browser with local persistence, sound feedback, and GitHub dark theme.
 
