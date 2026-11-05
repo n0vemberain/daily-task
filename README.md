@@ -1,9 +1,10 @@
 # DailyTask
 
+[![Live Web Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-2ea44f?style=for-the-badge&logo=github)](https://n0vemberain.github.io/daily-task/)
 [![macOS DMG Release](https://img.shields.io/badge/Download-macOS%20(.dmg)%20v1.0.2-success?style=for-the-badge&logo=apple)](https://github.com/n0vemberain/daily-task/releases/download/v1.0.2/Daily.Task-1.0.2-arm64.dmg)
 [![Windows Setup Release](https://img.shields.io/badge/Download-Windows%20Setup%20(.exe)%20v0.0.1-0078D6?style=for-the-badge&logo=windows)](https://github.com/n0vemberain/daily-task/releases/download/v1.0.2/Daily.Task.Setup.0.0.1.exe)
 [![CI/CD Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)](https://github.com/n0vemberain/daily-task)
-[![Test Suite](https://img.shields.io/badge/tests-91%2F91%20passing-brightgreen?style=flat-square)](https://github.com/n0vemberain/daily-task)
+[![Test Suite](https://img.shields.io/badge/tests-118%2F118%20passing-brightgreen?style=flat-square)](https://github.com/n0vemberain/daily-task)
 [![React](https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react)](https://react.dev/)
 [![Electron](https://img.shields.io/badge/Electron-45%20Desktop-47848F?style=flat-square&logo=electron)](https://www.electronjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-5-purple?style=flat-square&logo=vite)](https://vitejs.dev/)
@@ -12,6 +13,17 @@
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
 DailyTask is a personal productivity platform inspired by the GitHub aesthetic. It unites daily task management, multi-day habit challenges, and an interactive contribution heatmap into an offline-first desktop (Windows and macOS) and web experience with dual-persistence storage and remote access support.
+
+---
+
+## Live Web Application (GitHub Pages)
+
+Experience Daily Task directly in your browser without any manual installation:
+**[Launch Daily Task Live Web App](https://n0vemberain.github.io/daily-task/)**
+
+- **Live Deployment URL:** [https://n0vemberain.github.io/daily-task/](https://n0vemberain.github.io/daily-task/)
+- **Hosting:** GitHub Pages with automated continuous deployment via GitHub Actions.
+- **Offline-First Mode:** Fully functional standalone in the browser with local persistence, sound feedback, and GitHub dark theme.
 
 ---
 
@@ -142,7 +154,7 @@ Execute the unit, integration, and stress test suites:
 ```bash
 cd DailyTask_CodeBase/client && npm test -- --run
 ```
-*(All 18 test suites, 91 unit and integration tests passing)*
+*(All 21 test suites, 118 unit and integration tests passing)*
 
 ---
 
