@@ -663,6 +663,7 @@ export default function App() {
             <div className="pt-2">
               <TaskManager
                 tasks={tasks}
+                challenges={challenges}
                 onAddTask={handleAddTask}
                 onToggleTask={handleToggleTask}
                 onDeleteTask={handleDeleteTask}
@@ -693,6 +694,7 @@ export default function App() {
         {activeTab === 'tasks' && (
           <TaskManager
             tasks={tasks}
+            challenges={challenges}
             onAddTask={handleAddTask}
             onToggleTask={handleToggleTask}
             onDeleteTask={handleDeleteTask}

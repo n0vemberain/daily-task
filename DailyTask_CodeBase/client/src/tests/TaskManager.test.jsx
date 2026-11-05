@@ -335,4 +335,140 @@ describe('TaskManager Component', () => {
       })
     );
   });
+
+  it('allows associating a task with a Goal Challenge when creating a task', () => {
+    const onAddTask = vi.fn();
+    const mockChallenges = [
+      {
+        id: 'ch-leetcode',
+        title: '30-Day LeetCode Grind',
+        durationDays: 30,
+        checkIns: [
+          { dayNumber: 1, date: todayStr }
+        ]
+      }
+    ];
+
+    render(
+      <ThemeProvider>
+        <TaskManager
+          tasks={sampleTasks}
+          challenges={mockChallenges}
+          onAddTask={onAddTask}
+          onToggleTask={vi.fn()}
+          onDeleteTask={vi.fn()}
+          onEditTask={vi.fn()}
+        />
+      </ThemeProvider>
+    );
+
+    fireEvent.click(screen.getByText('Add New Task'));
+
+    const titleInput = screen.getByPlaceholderText(/e\.g\. Implement dynamic heat map tooltip/i);
+    fireEvent.change(titleInput, { target: { value: 'Solve Two Sum' } });
+
+    const selects = screen.getAllByRole('combobox');
+    const challengeSelect = selects.find(s => s.innerHTML.includes('30-Day LeetCode Grind'));
+    expect(challengeSelect).toBeDefined();
+    fireEvent.change(challengeSelect, { target: { value: 'ch-leetcode' } });
+
+    fireEvent.click(screen.getByText('Save & Add Task'));
+
+    expect(onAddTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Solve Two Sum',
+        challengeId: 'ch-leetcode',
+        challengeTitle: '30-Day LeetCode Grind',
+        dayNumber: 1
+      })
+    );
+  });
+
+  it('filters tasks using the Due filter button', () => {
+    const mixedTasks = [
+      {
+        id: 'task-today-pending',
+        title: 'Due today pending',
+        category: 'Work',
+        priority: 'High',
+        date: todayStr,
+        completed: false
+      },
+      {
+        id: 'task-past-pending',
+        title: 'Overdue past pending',
+        category: 'Work',
+        priority: 'High',
+        date: '2026-10-01',
+        completed: false
+      },
+      {
+        id: 'task-completed',
+        title: 'Finished task',
+        category: 'Work',
+        priority: 'Low',
+        date: '2026-10-01',
+        completed: true
+      },
+      {
+        id: 'task-future',
+        title: 'Future task',
+        category: 'Work',
+        priority: 'Low',
+        date: '2099-01-01',
+        completed: false
+      }
+    ];
+
+    render(
+      <ThemeProvider>
+        <TaskManager
+          tasks={mixedTasks}
+          onAddTask={vi.fn()}
+          onToggleTask={vi.fn()}
+          onDeleteTask={vi.fn()}
+          onEditTask={vi.fn()}
+        />
+      </ThemeProvider>
+    );
+
+    const dueBtn = screen.getByText(/Due \(2\)/i);
+    expect(dueBtn).toBeInTheDocument();
+
+    fireEvent.click(dueBtn);
+
+    expect(screen.getByText('Due today pending')).toBeInTheDocument();
+    expect(screen.getByText('Overdue past pending')).toBeInTheDocument();
+    expect(screen.queryByText('Finished task')).not.toBeInTheDocument();
+    expect(screen.queryByText('Future task')).not.toBeInTheDocument();
+  });
+
+  it('displays completed timestamp when a task is completed', () => {
+    const completedTasks = [
+      {
+        id: 'task-done-1',
+        title: 'Completed task with timestamp',
+        category: 'Coding',
+        priority: 'Medium',
+        estimatedMinutes: 25,
+        date: todayStr,
+        completed: true,
+        completedAt: '2026-11-06T02:15:00.000Z'
+      }
+    ];
+
+    render(
+      <ThemeProvider>
+        <TaskManager
+          tasks={completedTasks}
+          onAddTask={vi.fn()}
+          onToggleTask={vi.fn()}
+          onDeleteTask={vi.fn()}
+          onEditTask={vi.fn()}
+        />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByText(/Completed:/i)).toBeInTheDocument();
+  });
 });
