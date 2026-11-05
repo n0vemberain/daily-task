@@ -252,8 +252,10 @@ export const storageService = {
   addToRecycleBin: (type, item, cascadeTasks = [], username = null) => {
     try {
       const currentBin = storageService.getRecycleBin(username);
+      const generatedId = `rb-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
       const newEntry = {
-        id: `rb-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        id: generatedId,
+        recycleBinId: generatedId,
         type, // 'task' | 'challenge' | 'session'
         deletedAt: new Date().toISOString(),
         item,
@@ -261,27 +263,28 @@ export const storageService = {
       };
       const updatedBin = [newEntry, ...currentBin];
       storageService.saveRecycleBin(updatedBin, username);
-      return newEntry;
+      return updatedBin;
     } catch (e) {
       console.error('Error adding item to recycle bin', e);
-      return null;
+      return [];
     }
   },
 
   removeFromRecycleBin: (recycleBinId, username = null) => {
     try {
       const currentBin = storageService.getRecycleBin(username);
-      const updatedBin = currentBin.filter((entry) => entry.id !== recycleBinId);
+      const updatedBin = currentBin.filter((entry) => entry.id !== recycleBinId && entry.recycleBinId !== recycleBinId);
       storageService.saveRecycleBin(updatedBin, username);
-      return true;
+      return updatedBin;
     } catch (e) {
       console.error('Error removing item from recycle bin', e);
-      return false;
+      return [];
     }
   },
 
   clearRecycleBin: (username = null) => {
-    return storageService.saveRecycleBin([], username);
+    storageService.saveRecycleBin([], username);
+    return [];
   },
 
   getLastSync: () => {

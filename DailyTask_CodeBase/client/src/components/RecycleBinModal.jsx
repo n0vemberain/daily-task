@@ -39,8 +39,10 @@ export default function RecycleBinModal({
   const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
   const now = Date.now();
 
+  const safeBin = Array.isArray(recycleBin) ? recycleBin : [];
+
   const filteredItems = useMemo(() => {
-    return recycleBin.filter((entry) => {
+    return safeBin.filter((entry) => {
       if (!entry) return false;
       if (activeFilter !== 'all' && entry.type !== activeFilter) return false;
 
@@ -51,7 +53,7 @@ export default function RecycleBinModal({
       }
       return true;
     });
-  }, [recycleBin, activeFilter, searchQuery]);
+  }, [safeBin, activeFilter, searchQuery]);
 
   if (!isOpen) return null;
 
@@ -81,7 +83,7 @@ export default function RecycleBinModal({
   const handleEmptyBinClick = () => {
     setPasswordPromptInfo({
       title: 'Authorize Permanent Deletion',
-      description: `Permanently delete all ${recycleBin.length} items from the Recycle Bin? This action cannot be reversed.`
+      description: `Permanently delete all ${safeBin.length} items from the Recycle Bin? This action cannot be reversed.`
     });
     setPendingAction(() => () => {
       if (onEmptyBin) {
@@ -135,7 +137,7 @@ export default function RecycleBinModal({
                     borderColor: theme.accent + '40'
                   }}
                 >
-                  {recycleBin.length} {recycleBin.length === 1 ? 'item' : 'items'}
+                  {safeBin.length} {safeBin.length === 1 ? 'item' : 'items'}
                 </span>
               </h3>
               <p className="text-xs text-github-muted mt-0.5">
@@ -166,7 +168,7 @@ export default function RecycleBinModal({
                     : 'text-github-muted hover:text-white'
                 }`}
               >
-                All ({recycleBin.length})
+                All ({safeBin.length})
               </button>
               <button
                 type="button"
@@ -177,7 +179,7 @@ export default function RecycleBinModal({
                     : 'text-github-muted hover:text-white'
                 }`}
               >
-                Tasks ({recycleBin.filter((i) => i.type === 'task').length})
+                Tasks ({safeBin.filter((i) => i.type === 'task').length})
               </button>
               <button
                 type="button"
@@ -188,7 +190,7 @@ export default function RecycleBinModal({
                     : 'text-github-muted hover:text-white'
                 }`}
               >
-                Challenges ({recycleBin.filter((i) => i.type === 'challenge').length})
+                Challenges ({safeBin.filter((i) => i.type === 'challenge').length})
               </button>
               <button
                 type="button"
@@ -199,12 +201,12 @@ export default function RecycleBinModal({
                     : 'text-github-muted hover:text-white'
                 }`}
               >
-                Sessions ({recycleBin.filter((i) => i.type === 'session').length})
+                Sessions ({safeBin.filter((i) => i.type === 'session').length})
               </button>
             </div>
 
             {/* Empty Recycle Bin Button */}
-            {recycleBin.length > 0 && (
+            {safeBin.length > 0 && (
               <button
                 type="button"
                 onClick={handleEmptyBinClick}

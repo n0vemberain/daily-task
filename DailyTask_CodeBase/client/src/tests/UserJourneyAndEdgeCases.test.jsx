@@ -5,6 +5,7 @@ import TaskManager from '../components/TaskManager';
 import ChallengeTracker from '../components/ChallengeTracker';
 import ContributionHeatmap from '../components/ContributionHeatmap';
 import { formatDateStr } from '../data/initialData';
+import { storageService } from '../services/storageService';
 
 const mockProfile = {
   username: 'n0vemberain',
@@ -276,6 +277,72 @@ describe('User Journey & Edge Case Testing Suite', () => {
 
       // Challenges must have automatically reset to minimized!
       expect(screen.queryByText('Day-by-Day Check-in Grid')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Heatmap Outside Click Deselection & TaskManager Interaction Isolation', () => {
+    it('unselects date when clicking elsewhere on the page, but preserves selection when clicking inside TaskManager', async () => {
+      const handleSelectDate = vi.fn();
+      const todayStr = formatDateStr(new Date());
+
+      function IntegratedViewHarness() {
+        return (
+          <div>
+            <div data-testid="outside-background-area">Page Background Header</div>
+            <ContributionHeatmap
+              tasks={[]}
+              selectedDate={todayStr}
+              onSelectDate={handleSelectDate}
+            />
+            <div data-task-manager="true" data-testid="task-manager-container">
+              <button data-testid="task-edit-btn">Edit Task Inside Manager</button>
+            </div>
+          </div>
+        );
+      }
+
+      render(<IntegratedViewHarness />);
+
+      // Wait a tick for the outside click listener to be attached
+      await new Promise((r) => setTimeout(r, 20));
+
+      // 1. Click inside TaskManager container -> MUST NOT deselect
+      const taskEditBtn = screen.getByTestId('task-edit-btn');
+      fireEvent.click(taskEditBtn);
+      expect(handleSelectDate).not.toHaveBeenCalledWith(null);
+
+      // 2. Click outside in the background area -> MUST deselect
+      const outsideArea = screen.getByTestId('outside-background-area');
+      fireEvent.click(outsideArea);
+      expect(handleSelectDate).toHaveBeenCalledWith(null);
+    });
+  });
+
+  describe('Recycle Bin Data Integrity & Array Preservation', () => {
+    it('returns an array and maintains valid structure when adding, removing, and emptying the bin', () => {
+      const testUser = 'rb_test_user';
+
+      // Ensure clean state
+      storageService.clearRecycleBin(testUser);
+
+      // Add a task to recycle bin
+      const mockTask = { id: 'task-rb-1', title: 'Recycled Task', date: '2026-11-01' };
+      const binAfterAdd = storageService.addToRecycleBin('task', mockTask, [], testUser);
+
+      expect(Array.isArray(binAfterAdd)).toBe(true);
+      expect(binAfterAdd.length).toBe(1);
+      expect(binAfterAdd[0].item.title).toBe('Recycled Task');
+      expect(binAfterAdd[0].recycleBinId).toBe(binAfterAdd[0].id);
+
+      // Remove the item from recycle bin
+      const binAfterRemove = storageService.removeFromRecycleBin(binAfterAdd[0].id, testUser);
+      expect(Array.isArray(binAfterRemove)).toBe(true);
+      expect(binAfterRemove.length).toBe(0);
+
+      // Clear empty bin returns empty array
+      const binAfterClear = storageService.clearRecycleBin(testUser);
+      expect(Array.isArray(binAfterClear)).toBe(true);
+      expect(binAfterClear.length).toBe(0);
     });
   });
 });

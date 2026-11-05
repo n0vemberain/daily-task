@@ -197,7 +197,7 @@ export default function App() {
 
     // Periodic background sync every 20 seconds
     const interval = setInterval(() => {
-      performSync();
+      performSync({ overwrite: true });
     }, 20000);
 
     return () => clearInterval(interval);
@@ -361,7 +361,8 @@ export default function App() {
         const patched = {
           ...t,
           completed: nextCompleted,
-          completedAt: completedAtTimestamp
+          completedAt: completedAtTimestamp,
+          authorized: true
         };
         apiService.updateTask(tid, patched);
         return patched;
@@ -371,19 +372,32 @@ export default function App() {
 
     setTasks(updated);
     storageService.saveTasks(updated, uname);
+    performSync({ user: userProfile, tasks: updated, challenges, timerSessions, username: uname, overwrite: true });
   };
 
   const handleDeleteTask = async (taskId) => {
     const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+    const relatedIds = findRelatedRolloverTaskIds(tasks, taskId);
     const taskToDelete = tasks.find((t) => t.id === taskId || t._id === taskId);
-    if (taskToDelete) {
-      const updatedBin = storageService.addToRecycleBin('task', taskToDelete, [], uname);
-      setRecycleBin(updatedBin);
+
+    const allRelatedTasks = tasks.filter((t) => relatedIds.has(t.id || t._id));
+    const primaryItem = taskToDelete || allRelatedTasks[0];
+
+    if (primaryItem) {
+      const cascadeTasks = allRelatedTasks.filter((t) => (t.id || t._id) !== (primaryItem.id || primaryItem._id));
+      const updatedBin = storageService.addToRecycleBin('task', primaryItem, cascadeTasks, uname);
+      setRecycleBin(Array.isArray(updatedBin) ? updatedBin : storageService.getRecycleBin(uname));
     }
-    const updated = tasks.filter((t) => t.id !== taskId && t._id !== taskId);
+
+    const updated = tasks.filter((t) => !relatedIds.has(t.id || t._id));
     setTasks(updated);
     storageService.saveTasks(updated, uname);
-    await apiService.deleteTask(taskId);
+
+    for (const rid of relatedIds) {
+      await apiService.deleteTask(rid);
+    }
+
+    performSync({ user: userProfile, tasks: updated, challenges, timerSessions, username: uname, overwrite: true });
   };
 
   // Individual Task Edit Handler
@@ -402,10 +416,17 @@ export default function App() {
     if (!targetId) return;
 
     const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+    const relatedIds = findRelatedRolloverTaskIds(tasks, targetId);
+
     const updated = tasks.map((t) => {
-      if (t.id === targetId || t._id === targetId) {
-        const patched = { ...t, ...updatedFields };
-        apiService.updateTask(targetId, patched);
+      const tid = t.id || t._id;
+      if (relatedIds.has(tid)) {
+        const { date, dayNumber, rolledOverFrom, ...commonFields } = updatedFields;
+        const patched = tid === targetId
+          ? { ...t, ...updatedFields, authorized: true }
+          : { ...t, ...commonFields, authorized: true };
+
+        apiService.updateTask(tid, patched);
         return patched;
       }
       return t;
@@ -413,6 +434,7 @@ export default function App() {
 
     setTasks(updated);
     storageService.saveTasks(updated, uname);
+    performSync({ user: userProfile, tasks: updated, challenges, timerSessions, username: uname, overwrite: true });
   };
 
   // Handlers for Challenges
@@ -492,25 +514,27 @@ export default function App() {
 
     if (challengeToDelete) {
       const updatedBin = storageService.addToRecycleBin('challenge', challengeToDelete, cascadeTasks, uname);
-      setRecycleBin(updatedBin);
+      setRecycleBin(Array.isArray(updatedBin) ? updatedBin : storageService.getRecycleBin(uname));
     }
 
     const updatedChallenges = challenges.filter((c) => c.id !== challengeId && c._id !== challengeId);
     setChallenges(updatedChallenges);
     storageService.saveChallenges(updatedChallenges, uname);
 
+    let finalTasks = tasks;
     if (cascadeTasks.length > 0) {
-      const remainingTasks = tasks.filter(
+      finalTasks = tasks.filter(
         (t) => t.challengeId !== challengeId && (!challengeToDelete || t.challengeId !== challengeToDelete.id)
       );
-      setTasks(remainingTasks);
-      storageService.saveTasks(remainingTasks, uname);
+      setTasks(finalTasks);
+      storageService.saveTasks(finalTasks, uname);
       for (const ct of cascadeTasks) {
         apiService.deleteTask(ct.id || ct._id);
       }
     }
 
     await apiService.deleteChallenge(challengeId);
+    performSync({ user: userProfile, tasks: finalTasks, challenges: updatedChallenges, timerSessions, username: uname, overwrite: true });
   };
 
   // Individual Challenge Edit Handler with schedule and linked task adaptation
@@ -599,7 +623,7 @@ export default function App() {
     const sessionToDelete = timerSessions.find((s) => s.id === sessionId);
     if (sessionToDelete) {
       const updatedBin = storageService.addToRecycleBin('session', sessionToDelete, [], uname);
-      setRecycleBin(updatedBin);
+      setRecycleBin(Array.isArray(updatedBin) ? updatedBin : storageService.getRecycleBin(uname));
     }
     const updated = timerSessions.filter((s) => s.id !== sessionId);
     setTimerSessions(updated);
@@ -646,20 +670,21 @@ export default function App() {
       storageService.saveTimerSessions(updatedSessions, uname);
     }
 
-    const updatedBin = storageService.removeFromRecycleBin(binItem.recycleBinId, uname);
-    setRecycleBin(updatedBin);
+    const binId = binItem.id || binItem.recycleBinId;
+    const updatedBin = storageService.removeFromRecycleBin(binId, uname);
+    setRecycleBin(Array.isArray(updatedBin) ? updatedBin : storageService.getRecycleBin(uname));
   };
 
   const handlePermanentDeleteFromBin = (recycleBinId) => {
     const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
     const updatedBin = storageService.removeFromRecycleBin(recycleBinId, uname);
-    setRecycleBin(updatedBin);
+    setRecycleBin(Array.isArray(updatedBin) ? updatedBin : storageService.getRecycleBin(uname));
   };
 
   const handleEmptyBin = () => {
     const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
     const updatedBin = storageService.clearRecycleBin(uname);
-    setRecycleBin(updatedBin);
+    setRecycleBin(Array.isArray(updatedBin) ? updatedBin : []);
   };
 
   // Data Clean Handlers

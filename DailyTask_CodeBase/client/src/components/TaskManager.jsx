@@ -298,7 +298,7 @@ export default function TaskManager({
   const dueTasks = tasks.filter((t) => !t.completed && t.date && t.date <= todayStr);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" data-task-manager="true">
       {/* Top Banner */}
       <div className="bg-[#161b22] border border-github-border rounded-xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

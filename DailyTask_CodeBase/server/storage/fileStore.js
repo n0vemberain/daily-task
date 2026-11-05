@@ -840,29 +840,10 @@ class FileStore {
       this.updateUser(user, targetUsername);
     }
 
-    // 2. Merge Tasks: isolate by targetUser
+    // 2. Synchronize Tasks: isolate by targetUser
     if (Array.isArray(tasks)) {
-      const userTasksMap = new Map();
-      (store.tasks || [])
-        .filter(t => (t.userId || 'n0vemberain').toLowerCase() === targetUsername)
-        .forEach(t => {
-          const key = t.id || `${t.title}_${t.date}`;
-          userTasksMap.set(key, t);
-        });
-
-      tasks.forEach(incoming => {
-        const key = incoming.id || `${incoming.title}_${incoming.date}`;
-        const withUser = { ...incoming, userId: targetUsername };
-        if (userTasksMap.has(key)) {
-          const existing = userTasksMap.get(key);
-          userTasksMap.set(key, { ...existing, ...withUser });
-        } else {
-          userTasksMap.set(key, withUser);
-        }
-      });
-
       const otherUsersTasks = (store.tasks || []).filter(t => (t.userId || 'n0vemberain').toLowerCase() !== targetUsername);
-      store.tasks = [...otherUsersTasks, ...Array.from(userTasksMap.values())];
+      store.tasks = [...otherUsersTasks, ...tasks.map(t => ({ ...t, userId: targetUsername }))];
     }
 
     // 3. Merge Challenges: isolate by targetUser

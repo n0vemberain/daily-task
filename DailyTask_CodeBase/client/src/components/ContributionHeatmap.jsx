@@ -260,6 +260,41 @@ export default function ContributionHeatmap({
     }
   }, [timeRange]);
 
+  // Handle click outside to deselect date
+  useEffect(() => {
+    if (!selectedDate) return;
+
+    const handleDocumentClick = (e) => {
+      // 1. If click is inside heatmap container, let cell handlers manage it
+      if (containerRef.current && containerRef.current.contains(e.target)) {
+        return;
+      }
+
+      // 2. If click is inside TaskManager or modal overlays, keep date filter selected
+      if (
+        e.target.closest('[data-task-manager="true"]') ||
+        e.target.closest('[role="dialog"]') ||
+        e.target.closest('.fixed')
+      ) {
+        return;
+      }
+
+      // 3. User clicked elsewhere on the page -> deselect date
+      if (onSelectDate) {
+        onSelectDate(null);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      document.addEventListener('click', handleDocumentClick);
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  }, [selectedDate, onSelectDate]);
+
   // Color resolver based on completed task count and current theme
   const getThemeLevelClass = (count, isFuture, isSelected) => {
     if (isFuture) {
