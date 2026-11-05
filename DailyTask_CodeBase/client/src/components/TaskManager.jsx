@@ -260,7 +260,7 @@ export default function TaskManager({
       if (filter === 'today') {
         return t.date === todayStr;
       }
-      if (filter === 'pending') {
+      if (filter === 'active' || filter === 'pending') {
         return !t.completed;
       }
       if (filter === 'due') {
@@ -594,14 +594,14 @@ export default function TaskManager({
                 Due ({dueTasks.length})
               </button>
               <button
-                onClick={() => setFilter('pending')}
+                onClick={() => setFilter('active')}
                 className={`px-3 py-1 rounded-md font-medium whitespace-nowrap border ${
-                  filter === 'pending'
+                  filter === 'active' || filter === 'pending'
                     ? 'text-white shadow-sm'
                     : 'border-transparent text-github-muted hover:text-white'
                 }`}
                 style={
-                  filter === 'pending'
+                  filter === 'active' || filter === 'pending'
                     ? {
                         backgroundColor: theme.accentDark,
                         color: theme.accent,
@@ -610,7 +610,7 @@ export default function TaskManager({
                     : {}
                 }
               >
-                Pending ({tasks.filter((t) => !t.completed).length})
+                Active ({tasks.filter((t) => !t.completed).length})
               </button>
               <button
                 onClick={() => setFilter('completed')}

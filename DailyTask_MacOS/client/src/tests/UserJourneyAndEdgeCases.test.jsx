@@ -7,6 +7,10 @@ import ContributionHeatmap from '../components/ContributionHeatmap';
 import { formatDateStr } from '../data/initialData';
 import { storageService } from '../services/storageService';
 
+vi.mock('canvas-confetti', () => ({
+  default: vi.fn()
+}));
+
 const mockProfile = {
   username: 'n0vemberain',
   password: 'SecurePassword123!',
@@ -19,7 +23,7 @@ describe('User Journey & Edge Case Testing Suite', () => {
   });
 
   describe('TaskManager Tab Ordering Requirement', () => {
-    it('strictly renders filter tabs in order: Today -> Due -> Pending -> Completed -> All', () => {
+    it('strictly renders filter tabs in order: Today -> Due -> Active -> Completed -> All', () => {
       const mockTasks = [
         { id: 't1', title: 'Task 1', date: formatDateStr(new Date()), completed: false }
       ];
@@ -36,7 +40,7 @@ describe('User Journey & Edge Case Testing Suite', () => {
       );
 
       // Find the tab buttons container
-      const tabNames = ['Today', 'Due', 'Pending', 'Completed', 'All'];
+      const tabNames = ['Today', 'Due', 'Active', 'Pending', 'Completed', 'All'];
       const buttons = screen.getAllByRole('button');
       const foundTabLabels = [];
 
@@ -44,23 +48,83 @@ describe('User Journey & Edge Case Testing Suite', () => {
         const text = btn.textContent || '';
         for (const name of tabNames) {
           if (text.startsWith(name)) {
-            foundTabLabels.push(name);
+            foundTabLabels.push(name === 'Pending' ? 'Active' : name);
             break;
           }
         }
       });
 
-      // Assert that Due appears BEFORE Pending
+      // Assert that Due appears BEFORE Active
       const dueIndex = foundTabLabels.indexOf('Due');
-      const pendingIndex = foundTabLabels.indexOf('Pending');
+      const activeIndex = foundTabLabels.indexOf('Active');
       const todayIndex = foundTabLabels.indexOf('Today');
       const completedIndex = foundTabLabels.indexOf('Completed');
       const allIndex = foundTabLabels.indexOf('All');
 
       expect(todayIndex).toBeLessThan(dueIndex);
-      expect(dueIndex).toBeLessThan(pendingIndex);
-      expect(pendingIndex).toBeLessThan(completedIndex);
+      expect(dueIndex).toBeLessThan(activeIndex);
+      expect(activeIndex).toBeLessThan(completedIndex);
       expect(completedIndex).toBeLessThan(allIndex);
+    });
+
+    it('moves completed task to Completed filter, excludes it from Active, and shows both in All', () => {
+      function TaskManagerFilterHarness() {
+        const [tasks, setTasks] = useState([
+          { id: 't-active-1', title: 'Pending Active Task', date: '2026-11-06', completed: false, category: 'Work', priority: 'Medium' },
+          { id: 't-completed-1', title: 'Already Done Task', date: '2026-11-06', completed: true, category: 'Work', priority: 'Low' }
+        ]);
+
+        const handleToggle = (id) => {
+          setTasks((prev) =>
+            prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
+          );
+        };
+
+        return (
+          <TaskManager
+            tasks={tasks}
+            onAddTask={vi.fn()}
+            onToggleTask={handleToggle}
+            onDeleteTask={vi.fn()}
+            onEditTask={vi.fn()}
+            userProfile={mockProfile}
+          />
+        );
+      }
+
+      render(<TaskManagerFilterHarness />);
+
+      // Switch to Active filter
+      const activeBtn = screen.getByRole('button', { name: /^Active \(/i });
+      fireEvent.click(activeBtn);
+
+      // In Active filter, only incomplete task shows
+      expect(screen.getByText('Pending Active Task')).toBeInTheDocument();
+      expect(screen.queryByText('Already Done Task')).not.toBeInTheDocument();
+
+      // Complete the active task by clicking toggle button
+      const toggleBtn = screen.getByTitle('Mark completed');
+      fireEvent.click(toggleBtn);
+
+      // It must immediately disappear from Active filter!
+      expect(screen.queryByText('Pending Active Task')).not.toBeInTheDocument();
+      expect(screen.getByText('No tasks found')).toBeInTheDocument();
+
+      // Switch to Completed filter
+      const completedBtn = screen.getByRole('button', { name: /^Completed \(/i });
+      fireEvent.click(completedBtn);
+
+      // Both tasks are now completed and visible in Completed filter
+      expect(screen.getByText('Pending Active Task')).toBeInTheDocument();
+      expect(screen.getByText('Already Done Task')).toBeInTheDocument();
+
+      // Switch to All filter
+      const allBtn = screen.getByRole('button', { name: /^All \(/i });
+      fireEvent.click(allBtn);
+
+      // All filter shows all tasks
+      expect(screen.getByText('Pending Active Task')).toBeInTheDocument();
+      expect(screen.getByText('Already Done Task')).toBeInTheDocument();
     });
   });
 

@@ -12,7 +12,8 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
-  Edit3
+  Edit3,
+  GripVertical
 } from 'lucide-react';
 import ChallengeModal from './ChallengeModal';
 import CheckInModal from './CheckInModal';
@@ -32,6 +33,7 @@ export default function ChallengeTracker({
   onCheckIn,
   onDeleteChallenge,
   onEditChallenge,
+  onReorderChallenges,
   userProfile,
   activeTab
 }) {
@@ -42,6 +44,8 @@ export default function ChallengeTracker({
   const [editingChallenge, setEditingChallenge] = useState(null);
   const [challengeToDelete, setChallengeToDelete] = useState(null);
   const [expandedChallengeIds, setExpandedChallengeIds] = useState(new Set());
+  const [draggedChallengeId, setDraggedChallengeId] = useState(null);
+  const [dragOverChallengeId, setDragOverChallengeId] = useState(null);
 
   // Automatically reset all challenges to minimized whenever switching tabs
   useEffect(() => {
@@ -70,11 +74,109 @@ export default function ChallengeTracker({
     }
   };
 
+  const isChallengeCompleted = (challenge) => {
+    if (!challenge) return false;
+    if (challenge.status === 'completed') return true;
+    const checkIns = challenge.checkIns || [];
+    const totalDays = challenge.durationDays || checkIns.length;
+    if (totalDays === 0) return false;
+
+    const challengeId = challenge.id || challenge._id;
+    let completedTotal = 0;
+    let skippedCount = 0;
+
+    for (const dayItem of checkIns) {
+      if (dayItem.status === 'skipped') {
+        skippedCount += 1;
+        continue;
+      }
+
+      const dayTasks = tasks.filter(
+        (t) =>
+          (t.challengeId === challengeId && t.dayNumber === dayItem.dayNumber) ||
+          (t.challengeId === challengeId && t.date === dayItem.date)
+      );
+
+      if (dayTasks.length > 0) {
+        if (dayTasks.every((t) => t.completed)) {
+          completedTotal += 1;
+        }
+      } else if (dayItem.status === 'completed') {
+        completedTotal += 1;
+      }
+    }
+
+    return completedTotal >= totalDays || (completedTotal + skippedCount >= totalDays && completedTotal > 0);
+  };
+
   const filteredChallenges = challenges.filter((c) => {
-    if (filter === 'active') return c.status === 'active';
-    if (filter === 'completed') return c.status === 'completed';
+    const completed = isChallengeCompleted(c);
+    if (filter === 'active') return !completed;
+    if (filter === 'completed') return completed;
     return true;
   });
+
+  const handleMoveChallenge = (challengeId, direction) => {
+    if (!onReorderChallenges) return;
+    const currentMasterIdx = challenges.findIndex((c) => (c.id || c._id) === challengeId);
+    if (currentMasterIdx === -1) return;
+
+    const visibleIdx = filteredChallenges.findIndex((c) => (c.id || c._id) === challengeId);
+    if (visibleIdx === -1) return;
+
+    const targetVisibleIdx = direction === 'up' ? visibleIdx - 1 : visibleIdx + 1;
+    if (targetVisibleIdx < 0 || targetVisibleIdx >= filteredChallenges.length) return;
+
+    const targetChallenge = filteredChallenges[targetVisibleIdx];
+    const targetMasterIdx = challenges.findIndex((c) => (c.id || c._id) === (targetChallenge.id || targetChallenge._id));
+    if (targetMasterIdx === -1) return;
+
+    const newChallenges = [...challenges];
+    const [moved] = newChallenges.splice(currentMasterIdx, 1);
+    newChallenges.splice(targetMasterIdx, 0, moved);
+    onReorderChallenges(newChallenges);
+  };
+
+  const handleDragStart = (e, challengeId) => {
+    setDraggedChallengeId(challengeId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', challengeId);
+  };
+
+  const handleDragOver = (e, challengeId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverChallengeId !== challengeId) {
+      setDragOverChallengeId(challengeId);
+    }
+  };
+
+  const handleDrop = (e, targetChallengeId) => {
+    e.preventDefault();
+    if (!draggedChallengeId || draggedChallengeId === targetChallengeId || !onReorderChallenges) {
+      setDraggedChallengeId(null);
+      setDragOverChallengeId(null);
+      return;
+    }
+
+    const fromIndex = challenges.findIndex((c) => (c.id || c._id) === draggedChallengeId);
+    const toIndex = challenges.findIndex((c) => (c.id || c._id) === targetChallengeId);
+
+    if (fromIndex !== -1 && toIndex !== -1) {
+      const newChallenges = [...challenges];
+      const [moved] = newChallenges.splice(fromIndex, 1);
+      newChallenges.splice(toIndex, 0, moved);
+      onReorderChallenges(newChallenges);
+    }
+
+    setDraggedChallengeId(null);
+    setDragOverChallengeId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedChallengeId(null);
+    setDragOverChallengeId(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -204,7 +306,7 @@ export default function ChallengeTracker({
         </div>
       ) : (
         <div className="space-y-6">
-          {filteredChallenges.map((challenge) => {
+          {filteredChallenges.map((challenge, visibleIdx) => {
             const checkIns = challenge.checkIns || [];
             const challengeId = challenge.id || challenge._id;
             const totalDays = challenge.durationDays || checkIns.length;
@@ -277,12 +379,26 @@ export default function ChallengeTracker({
 
             const completedTotal = onTimeDaysCount + lateDaysCount;
             const progressPercent = totalDays > 0 ? Math.round((completedTotal / totalDays) * 100) : 0;
-            const isCompleted = challenge.status === 'completed' || completedTotal === totalDays;
+            const isCompleted = isChallengeCompleted(challenge);
 
             return (
               <div
                 key={challengeId}
-                className="bg-[#161b22] border rounded-xl p-4 sm:p-5 shadow-sm transition-all hover:border-white/20 border-github-border"
+                draggable
+                onDragStart={(e) => handleDragStart(e, challengeId)}
+                onDragOver={(e) => handleDragOver(e, challengeId)}
+                onDrop={(e) => handleDrop(e, challengeId)}
+                onDragEnd={handleDragEnd}
+                className={`bg-[#161b22] border rounded-xl p-4 sm:p-5 shadow-sm transition-all hover:border-white/20 ${
+                  dragOverChallengeId === challengeId
+                    ? 'border-dashed border-2'
+                    : 'border-github-border'
+                } ${draggedChallengeId === challengeId ? 'opacity-40' : 'opacity-100'}`}
+                style={
+                  dragOverChallengeId === challengeId
+                    ? { borderColor: theme.accent }
+                    : {}
+                }
               >
                 {/* Challenge Header - Clickable anywhere on header to expand/collapse */}
                 <div
@@ -293,8 +409,53 @@ export default function ChallengeTracker({
                   title={isCollapsed ? 'Click header to expand challenge details and grid' : 'Click top area to minimize challenge'}
                 >
                   <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                    <div
+                      className="flex items-center gap-0.5 flex-shrink-0 mt-0.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div
+                        className="p-1 text-github-muted hover:text-white cursor-grab active:cursor-grabbing"
+                        title="Drag to reorder"
+                      >
+                        <GripVertical className="w-4 h-4" />
+                      </div>
+                      <div className="flex flex-col -space-y-0.5">
+                        <button
+                          type="button"
+                          disabled={visibleIdx === 0}
+                          onClick={() => handleMoveChallenge(challengeId, 'up')}
+                          className={`p-0.5 rounded transition-colors ${
+                            visibleIdx === 0
+                              ? 'text-gray-600 cursor-not-allowed opacity-30'
+                              : 'text-github-muted hover:text-white hover:bg-[#21262d]'
+                          }`}
+                          title="Move Up"
+                          aria-label="Move Up"
+                        >
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={visibleIdx === filteredChallenges.length - 1}
+                          onClick={() => handleMoveChallenge(challengeId, 'down')}
+                          className={`p-0.5 rounded transition-colors ${
+                            visibleIdx === filteredChallenges.length - 1
+                              ? 'text-gray-600 cursor-not-allowed opacity-30'
+                              : 'text-github-muted hover:text-white hover:bg-[#21262d]'
+                          }`}
+                          title="Move Down"
+                          aria-label="Move Down"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-[#0d1117] text-github-muted border border-github-border">
+                          #{visibleIdx + 1}
+                        </span>
                         <h3 className="text-base font-bold text-white tracking-tight truncate">
                           {challenge.title}
                         </h3>

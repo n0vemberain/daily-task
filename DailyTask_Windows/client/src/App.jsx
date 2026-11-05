@@ -504,6 +504,13 @@ export default function App() {
     await apiService.checkinChallenge(challengeId, checkinData);
   };
 
+  const handleReorderChallenges = (newChallenges) => {
+    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+    setChallenges(newChallenges);
+    storageService.saveChallenges(newChallenges, uname);
+    performSync({ user: userProfile, tasks, challenges: newChallenges, timerSessions, username: uname, overwrite: true });
+  };
+
   const handleDeleteChallenge = async (challengeId) => {
     const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
     const challengeToDelete = challenges.find((c) => c.id === challengeId || c._id === challengeId);
@@ -858,6 +865,7 @@ export default function App() {
             onDeleteChallenge={handleDeleteChallenge}
             onEditChallenge={handleEditChallenge}
             onEditTask={handleEditTask}
+            onReorderChallenges={handleReorderChallenges}
             userProfile={userProfile}
           />
         )}

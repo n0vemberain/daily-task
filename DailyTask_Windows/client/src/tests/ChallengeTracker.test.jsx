@@ -225,4 +225,108 @@ describe('ChallengeTracker Component', () => {
       )
     ).toBeInTheDocument();
   });
+
+  it('moves completed challenges to Completed tab and excludes them from Active tab', () => {
+    const mixedChallenges = [
+      {
+        id: 'ch-active',
+        title: 'Active Workout Routine',
+        category: 'Fitness',
+        durationDays: 2,
+        startDate: '2026-10-01',
+        endDate: '2026-10-02',
+        status: 'active',
+        checkIns: [
+          { dayNumber: 1, date: '2026-10-01', status: 'completed', note: '' },
+          { dayNumber: 2, date: '2026-10-02', status: 'pending', note: '' }
+        ]
+      },
+      {
+        id: 'ch-completed',
+        title: 'Completed Reading Sprint',
+        category: 'Study',
+        durationDays: 2,
+        startDate: '2026-10-01',
+        endDate: '2026-10-02',
+        status: 'completed',
+        checkIns: [
+          { dayNumber: 1, date: '2026-10-01', status: 'completed', note: '' },
+          { dayNumber: 2, date: '2026-10-02', status: 'completed', note: '' }
+        ]
+      }
+    ];
+
+    render(
+      <ChallengeTracker
+        challenges={mixedChallenges}
+        onCreateChallenge={vi.fn()}
+        onCheckIn={vi.fn()}
+        onDeleteChallenge={vi.fn()}
+      />
+    );
+
+    // Default filter is 'active': Active Workout Routine is visible, Completed Reading Sprint is NOT visible
+    expect(screen.getByText('Active Workout Routine')).toBeInTheDocument();
+    expect(screen.queryByText('Completed Reading Sprint')).not.toBeInTheDocument();
+
+    // Switch to 'completed' tab
+    fireEvent.click(screen.getByRole('button', { name: /^Completed$/i }));
+    expect(screen.queryByText('Active Workout Routine')).not.toBeInTheDocument();
+    expect(screen.getByText('Completed Reading Sprint')).toBeInTheDocument();
+
+    // Switch to 'all' tab: both challenges are visible
+    fireEvent.click(screen.getByRole('button', { name: /^All$/i }));
+    expect(screen.getByText('Active Workout Routine')).toBeInTheDocument();
+    expect(screen.getByText('Completed Reading Sprint')).toBeInTheDocument();
+  });
+
+  it('allows manual reordering of challenges via Move Up and Move Down buttons', () => {
+    const handleReorderChallenges = vi.fn();
+    const orderedChallenges = [
+      {
+        id: 'ch-1',
+        title: 'Challenge Number One',
+        category: 'Coding',
+        durationDays: 5,
+        status: 'active',
+        checkIns: [{ dayNumber: 1, date: '2026-10-01', status: 'pending' }]
+      },
+      {
+        id: 'ch-2',
+        title: 'Challenge Number Two',
+        category: 'Coding',
+        durationDays: 5,
+        status: 'active',
+        checkIns: [{ dayNumber: 1, date: '2026-10-01', status: 'pending' }]
+      },
+      {
+        id: 'ch-3',
+        title: 'Challenge Number Three',
+        category: 'Coding',
+        durationDays: 5,
+        status: 'active',
+        checkIns: [{ dayNumber: 1, date: '2026-10-01', status: 'pending' }]
+      }
+    ];
+
+    render(
+      <ChallengeTracker
+        challenges={orderedChallenges}
+        onReorderChallenges={handleReorderChallenges}
+      />
+    );
+
+    // Verify position badges #1, #2, #3
+    expect(screen.getByText('#1')).toBeInTheDocument();
+    expect(screen.getByText('#2')).toBeInTheDocument();
+    expect(screen.getByText('#3')).toBeInTheDocument();
+
+    // Click Move Up on Challenge Number Three
+    const moveUpButtons = screen.getAllByTitle('Move Up');
+    fireEvent.click(moveUpButtons[2]);
+
+    expect(handleReorderChallenges).toHaveBeenCalledTimes(1);
+    const reorderedIds = handleReorderChallenges.mock.calls[0][0].map((c) => c.id);
+    expect(reorderedIds).toEqual(['ch-1', 'ch-3', 'ch-2']);
+  });
 });
