@@ -88,16 +88,15 @@ export default function App() {
       const activeUser = storageService.getCurrentUser();
       const uname = (activeUser?.username || 'n0vemberain').toLowerCase();
       const isAdmin = activeUser?.role === 'admin' || uname === 'n0vemberain';
-      const dataToSync = currentData
-        ? { sessionVersion: activeUser?.sessionVersion || 1, ...currentData }
-        : {
-            user: storageService.getUserProfile(uname),
-            tasks: storageService.getTasks(uname),
-            challenges: storageService.getChallenges(uname),
-            timerSessions: storageService.getTimerSessions(uname),
-            username: uname,
-            sessionVersion: activeUser?.sessionVersion || 1
-          };
+      const dataToSync = {
+        user: storageService.getUserProfile(uname),
+        tasks: storageService.getTasks(uname),
+        challenges: storageService.getChallenges(uname),
+        timerSessions: storageService.getTimerSessions(uname),
+        username: uname,
+        sessionVersion: activeUser?.sessionVersion || 1,
+        ...(currentData || {})
+      };
 
       const result = await apiService.syncAll(dataToSync);
       const now = new Date().toISOString();
@@ -197,7 +196,7 @@ export default function App() {
 
     // Periodic background sync every 20 seconds
     const interval = setInterval(() => {
-      performSync({ overwrite: true });
+      performSync();
     }, 20000);
 
     return () => clearInterval(interval);

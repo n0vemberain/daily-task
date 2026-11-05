@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Flame,
   Plus,
@@ -10,6 +10,8 @@ import {
   Clock,
   Sparkles,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Edit3
 } from 'lucide-react';
 import ChallengeModal from './ChallengeModal';
@@ -20,16 +22,18 @@ import { formatDateStr } from '../data/initialData';
 import { useTheme } from '../context/ThemeContext';
 
 export default function ChallengeTracker({
-  challenges,
+  challenges = [],
   tasks = [],
   onAddTask,
   onToggleTask,
   onDeleteTask,
+  onEditTask,
   onCreateChallenge,
   onCheckIn,
   onDeleteChallenge,
   onEditChallenge,
-  userProfile
+  userProfile,
+  activeTab
 }) {
   const { theme } = useTheme();
   const [filter, setFilter] = useState('active'); // 'active', 'completed', 'all'
@@ -37,8 +41,23 @@ export default function ChallengeTracker({
   const [selectedDayCheckIn, setSelectedDayCheckIn] = useState(null); // { challenge, dayItem }
   const [editingChallenge, setEditingChallenge] = useState(null);
   const [challengeToDelete, setChallengeToDelete] = useState(null);
+  const [expandedChallengeIds, setExpandedChallengeIds] = useState(new Set());
+
+  // Automatically reset all challenges to minimized whenever switching tabs
+  useEffect(() => {
+    setExpandedChallengeIds(new Set());
+  }, [activeTab]);
 
   const todayStr = formatDateStr(new Date());
+
+  const toggleExpand = (id) => {
+    setExpandedChallengeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const handleDeleteClick = (challenge) => {
     setChallengeToDelete(challenge);
@@ -187,58 +206,159 @@ export default function ChallengeTracker({
         <div className="space-y-6">
           {filteredChallenges.map((challenge) => {
             const checkIns = challenge.checkIns || [];
-            const completedCount = checkIns.filter((c) => c.status === 'completed').length;
-            const skippedCount = checkIns.filter((c) => c.status === 'skipped').length;
+            const challengeId = challenge.id || challenge._id;
             const totalDays = challenge.durationDays || checkIns.length;
-            const progressPercent = totalDays > 0 ? Math.round((completedCount / totalDays) * 100) : 0;
-            const isCompleted = challenge.status === 'completed' || completedCount === totalDays;
+            const isCollapsed = !expandedChallengeIds.has(challengeId);
+
+            // Compute dynamic day statuses for this challenge
+            let onTimeDaysCount = 0;
+            let lateDaysCount = 0;
+            let incompleteDaysCount = 0;
+            let skippedCount = 0;
+
+            const computedCheckIns = checkIns.map((dayItem) => {
+              const isToday = dayItem.date === todayStr;
+              const isPast = dayItem.date < todayStr;
+              const isFuture = dayItem.date > todayStr;
+
+              const dayTasks = tasks.filter(
+                (t) =>
+                  (t.challengeId === challengeId && t.dayNumber === dayItem.dayNumber) ||
+                  (t.challengeId === challengeId && t.date === dayItem.date)
+              );
+
+              const allTasksCompleted = dayTasks.length > 0 && dayTasks.every((t) => t.completed);
+              const hasLateCompletion = dayTasks.some(
+                (t) => t.hasRolledOver || t.completedLate || (t.completedAt && t.completedAt.slice(0, 10) > dayItem.date)
+              );
+
+              let status = dayItem.status || 'pending';
+              if (dayItem.status === 'skipped') {
+                status = 'skipped';
+                skippedCount += 1;
+              } else if (dayTasks.length > 0) {
+                if (allTasksCompleted) {
+                  if (hasLateCompletion) {
+                    status = 'completed-late';
+                    lateDaysCount += 1;
+                  } else {
+                    status = 'completed';
+                    onTimeDaysCount += 1;
+                  }
+                } else if (isPast) {
+                  status = 'incomplete';
+                  incompleteDaysCount += 1;
+                }
+              } else {
+                if (dayItem.status === 'completed') {
+                  const isLate = dayItem.completedAt && dayItem.completedAt.slice(0, 10) > dayItem.date;
+                  if (isLate) {
+                    status = 'completed-late';
+                    lateDaysCount += 1;
+                  } else {
+                    status = 'completed';
+                    onTimeDaysCount += 1;
+                  }
+                } else if (isPast) {
+                  status = 'incomplete';
+                  incompleteDaysCount += 1;
+                }
+              }
+
+              return {
+                ...dayItem,
+                status,
+                dayTasks,
+                isToday,
+                isPast,
+                isFuture
+              };
+            });
+
+            const completedTotal = onTimeDaysCount + lateDaysCount;
+            const progressPercent = totalDays > 0 ? Math.round((completedTotal / totalDays) * 100) : 0;
+            const isCompleted = challenge.status === 'completed' || completedTotal === totalDays;
 
             return (
               <div
-                key={challenge.id || challenge._id}
-                className="bg-[#161b22] border border-github-border rounded-xl p-4 sm:p-5 shadow-sm transition-all hover:border-white/20"
+                key={challengeId}
+                className="bg-[#161b22] border rounded-xl p-4 sm:p-5 shadow-sm transition-all hover:border-white/20 border-github-border"
               >
-                {/* Challenge Header */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-github-border">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-base font-bold text-white tracking-tight">
-                        {challenge.title}
-                      </h3>
-                      <span
-                        className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full border"
-                        style={{
-                          backgroundColor: theme.accentDark,
-                          color: theme.accent,
-                          borderColor: theme.accent + '40'
-                        }}
-                      >
-                        {challenge.category || 'General'}
-                      </span>
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-[#0d1117] text-github-muted border border-github-border">
-                        {totalDays} Days
-                      </span>
-                      {isCompleted && (
-                        <span className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-700/40">
-                          <Trophy className="w-3 h-3 text-emerald-400" />
-                          Achieved
+                {/* Challenge Header - Clickable anywhere on header to expand/collapse */}
+                <div
+                  onClick={() => toggleExpand(challengeId)}
+                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 cursor-pointer select-none group/header hover:bg-[#21262d]/30 rounded-lg p-1.5 -m-1.5 transition-colors ${
+                    isCollapsed ? '' : 'pb-4 border-b border-github-border'
+                  }`}
+                  title={isCollapsed ? 'Click header to expand challenge details and grid' : 'Click top area to minimize challenge'}
+                >
+                  <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-base font-bold text-white tracking-tight truncate">
+                          {challenge.title}
+                        </h3>
+                        <span
+                          className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full border"
+                          style={{
+                            backgroundColor: theme.accentDark,
+                            color: theme.accent,
+                            borderColor: theme.accent + '40'
+                          }}
+                        >
+                          {challenge.category || 'General'}
                         </span>
+                        <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-[#0d1117] text-github-muted border border-github-border">
+                          {totalDays} Days
+                        </span>
+                        {isCompleted && (
+                          <span className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-700/40">
+                            <Trophy className="w-3 h-3 text-emerald-400" />
+                            Achieved
+                          </span>
+                        )}
+                        {isCollapsed && (
+                          <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-[#0d1117] text-white border border-github-border">
+                            {completedTotal}/{totalDays} ({progressPercent}%)
+                          </span>
+                        )}
+                      </div>
+                      {challenge.description && !isCollapsed && (
+                        <p className="text-xs text-github-muted">{challenge.description}</p>
                       )}
                     </div>
-                    {challenge.description && (
-                      <p className="text-xs text-github-muted">{challenge.description}</p>
-                    )}
                   </div>
 
                   {/* Actions & Dates */}
-                  <div className="flex items-center gap-2 self-end sm:self-auto text-xs text-github-muted">
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-2 self-end sm:self-auto text-xs text-github-muted flex-shrink-0"
+                  >
                     <span className="font-mono text-[11px]">
                       {challenge.startDate} → {challenge.endDate}
                     </span>
 
+                    {/* Minimize / Maximize toggle */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleExpand(challengeId);
+                      }}
+                      className="px-2 py-1 rounded-md text-github-muted hover:text-white hover:bg-[#21262d] transition-colors flex items-center gap-1 text-xs border border-github-border"
+                      title={isCollapsed ? 'Maximize Challenge Grid' : 'Minimize Challenge Grid'}
+                    >
+                      {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                      <span>{isCollapsed ? 'Expand' : 'Minimize'}</span>
+                    </button>
+
                     {/* Edit Challenge */}
                     <button
-                      onClick={() => setEditingChallenge(challenge)}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingChallenge(challenge);
+                      }}
                       className="p-1.5 rounded-md text-github-muted hover:text-white hover:bg-[#21262d] transition-colors"
                       title="Edit Challenge"
                     >
@@ -247,7 +367,11 @@ export default function ChallengeTracker({
 
                     {/* Delete Challenge */}
                     <button
-                      onClick={() => handleDeleteClick(challenge)}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(challenge);
+                      }}
                       className="p-1.5 rounded-md text-github-muted hover:text-red-400 hover:bg-[#21262d] transition-colors"
                       title="Delete Challenge (Requires password)"
                     >
@@ -256,139 +380,174 @@ export default function ChallengeTracker({
                   </div>
                 </div>
 
-                {/* Progress Bar & Summary Stats */}
-                <div className="py-4 border-b border-github-border space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-github-muted">
-                      Progress:{' '}
-                      <strong className="text-white font-mono">
-                        {completedCount} / {totalDays}
-                      </strong>{' '}
-                      days checked in
-                    </span>
-                    <span className="font-mono font-bold" style={{ color: theme.accent }}>
-                      {progressPercent}%
-                    </span>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="w-full h-2.5 bg-[#0d1117] rounded-full overflow-hidden border border-github-border">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${progressPercent}%`,
-                        backgroundColor: theme.accent
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px] text-github-muted pt-1 flex-wrap gap-2">
-                    <div className="flex items-center gap-4">
-                      <span className="flex items-center gap-1.5">
-                        <span
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: theme.accent }}
-                        />
-                        {completedCount} Completed
-                      </span>
-                      {skippedCount > 0 && (
-                        <span className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-amber-500" />
-                          {skippedCount} Skipped
+                {!isCollapsed && (
+                  <>
+                    {/* Progress Bar & Summary Stats */}
+                    <div className="py-4 border-b border-github-border space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-github-muted">
+                          Progress:{' '}
+                          <strong className="text-white font-mono">
+                            {completedTotal} / {totalDays}
+                          </strong>{' '}
+                          days achieved
                         </span>
-                      )}
-                      <span>
-                        {Math.max(0, totalDays - completedCount - skippedCount)} Days Remaining
-                      </span>
-                    </div>
-                    <span className="italic text-[10px]">Click any day square to check-in or edit</span>
-                  </div>
-                </div>
+                        <span className="font-mono font-bold" style={{ color: theme.accent }}>
+                          {progressPercent}%
+                        </span>
+                      </div>
 
-                {/* The Interactive Day-by-Day Challenge Grid */}
-                <div className="pt-4">
-                  <div className="text-xs font-semibold text-github-text uppercase tracking-wider mb-2.5 flex items-center justify-between">
-                    <span>Day-by-Day Check-in Grid</span>
-                    <span className="text-[11px] text-github-muted normal-case font-normal">
-                      Completed • Orange = Skipped • Ring = Today
-                    </span>
-                  </div>
+                      {/* Progress bar */}
+                      <div className="w-full h-2.5 bg-[#0d1117] rounded-full overflow-hidden border border-github-border">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${progressPercent}%`,
+                            backgroundColor: theme.accent
+                          }}
+                        />
+                      </div>
 
-                  <div className="grid grid-cols-7 sm:grid-cols-10 md:grid-cols-14 lg:grid-cols-15 gap-1.5 sm:gap-2">
-                    {checkIns.map((dayItem) => {
-                      const isToday = dayItem.date === todayStr;
-                      const isDone = dayItem.status === 'completed';
-                      const isSkipped = dayItem.status === 'skipped';
-                      const challengeId = challenge.id || challenge._id;
-                      const dayTasks = tasks.filter(
-                        (t) =>
-                          (t.challengeId === challengeId && t.dayNumber === dayItem.dayNumber) ||
-                          (t.challengeId === challengeId && t.date === dayItem.date)
-                      );
-
-                      let cellStyle = 'bg-[#0d1117] border-github-border text-github-muted hover:border-white/30';
-                      if (isDone) {
-                        cellStyle = 'border-white/30 text-white shadow-sm';
-                      } else if (isSkipped) {
-                        cellStyle = 'bg-amber-950/40 border-amber-600/50 text-amber-300 hover:border-amber-500';
-                      } else if (isToday) {
-                        cellStyle = 'ring-2 font-bold animate-pulse text-white';
-                      }
-
-                      return (
-                        <button
-                          key={dayItem.dayNumber}
-                          onClick={() => setSelectedDayCheckIn({ challenge, dayItem })}
-                          className={`aspect-square min-h-[36px] rounded-lg border p-1 flex flex-col items-center justify-center relative transition-all group ${cellStyle}`}
-                          style={
-                            isDone
-                              ? {
-                                  backgroundColor: theme.hexLevels[3],
-                                  borderColor: theme.accent + '80'
-                                }
-                              : isToday
-                              ? {
-                                  borderColor: theme.accent,
-                                  boxShadow: `0 0 0 2px ${theme.accent}60`,
-                                  backgroundColor: theme.accentDark
-                                }
-                              : {}
-                          }
-                          title={`Day ${dayItem.dayNumber} (${dayItem.date}): ${dayItem.status}${
-                            dayItem.note ? ` - "${dayItem.note}"` : ''
-                          }${dayTasks.length > 0 ? ` • ${dayTasks.length} task(s)` : ''}`}
-                        >
-                          <span className="text-[11px] font-mono leading-none">
-                            {dayItem.dayNumber}
-                          </span>
-                          {isDone ? (
-                            <CheckCircle2
-                              className="w-3.5 h-3.5 mt-1"
-                              style={{ color: '#ffffff' }}
-                            />
-                          ) : isSkipped ? (
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1" />
-                          ) : isToday ? (
+                      <div className="flex items-center justify-between text-[11px] text-github-muted pt-1 flex-wrap gap-2">
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <span className="flex items-center gap-1.5 text-emerald-300">
                             <span
-                              className="w-1.5 h-1.5 rounded-full mt-1"
+                              className="w-2 h-2 rounded-full"
                               style={{ backgroundColor: theme.accent }}
                             />
-                          ) : dayTasks.length > 0 ? (
-                            <span className="text-[9px] font-mono leading-none px-1 rounded bg-[#161b22] text-amber-300 border border-amber-800/40 mt-1">
-                              {dayTasks.filter((t) => t.completed).length}/{dayTasks.length}
+                            {onTimeDaysCount} On Time
+                          </span>
+                          {lateDaysCount > 0 && (
+                            <span className="flex items-center gap-1.5 text-yellow-300 font-medium">
+                              <span className="w-2 h-2 rounded-full bg-yellow-400" />
+                              {lateDaysCount} Late / Rollover Done
                             </span>
-                          ) : (
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#30363d] mt-1 group-hover:bg-github-muted" />
                           )}
+                          {incompleteDaysCount > 0 && (
+                            <span className="flex items-center gap-1.5 text-rose-300">
+                              <span className="w-2 h-2 rounded-full bg-rose-500" />
+                              {incompleteDaysCount} Incomplete
+                            </span>
+                          )}
+                          {skippedCount > 0 && (
+                            <span className="flex items-center gap-1.5 text-amber-300">
+                              <span className="w-2 h-2 rounded-full bg-amber-500" />
+                              {skippedCount} Skipped
+                            </span>
+                          )}
+                          <span>
+                            {Math.max(0, totalDays - completedTotal - skippedCount)} Days Remaining
+                          </span>
+                        </div>
+                        <span className="italic text-[10px]">Click any day square to check-in or edit</span>
+                      </div>
+                    </div>
 
-                          {dayItem.note && (
-                            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                    {/* The Interactive Day-by-Day Challenge Grid */}
+                    <div className="pt-4">
+                      <div className="text-xs font-semibold text-github-text uppercase tracking-wider mb-2.5 flex items-center justify-between flex-wrap gap-1">
+                        <span>Day-by-Day Check-in Grid</span>
+                        <span className="text-[11px] text-github-muted normal-case font-normal">
+                          Green = On Time • Yellow = Late Done • Red = Incomplete • Orange = Skipped • Ring = Today
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-7 sm:grid-cols-10 md:grid-cols-14 lg:grid-cols-15 gap-1.5 sm:gap-2">
+                        {computedCheckIns.map((dayItem) => {
+                          const isDoneOnTime = dayItem.status === 'completed';
+                          const isDoneLate = dayItem.status === 'completed-late';
+                          const isSkipped = dayItem.status === 'skipped';
+                          const isIncomplete = dayItem.status === 'incomplete';
+                          const isToday = dayItem.isToday;
+                          const dayTasks = dayItem.dayTasks || [];
+
+                          let cellStyle = 'bg-[#0d1117] border-github-border text-github-muted hover:border-white/30';
+                          let inlineStyle = {};
+
+                          if (isDoneOnTime) {
+                            cellStyle = 'border-emerald-500/80 text-white shadow-sm';
+                            inlineStyle = {
+                              backgroundColor: theme.hexLevels[3] || '#238636',
+                              borderColor: theme.accent
+                            };
+                          } else if (isDoneLate) {
+                            cellStyle = 'border-yellow-500/80 text-yellow-200 shadow-sm';
+                            inlineStyle = {
+                              backgroundColor: 'rgba(234, 179, 8, 0.25)',
+                              borderColor: '#eab308'
+                            };
+                          } else if (isSkipped) {
+                            cellStyle = 'border-amber-600/70 text-amber-300';
+                            inlineStyle = {
+                              backgroundColor: 'rgba(217, 119, 6, 0.25)',
+                              borderColor: '#d97706'
+                            };
+                          } else if (isIncomplete) {
+                            cellStyle = 'border-rose-600/80 text-rose-300';
+                            inlineStyle = {
+                              backgroundColor: 'rgba(225, 29, 72, 0.22)',
+                              borderColor: '#e11d48'
+                            };
+                          } else if (isToday) {
+                            cellStyle = 'ring-2 font-bold animate-pulse text-white';
+                            inlineStyle = {
+                              borderColor: theme.accent,
+                              boxShadow: `0 0 0 2px ${theme.accent}60`,
+                              backgroundColor: theme.accentDark
+                            };
+                          }
+
+                          return (
+                            <button
+                              key={dayItem.dayNumber}
+                              onClick={() => setSelectedDayCheckIn({ challenge, dayItem })}
+                              className={`aspect-square min-h-[36px] rounded-lg border p-1 flex flex-col items-center justify-center relative transition-all group ${cellStyle}`}
+                              style={inlineStyle}
+                              title={`Day ${dayItem.dayNumber} (${dayItem.date}): ${dayItem.status}${
+                                dayItem.note ? ` - "${dayItem.note}"` : ''
+                              }${dayTasks.length > 0 ? ` • ${dayTasks.length} task(s)` : ''}`}
+                            >
+                              <span className="text-[11px] font-mono leading-none">
+                                {dayItem.dayNumber}
+                              </span>
+                              {isDoneOnTime ? (
+                                <CheckCircle2
+                                  className="w-3.5 h-3.5 mt-1"
+                                  style={{ color: '#ffffff' }}
+                                />
+                              ) : isDoneLate ? (
+                                <CheckCircle2
+                                  className="w-3.5 h-3.5 mt-1 text-yellow-400"
+                                />
+                              ) : isSkipped ? (
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1" />
+                              ) : isIncomplete ? (
+                                <span className="text-[9px] font-mono leading-none px-1 rounded bg-rose-950 text-rose-300 border border-rose-800/60 mt-1">
+                                  {dayTasks.filter((t) => t.completed).length}/{dayTasks.length}
+                                </span>
+                              ) : isToday ? (
+                                <span
+                                  className="w-1.5 h-1.5 rounded-full mt-1"
+                                  style={{ backgroundColor: theme.accent }}
+                                />
+                              ) : dayTasks.length > 0 ? (
+                                <span className="text-[9px] font-mono leading-none px-1 rounded bg-[#161b22] text-amber-300 border border-amber-800/40 mt-1">
+                                  {dayTasks.filter((t) => t.completed).length}/{dayTasks.length}
+                                </span>
+                              ) : (
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#30363d] mt-1 group-hover:bg-github-muted" />
+                              )}
+
+                              {dayItem.note && (
+                                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             );
           })}
@@ -412,8 +571,10 @@ export default function ChallengeTracker({
         onAddTask={onAddTask}
         onToggleTask={onToggleTask}
         onDeleteTask={onDeleteTask}
+        onEditTask={onEditTask}
         onSaveCheckIn={onCheckIn}
         userProfile={userProfile}
+        challenges={challenges}
       />
 
       {/* Modal to Edit Challenge */}

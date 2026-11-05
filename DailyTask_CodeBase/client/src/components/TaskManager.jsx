@@ -298,7 +298,7 @@ export default function TaskManager({
   const dueTasks = tasks.filter((t) => !t.completed && t.date && t.date <= todayStr);
 
   return (
-    <div className="space-y-5" data-task-manager="true">
+    <div className="space-y-5">
       {/* Top Banner */}
       <div className="bg-[#161b22] border border-github-border rounded-xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -779,6 +779,7 @@ export default function TaskManager({
                 {/* Left: Checkbox + Title */}
                 <div className="flex items-center gap-3 flex-1 min-w-0 mr-3">
                   <button
+                    data-task-action="true"
                     onClick={() => handleTaskToggleClick(task)}
                     className="focus:outline-none flex-shrink-0"
                     title={
@@ -881,6 +882,7 @@ export default function TaskManager({
 
                   {/* Individual Edit Task Button */}
                   <button
+                    data-task-action="true"
                     onClick={() => handleTaskEditClick(task)}
                     className="p-1 rounded-md text-github-muted hover:text-white hover:bg-[#21262d] transition-colors"
                     title={isPast ? 'Edit past task (Requires password)' : 'Edit individual task'}
@@ -890,6 +892,7 @@ export default function TaskManager({
 
                   {/* Delete button */}
                   <button
+                    data-task-action="true"
                     onClick={() => handleTaskDeleteClick(task)}
                     className="p-1 rounded-md text-github-muted hover:text-red-400 hover:bg-[#21262d] transition-colors"
                     title={isPast ? 'Delete past task (Requires password)' : 'Delete task (Requires password)'}

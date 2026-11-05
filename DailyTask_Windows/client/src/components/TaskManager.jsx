@@ -27,6 +27,7 @@ import PasswordPromptModal from './PasswordPromptModal';
 
 export default function TaskManager({
   tasks,
+  challenges = [],
   onAddTask,
   onToggleTask,
   onDeleteTask,
@@ -38,6 +39,24 @@ export default function TaskManager({
 }) {
   const { theme } = useTheme();
   const defaultCategories = ['Coding', 'Study', 'Fitness', 'Work', 'General'];
+
+  // Helper to format completion timestamp
+  const formatCompletedTime = (completedAt) => {
+    if (!completedAt) return null;
+    try {
+      const d = new Date(completedAt);
+      if (isNaN(d.getTime())) return null;
+      return d.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (e) {
+      return null;
+    }
+  };
 
   // Password confirmation state for modifying past history
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -81,6 +100,7 @@ export default function TaskManager({
   // Form State: Ensure new tasks cannot default to a past date
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('Coding');
+  const [newChallengeId, setNewChallengeId] = useState('');
   const [newPriority, setNewPriority] = useState('Medium');
   const [newEstimatedMinutes, setNewEstimatedMinutes] = useState(30);
   const [newDate, setNewDate] = useState(() => (selectedDate && selectedDate >= todayStr ? selectedDate : todayStr));
@@ -136,16 +156,12 @@ export default function TaskManager({
 
   const handleTaskDeleteClick = (task) => {
     const taskId = task.id || task._id;
-    if (task.date < todayStr) {
-      setPasswordPromptInfo({
-        title: 'Authorize Task Deletion',
-        description: `Deleting historical task record "${task.title}" (${task.date}) requires your account password.`
-      });
-      setPendingHistoryAction(() => () => onDeleteTask(taskId));
-      setIsPasswordModalOpen(true);
-      return;
-    }
-    onDeleteTask(taskId);
+    setPasswordPromptInfo({
+      title: 'Authorize Task Deletion',
+      description: `Deleting task "${task.title}" requires your account password.`
+    });
+    setPendingHistoryAction(() => () => onDeleteTask(taskId));
+    setIsPasswordModalOpen(true);
   };
 
   const handleTaskEditClick = (task) => {
@@ -180,18 +196,33 @@ export default function TaskManager({
       }
     }
 
+    const selectedChallenge = challenges.find((c) => (c.id === newChallengeId || c._id === newChallengeId));
+    let matchedDayNumber = null;
+    const taskDate = newDate || todayStr;
+
+    if (selectedChallenge && Array.isArray(selectedChallenge.checkIns)) {
+      const matchedDay = selectedChallenge.checkIns.find((ci) => ci.date === taskDate);
+      if (matchedDay) {
+        matchedDayNumber = matchedDay.dayNumber;
+      }
+    }
+
     onAddTask({
       id: `task-${Date.now()}`,
       title: newTitle.trim(),
       category: finalCategory || 'General',
       priority: newPriority,
       estimatedMinutes: parseInt(newEstimatedMinutes, 10) || 30,
-      date: newDate || todayStr,
+      date: taskDate,
       completed: false,
-      completedAt: null
+      completedAt: null,
+      challengeId: selectedChallenge ? (selectedChallenge.id || selectedChallenge._id) : null,
+      challengeTitle: selectedChallenge ? selectedChallenge.title : null,
+      dayNumber: matchedDayNumber
     });
 
     setNewTitle('');
+    setNewChallengeId('');
     setManualCategoryInput('');
     setIsManualCategory(false);
     setIsAddFormOpen(false);
@@ -232,6 +263,9 @@ export default function TaskManager({
       if (filter === 'pending') {
         return !t.completed;
       }
+      if (filter === 'due') {
+        return !t.completed && t.date && t.date <= todayStr;
+      }
       if (filter === 'completed') {
         return t.completed;
       }
@@ -261,6 +295,7 @@ export default function TaskManager({
 
   const todayTasks = tasks.filter((t) => t.date === todayStr);
   const todayDone = todayTasks.filter((t) => t.completed).length;
+  const dueTasks = tasks.filter((t) => !t.completed && t.date && t.date <= todayStr);
 
   return (
     <div className="space-y-5">
@@ -355,9 +390,9 @@ export default function TaskManager({
             <span className="text-xs text-github-muted">Linked to Activity Heatmap</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {/* Task Title */}
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 md:col-span-3">
               <label className="block text-[11px] font-semibold text-github-text uppercase tracking-wider mb-1">
                 Task Description *
               </label>
@@ -421,6 +456,26 @@ export default function TaskManager({
                   <option value="__NEW__">+ Enter New Category Manually...</option>
                 </select>
               )}
+            </div>
+
+            {/* Goal Challenge (Optional) */}
+            <div>
+              <label className="block text-[11px] font-semibold text-github-text uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5 text-amber-400" />
+                <span>Goal Challenge</span>
+              </label>
+              <select
+                value={newChallengeId}
+                onChange={(e) => setNewChallengeId(e.target.value)}
+                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none"
+              >
+                <option value="">None (No Challenge)</option>
+                {challenges.map((c) => (
+                  <option key={c.id || c._id} value={c.id || c._id}>
+                    {c.title} ({c.durationDays || c.totalDays || 30} Days)
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Priority */}
@@ -518,6 +573,25 @@ export default function TaskManager({
                 }
               >
                 Today ({todayTasks.length})
+              </button>
+              <button
+                onClick={() => setFilter('due')}
+                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap border ${
+                  filter === 'due'
+                    ? 'text-white shadow-sm'
+                    : 'border-transparent text-github-muted hover:text-white'
+                }`}
+                style={
+                  filter === 'due'
+                    ? {
+                        backgroundColor: theme.accentDark,
+                        color: theme.accent,
+                        borderColor: theme.accent + '40'
+                      }
+                    : {}
+                }
+              >
+                Due ({dueTasks.length})
               </button>
               <button
                 onClick={() => setFilter('pending')}
@@ -705,6 +779,7 @@ export default function TaskManager({
                 {/* Left: Checkbox + Title */}
                 <div className="flex items-center gap-3 flex-1 min-w-0 mr-3">
                   <button
+                    data-task-action="true"
                     onClick={() => handleTaskToggleClick(task)}
                     className="focus:outline-none flex-shrink-0"
                     title={
@@ -769,6 +844,18 @@ export default function TaskManager({
                         <Clock className="w-3 h-3" />
                         {task.estimatedMinutes}m
                       </span>
+                      {task.completed && task.completedAt && (
+                        <>
+                          <span>•</span>
+                          <span
+                            className="flex items-center gap-1 font-mono text-emerald-400 font-medium"
+                            title={`Completed at ${task.completedAt}`}
+                          >
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            <span>Completed: {formatCompletedTime(task.completedAt)}</span>
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -795,6 +882,7 @@ export default function TaskManager({
 
                   {/* Individual Edit Task Button */}
                   <button
+                    data-task-action="true"
                     onClick={() => handleTaskEditClick(task)}
                     className="p-1 rounded-md text-github-muted hover:text-white hover:bg-[#21262d] transition-colors"
                     title={isPast ? 'Edit past task (Requires password)' : 'Edit individual task'}
@@ -804,9 +892,10 @@ export default function TaskManager({
 
                   {/* Delete button */}
                   <button
+                    data-task-action="true"
                     onClick={() => handleTaskDeleteClick(task)}
                     className="p-1 rounded-md text-github-muted hover:text-red-400 hover:bg-[#21262d] transition-colors"
-                    title={isPast ? 'Delete past task (Requires password)' : 'Delete task'}
+                    title={isPast ? 'Delete past task (Requires password)' : 'Delete task (Requires password)'}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -824,6 +913,7 @@ export default function TaskManager({
           onClose={() => setEditingTask(null)}
           task={editingTask}
           onSaveTask={onEditTask}
+          challenges={challenges}
         />
       )}
 

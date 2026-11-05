@@ -260,6 +260,13 @@ export default function ContributionHeatmap({
     }
   }, [timeRange]);
 
+  // Synchronize mobileSelectedDay when selectedDate is cleared
+  useEffect(() => {
+    if (!selectedDate) {
+      setMobileSelectedDay(null);
+    }
+  }, [selectedDate]);
+
   // Handle click outside to deselect date
   useEffect(() => {
     if (!selectedDate) return;
@@ -270,16 +277,18 @@ export default function ContributionHeatmap({
         return;
       }
 
-      // 2. If click is inside TaskManager or modal overlays, keep date filter selected
-      if (
-        e.target.closest('[data-task-manager="true"]') ||
-        e.target.closest('[role="dialog"]') ||
-        e.target.closest('.fixed')
-      ) {
+      // 2. If click is inside an open modal or security prompt, do not deselect
+      if (e.target.closest('[role="dialog"]') || e.target.closest('.fixed')) {
         return;
       }
 
-      // 3. User clicked elsewhere on the page -> deselect date
+      // 3. If clicking a task action button (edit, delete, toggle), do not deselect
+      if (e.target.closest('[data-task-action="true"]')) {
+        return;
+      }
+
+      // 4. User clicked anywhere else on the page (outside the heatmap window) -> deselect date
+      setMobileSelectedDay(null);
       if (onSelectDate) {
         onSelectDate(null);
       }
@@ -449,7 +458,7 @@ export default function ContributionHeatmap({
               {weeks.map((week, wIdx) => (
                 <div key={wIdx} className="grid grid-cols-7 gap-1.5 sm:gap-2">
                   {week.map((day, dIdx) => {
-                    const isSelected = selectedDate === day.date || mobileSelectedDay?.date === day.date;
+                    const isSelected = Boolean(selectedDate && selectedDate === day.date);
                     const levelClass = getThemeLevelClass(day.count, day.isFuture, isSelected);
 
                     return (
@@ -541,7 +550,7 @@ export default function ContributionHeatmap({
                     style={{ rowGap: timeRange === 'year' ? '2.5px' : '3.5px' }}
                   >
                     {week.map((day, dIdx) => {
-                      const isSelected = selectedDate === day.date || mobileSelectedDay?.date === day.date;
+                      const isSelected = Boolean(selectedDate && selectedDate === day.date);
                       const levelClass = getThemeLevelClass(day.count, day.isFuture, isSelected);
 
                       return (

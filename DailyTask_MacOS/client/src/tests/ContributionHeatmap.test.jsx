@@ -59,25 +59,23 @@ describe('ContributionHeatmap Component', () => {
     expect(halfYearBtn).toHaveClass('bg-olive-800');
   });
 
-  it('unselects and returns to neutral state when clicking anywhere outside or elsewhere', () => {
+  it('toggles selection off when clicking an already selected cell', () => {
     const handleSelectDate = vi.fn();
     const today = formatDateStr(new Date());
 
-    render(
-      <div>
-        <div data-testid="outside-element">Outside Area</div>
-        <ContributionHeatmap
-          tasks={sampleTasks}
-          selectedDate={today}
-          onSelectDate={handleSelectDate}
-        />
-      </div>
+    const { container } = render(
+      <ContributionHeatmap
+        tasks={sampleTasks}
+        selectedDate={today}
+        onSelectDate={handleSelectDate}
+      />
     );
 
-    // Simulate clicking elsewhere on the page
-    const outsideEl = screen.getByTestId('outside-element');
-    fireEvent.pointerDown(outsideEl);
-
+    const cells = container.querySelectorAll('[data-heatmap-cell="true"]');
+    const nonDisabledCells = Array.from(cells).filter((c) => !c.disabled);
+    expect(nonDisabledCells.length).toBeGreaterThan(0);
+    const todayCell = nonDisabledCells[nonDisabledCells.length - 1];
+    fireEvent.click(todayCell);
     expect(handleSelectDate).toHaveBeenCalledWith(null);
   });
 

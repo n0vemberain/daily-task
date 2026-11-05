@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DATA_DIR = path.join(__dirname, '../data');
+const DATA_DIR = process.env.DAILY_TASK_DATA_DIR || path.join(__dirname, '../data');
 const STORE_FILE = path.join(DATA_DIR, 'store.json');
 
 // Helper to get formatted date string YYYY-MM-DD
@@ -804,19 +804,19 @@ class FileStore {
       if (user && user.username) {
         this.updateUser(user, targetUsername);
       }
-      // Replace only targetUser's items
-      store.tasks = (store.tasks || []).filter(t => (t.userId || 'n0vemberain').toLowerCase() !== targetUsername);
+      // Replace only targetUser's items if array was provided
       if (Array.isArray(tasks)) {
+        store.tasks = (store.tasks || []).filter(t => (t.userId || 'n0vemberain').toLowerCase() !== targetUsername);
         store.tasks.push(...tasks.map(t => ({ ...t, userId: targetUsername })));
       }
 
-      store.challenges = (store.challenges || []).filter(c => (c.userId || 'n0vemberain').toLowerCase() !== targetUsername);
       if (Array.isArray(challenges)) {
+        store.challenges = (store.challenges || []).filter(c => (c.userId || 'n0vemberain').toLowerCase() !== targetUsername);
         store.challenges.push(...challenges.map(c => ({ ...c, userId: targetUsername })));
       }
 
-      store.timerSessions = (store.timerSessions || []).filter(s => (s.userId || 'n0vemberain').toLowerCase() !== targetUsername);
       if (Array.isArray(timerSessions)) {
+        store.timerSessions = (store.timerSessions || []).filter(s => (s.userId || 'n0vemberain').toLowerCase() !== targetUsername);
         store.timerSessions.push(...timerSessions.map(s => ({ ...s, userId: targetUsername })));
       }
 

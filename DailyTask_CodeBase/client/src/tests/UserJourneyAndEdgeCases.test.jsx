@@ -281,7 +281,7 @@ describe('User Journey & Edge Case Testing Suite', () => {
   });
 
   describe('Heatmap Outside Click Deselection & TaskManager Interaction Isolation', () => {
-    it('unselects date when clicking elsewhere on the page, but preserves selection when clicking inside TaskManager', async () => {
+    it('unselects date when clicking elsewhere on the page, but preserves selection when clicking task actions', async () => {
       const handleSelectDate = vi.fn();
       const todayStr = formatDateStr(new Date());
 
@@ -294,8 +294,8 @@ describe('User Journey & Edge Case Testing Suite', () => {
               selectedDate={todayStr}
               onSelectDate={handleSelectDate}
             />
-            <div data-task-manager="true" data-testid="task-manager-container">
-              <button data-testid="task-edit-btn">Edit Task Inside Manager</button>
+            <div data-testid="task-manager-container">
+              <button data-task-action="true" data-testid="task-edit-btn">Edit Task Inside Manager</button>
             </div>
           </div>
         );

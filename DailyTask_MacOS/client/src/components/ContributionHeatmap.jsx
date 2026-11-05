@@ -260,34 +260,49 @@ export default function ContributionHeatmap({
     }
   }, [timeRange]);
 
-  // Click outside listener: when any box is selected, clicking anywhere other than the heatmap cells unselects it
+  // Synchronize mobileSelectedDay when selectedDate is cleared
   useEffect(() => {
-    const handleGlobalClick = (e) => {
-      // If clicking inside a heatmap cell, let handleCellClick handle selection/toggle
-      if (e.target.closest('.heatmap-cell') || e.target.closest('[data-heatmap-cell="true"]')) {
+    if (!selectedDate) {
+      setMobileSelectedDay(null);
+    }
+  }, [selectedDate]);
+
+  // Handle click outside to deselect date
+  useEffect(() => {
+    if (!selectedDate) return;
+
+    const handleDocumentClick = (e) => {
+      // 1. If click is inside heatmap container, let cell handlers manage it
+      if (containerRef.current && containerRef.current.contains(e.target)) {
         return;
       }
 
-      // If clicking inside the active mobile drawer (e.g. interacting with drawer), do not auto-unselect
-      if (e.target.closest('[data-heatmap-drawer="true"]')) {
+      // 2. If click is inside an open modal or security prompt, do not deselect
+      if (e.target.closest('[role="dialog"]') || e.target.closest('.fixed')) {
         return;
       }
 
-      // If user clicks anywhere else on the page or outside, unselect the active box
-      if (selectedDate || mobileSelectedDay) {
-        if (onSelectDate) {
-          onSelectDate(null);
-        }
-        setMobileSelectedDay(null);
-        setHoveredDay(null);
+      // 3. If clicking a task action button (edit, delete, toggle), do not deselect
+      if (e.target.closest('[data-task-action="true"]')) {
+        return;
+      }
+
+      // 4. User clicked anywhere else on the page (outside the heatmap window) -> deselect date
+      setMobileSelectedDay(null);
+      if (onSelectDate) {
+        onSelectDate(null);
       }
     };
 
-    document.addEventListener('pointerdown', handleGlobalClick);
+    const timer = setTimeout(() => {
+      document.addEventListener('click', handleDocumentClick);
+    }, 0);
+
     return () => {
-      document.removeEventListener('pointerdown', handleGlobalClick);
+      clearTimeout(timer);
+      document.removeEventListener('click', handleDocumentClick);
     };
-  }, [selectedDate, mobileSelectedDay, onSelectDate]);
+  }, [selectedDate, onSelectDate]);
 
   // Color resolver based on completed task count and current theme
   const getThemeLevelClass = (count, isFuture, isSelected) => {
@@ -443,7 +458,7 @@ export default function ContributionHeatmap({
               {weeks.map((week, wIdx) => (
                 <div key={wIdx} className="grid grid-cols-7 gap-1.5 sm:gap-2">
                   {week.map((day, dIdx) => {
-                    const isSelected = selectedDate === day.date || mobileSelectedDay?.date === day.date;
+                    const isSelected = Boolean(selectedDate && selectedDate === day.date);
                     const levelClass = getThemeLevelClass(day.count, day.isFuture, isSelected);
 
                     return (
@@ -535,7 +550,7 @@ export default function ContributionHeatmap({
                     style={{ rowGap: timeRange === 'year' ? '2.5px' : '3.5px' }}
                   >
                     {week.map((day, dIdx) => {
-                      const isSelected = selectedDate === day.date || mobileSelectedDay?.date === day.date;
+                      const isSelected = Boolean(selectedDate && selectedDate === day.date);
                       const levelClass = getThemeLevelClass(day.count, day.isFuture, isSelected);
 
                       return (

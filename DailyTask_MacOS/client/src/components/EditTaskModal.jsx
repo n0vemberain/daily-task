@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Edit3, Clock, Calendar, Tag, Lock } from 'lucide-react';
+import { X, CheckCircle2, Edit3, Clock, Calendar, Tag, Lock, Flame } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { formatDateStr } from '../data/initialData';
 
@@ -7,7 +7,8 @@ export default function EditTaskModal({
   isOpen,
   onClose,
   task,
-  onSaveTask
+  onSaveTask,
+  challenges = []
 }) {
   const { theme } = useTheme();
   const todayStr = formatDateStr(new Date());
@@ -18,6 +19,7 @@ export default function EditTaskModal({
   const [priority, setPriority] = useState('Medium');
   const [date, setDate] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState(30);
+  const [challengeId, setChallengeId] = useState('');
 
   const [customCategories, setCustomCategories] = useState(() => {
     try {
@@ -38,6 +40,7 @@ export default function EditTaskModal({
       setPriority(task.priority || 'Medium');
       setDate(task.date || '');
       setEstimatedMinutes(task.estimatedMinutes || 30);
+      setChallengeId(task.challengeId || '');
       setIsManualCategory(false);
       setManualCategoryInput('');
     }
@@ -63,20 +66,42 @@ export default function EditTaskModal({
       }
     }
 
+    const selectedChallenge = challenges.find((c) => (c.id === challengeId || c._id === challengeId));
+    let matchedDayNumber = task.dayNumber || null;
+    const taskDate = date || task.date;
+
+    if (selectedChallenge && Array.isArray(selectedChallenge.checkIns)) {
+      const matchedDay = selectedChallenge.checkIns.find((ci) => ci.date === taskDate);
+      if (matchedDay) {
+        matchedDayNumber = matchedDay.dayNumber;
+      }
+    } else if (!selectedChallenge) {
+      matchedDayNumber = null;
+    }
+
     onSaveTask(task.id || task._id, {
       ...task,
       title: title.trim(),
       category: finalCategory || 'General',
       priority,
-      date: date || task.date,
-      estimatedMinutes: Math.max(5, parseInt(estimatedMinutes, 10) || 30)
+      date: taskDate,
+      estimatedMinutes: Math.max(5, parseInt(estimatedMinutes, 10) || 30),
+      challengeId: selectedChallenge ? (selectedChallenge.id || selectedChallenge._id) : null,
+      challengeTitle: selectedChallenge ? selectedChallenge.title : null,
+      dayNumber: matchedDayNumber
     });
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-github-border bg-[#0d1117]">
           <div className="flex items-center gap-2">
@@ -177,6 +202,26 @@ export default function EditTaskModal({
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Goal Challenge Selection */}
+          <div>
+            <label className="block text-[11px] font-semibold text-github-text uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <Flame className="w-3.5 h-3.5 text-amber-400" />
+              <span>Goal Challenge</span>
+            </label>
+            <select
+              value={challengeId}
+              onChange={(e) => setChallengeId(e.target.value)}
+              className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white focus:outline-none"
+            >
+              <option value="">None (No Challenge)</option>
+              {challenges.map((c) => (
+                <option key={c.id || c._id} value={c.id || c._id}>
+                  {c.title} ({c.durationDays || c.totalDays || 30} Days)
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Past Date Authorized Indicator */}

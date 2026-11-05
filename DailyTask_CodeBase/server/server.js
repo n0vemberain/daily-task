@@ -17,7 +17,7 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const clientDistPath = path.join(__dirname, '../client/dist');
+const clientDistPath = process.env.CLIENT_DIST_PATH || path.join(__dirname, '../client/dist');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -136,7 +136,26 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, async () => {
-  console.log(`[Server] Running on http://localhost:${PORT}`);
-  await connectDB();
+export const startServer = (port = PORT) => {
+  return new Promise((resolve, reject) => {
+    const server = app.listen(port, async () => {
+      console.log(`[Server] Running on http://localhost:${port}`);
+      await connectDB();
+      if (process.send) {
+        process.send({ type: 'server-started', port });
+      }
+      resolve(server);
+    });
+    server.on('error', (err) => {
+      console.error('[Server] Listen error:', err);
+      reject(err);
+    });
+  });
+};
+
+export default app;
+
+// Auto-start when executed directly or as child process
+startServer(PORT).catch((err) => {
+  console.error('[Server] Failed to start:', err);
 });

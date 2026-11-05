@@ -3,24 +3,27 @@ import { Flame, Trophy, CheckCircle2, Target, Calendar } from 'lucide-react';
 import { formatDateStr } from '../data/initialData';
 import { useTheme } from '../context/ThemeContext';
 
-export default function StatsOverview({ tasks, challenges }) {
+export default function StatsOverview({ tasks = [], challenges = [] }) {
   const { theme } = useTheme();
   const todayStr = formatDateStr(new Date());
 
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+  const safeChallenges = Array.isArray(challenges) ? challenges : [];
+
   // Calculate tasks completed today
-  const todayTasks = tasks.filter(t => t.date === todayStr);
+  const todayTasks = safeTasks.filter(t => t.date === todayStr);
   const todayCompleted = todayTasks.filter(t => t.completed).length;
 
   // Total completed tasks
-  const totalCompleted = tasks.filter(t => t.completed).length;
+  const totalCompleted = safeTasks.filter(t => t.completed).length;
 
   // Calculate streaks from completed tasks grouped by date
   const completedDatesSet = new Set(
-    tasks.filter(t => t.completed && t.date).map(t => t.date)
+    safeTasks.filter(t => t.completed && t.date).map(t => t.date)
   );
 
   // Active challenges count and average completion
-  const activeChallenges = challenges.filter(c => c.status === 'active');
+  const activeChallenges = safeChallenges.filter(c => c.status === 'active');
   let totalChallengeDays = 0;
   let completedChallengeDays = 0;
   activeChallenges.forEach(c => {

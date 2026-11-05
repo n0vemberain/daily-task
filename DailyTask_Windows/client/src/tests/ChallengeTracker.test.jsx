@@ -46,6 +46,10 @@ describe('ChallengeTracker Component', () => {
       />
     );
 
+    // Challenges start minimized; click header/expand to open
+    const expandBtn = screen.getByTitle('Maximize Challenge Grid');
+    fireEvent.click(expandBtn);
+
     expect(screen.getByText('Day-by-Day Check-in Grid')).toBeInTheDocument();
     expect(screen.getByText('1')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
@@ -60,7 +64,7 @@ describe('ChallengeTracker Component', () => {
         challengeId: 'ch-1',
         dayNumber: 3,
         date: '2026-10-03',
-        completed: true
+        completed: false
       }
     ];
 
@@ -77,8 +81,12 @@ describe('ChallengeTracker Component', () => {
       />
     );
 
-    // Indicator 1/1 on day 3 button
-    expect(screen.getByText('1/1')).toBeInTheDocument();
+    // Expand the challenge first
+    const expandBtn = screen.getByTitle('Maximize Challenge Grid');
+    fireEvent.click(expandBtn);
+
+    // Indicator 0/1 on day 3 button
+    expect(screen.getByText('0/1')).toBeInTheDocument();
 
     // Click Day 3 square
     const day3Btn = screen.getByText('3').closest('button');
@@ -128,5 +136,93 @@ describe('ChallengeTracker Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Authorize & Proceed/i }));
 
     expect(handleDeleteChallenge).toHaveBeenCalledWith('ch-1');
+  });
+
+  it('toggles collapse and expand to minimize/maximize challenge card', () => {
+    render(
+      <ChallengeTracker
+        challenges={mockChallenges}
+        onCreateChallenge={vi.fn()}
+        onCheckIn={vi.fn()}
+        onDeleteChallenge={vi.fn()}
+      />
+    );
+
+    // Initial state: starts minimized, Grid is hidden
+    expect(screen.queryByText('Day-by-Day Check-in Grid')).not.toBeInTheDocument();
+
+    // Click Expand button
+    const expandBtn = screen.getByTitle('Maximize Challenge Grid');
+    fireEvent.click(expandBtn);
+
+    // Grid is now visible
+    expect(screen.getByText('Day-by-Day Check-in Grid')).toBeInTheDocument();
+
+    // Click Minimize button
+    const minimizeBtn = screen.getByTitle('Minimize Challenge Grid');
+    fireEvent.click(minimizeBtn);
+
+    // Grid is hidden again
+    expect(screen.queryByText('Day-by-Day Check-in Grid')).not.toBeInTheDocument();
+  });
+
+  it('computes dynamic day status and summary counts for on-time, late, incomplete, and skipped days', () => {
+    const dynamicChallenge = [
+      {
+        id: 'ch-dynamic',
+        title: 'Status Color Verification Challenge',
+        category: 'Productivity',
+        durationDays: 4,
+        startDate: '2026-10-01',
+        endDate: '2026-10-04',
+        status: 'active',
+        checkIns: [
+          { dayNumber: 1, date: '2026-10-01', status: 'completed', note: 'Done' },
+          { dayNumber: 2, date: '2026-10-02', status: 'skipped', note: '' },
+          { dayNumber: 3, date: '2026-10-03', status: 'pending', note: '' },
+          { dayNumber: 4, date: '2026-10-04', status: 'pending', note: '' }
+        ]
+      }
+    ];
+
+    const dynamicTasks = [
+      // Day 4 has a task that completed late (completedAt > date)
+      {
+        id: 'task-late',
+        title: 'Late Rollover Task',
+        challengeId: 'ch-dynamic',
+        dayNumber: 4,
+        date: '2026-10-04',
+        completed: true,
+        completedAt: '2026-10-05T12:00:00.000Z'
+      }
+    ];
+
+    render(
+      <ChallengeTracker
+        challenges={dynamicChallenge}
+        tasks={dynamicTasks}
+        onCreateChallenge={vi.fn()}
+        onCheckIn={vi.fn()}
+        onDeleteChallenge={vi.fn()}
+      />
+    );
+
+    // Expand the challenge first to view the grid and breakdown
+    const expandBtn = screen.getByTitle('Maximize Challenge Grid');
+    fireEvent.click(expandBtn);
+
+    // Summary bar verifies breakdown
+    expect(screen.getByText(/1 On Time/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 Late \/ Rollover Done/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 Skipped/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 Incomplete/i)).toBeInTheDocument();
+
+    // Verify Legend text is displayed
+    expect(
+      screen.getByText(
+        /Green = On Time • Yellow = Late Done • Red = Incomplete • Orange = Skipped • Ring = Today/i
+      )
+    ).toBeInTheDocument();
   });
 });
