@@ -25,6 +25,13 @@ Experience Daily Task directly in your browser without any manual installation:
 - **Built-in Credentials:**
   - **Username:** `n0vemberain`
   - **Password:** `Password123!`
+- **Step-by-Step Guide: How to Completely Delete All Website Data:**
+  1. Open the dashboard and click the **Settings** (gear icon) in the top navigation bar.
+  2. In the Settings window, go to the **Data Management** tab.
+  3. Scroll to the **Data Clean Center (Danger Zone)** card and click **Open Clean Center**.
+  4. In the Clean Center modal, choose **Factory Reset (Clear All Data)**.
+  5. Enter your account password (`Password123!`) to authorize the deletion and confirm.
+  6. *Alternative browser method:* Open Developer Tools Console (`F12` or `Inspect -> Console`) and run `localStorage.clear(); location.reload();`.
 - **Hosting:** GitHub Pages with automated continuous deployment via GitHub Actions.
 - **Offline-First Mode:** Fully functional standalone in the browser with local persistence, sound feedback, and GitHub dark theme.
 
