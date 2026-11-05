@@ -502,6 +502,13 @@ export default function App() {
     performSync({ user: userProfile, tasks: updatedTasks, challenges: updated });
   };
 
+  const handleReorderChallenges = (reordered) => {
+    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+    setChallenges(reordered);
+    storageService.saveChallenges(reordered, uname);
+    performSync({ user: userProfile, tasks, challenges: reordered, username: uname });
+  };
+
   // Focus Timer Session Handlers
   const handleAddTimerSession = (session) => {
     const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
@@ -687,6 +694,8 @@ export default function App() {
             onCheckIn={handleCheckIn}
             onDeleteChallenge={handleDeleteChallenge}
             onEditChallenge={handleEditChallenge}
+            onEditTask={handleEditTask}
+            onReorderChallenges={handleReorderChallenges}
             userProfile={userProfile}
           />
         )}

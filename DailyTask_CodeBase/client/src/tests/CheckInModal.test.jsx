@@ -162,9 +162,9 @@ describe('CheckInModal Component', () => {
       />
     );
 
-    expect(screen.getByText('History Protected')).toBeInTheDocument();
+    expect(screen.getByText(/History Protected/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/Past history is protected\. Password required to add, edit or delete tasks\./i)
+      screen.getByText(/Adding to past day prompts password/i)
     ).toBeInTheDocument();
 
     // Clicking status triggers password prompt modal
@@ -175,7 +175,7 @@ describe('CheckInModal Component', () => {
     expect(screen.getByPlaceholderText('Enter your account password...')).toBeInTheDocument();
   });
 
-  it('unlocks past day modifications when correct password is provided', () => {
+  it('authorizes a single action on past day when correct password is provided without persistent unlock', () => {
     const handleSave = vi.fn();
 
     render(
@@ -190,9 +190,9 @@ describe('CheckInModal Component', () => {
       />
     );
 
-    // Click Unlock with Password button
-    const unlockBtn = screen.getAllByRole('button', { name: /Unlock with Password/i })[0];
-    fireEvent.click(unlockBtn);
+    // Click Pending status on past day
+    const pendingBtn = screen.getByRole('button', { name: /Pending/i });
+    fireEvent.click(pendingBtn);
 
     // Enter correct password
     const passwordInput = screen.getByPlaceholderText('Enter your account password...');
@@ -201,11 +201,94 @@ describe('CheckInModal Component', () => {
     const submitBtn = screen.getByRole('button', { name: /Authorize & Proceed/i });
     fireEvent.click(submitBtn);
 
-    // Check that unlocked badge is now visible
-    expect(screen.getByText('Unlocked with Password')).toBeInTheDocument();
+    // Password modal is closed and action executed
+    expect(screen.queryByPlaceholderText('Enter your account password...')).not.toBeInTheDocument();
+    // Modal still displays history protection for subsequent actions (no persistent unlock)
+    expect(screen.getByText(/History Protected \(Single-Action Password\)/i)).toBeInTheDocument();
+  });
 
-    // Now quick add task form is accessible
-    expect(screen.getByPlaceholderText(/What will you study\/do on Day 1\?/i)).toBeInTheDocument();
+  it('closes modal when clicking on backdrop overlay', () => {
+    const handleClose = vi.fn();
+
+    const { container } = render(
+      <CheckInModal
+        isOpen={true}
+        challenge={mockChallenge}
+        dayItem={mockDayItemToday}
+        tasks={mockTasks}
+        onClose={handleClose}
+      />
+    );
+
+    // The outermost container is the backdrop
+    const backdrop = container.firstChild;
+    fireEvent.click(backdrop);
+
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('enforces task completion rules for completed check-in status', () => {
+    // Case 1: 0 tasks planned - Completed button is disabled
+    const { rerender } = render(
+      <CheckInModal
+        isOpen={true}
+        challenge={mockChallenge}
+        dayItem={mockDayItemToday}
+        tasks={[]}
+        onClose={vi.fn()}
+      />
+    );
+
+    const completedBtnEmpty = screen.getAllByRole('button', { name: /Completed/i })[0];
+    expect(completedBtnEmpty).toBeDisabled();
+    expect(screen.getByText(/Add at least 1 task below and complete it/i)).toBeInTheDocument();
+
+    // Case 2: 1 incomplete task - Completed button is disabled
+    rerender(
+      <CheckInModal
+        isOpen={true}
+        challenge={mockChallenge}
+        dayItem={mockDayItemToday}
+        tasks={[
+          {
+            id: 'task-1',
+            title: 'Incomplete Task',
+            challengeId: 'ch-1',
+            dayNumber: 5,
+            date: todayStr,
+            completed: false
+          }
+        ]}
+        onClose={vi.fn()}
+      />
+    );
+
+    const completedBtnIncomplete = screen.getAllByRole('button', { name: /Completed/i })[0];
+    expect(completedBtnIncomplete).toBeDisabled();
+    expect(screen.getByText(/Complete all tasks \(0\/1 done\) to mark this day as completed/i)).toBeInTheDocument();
+
+    // Case 3: All tasks completed - Completed status is automatically enabled and selected
+    rerender(
+      <CheckInModal
+        isOpen={true}
+        challenge={mockChallenge}
+        dayItem={mockDayItemToday}
+        tasks={[
+          {
+            id: 'task-1',
+            title: 'Complete Task',
+            challengeId: 'ch-1',
+            dayNumber: 5,
+            date: todayStr,
+            completed: true
+          }
+        ]}
+        onClose={vi.fn()}
+      />
+    );
+
+    const completedBtnAllDone = screen.getAllByRole('button', { name: /Completed/i })[0];
+    expect(completedBtnAllDone).not.toBeDisabled();
   });
 
   it('locks status selection on future days while allowing task planning', () => {

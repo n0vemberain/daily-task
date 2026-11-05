@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   X,
   CheckCircle2,
@@ -13,13 +13,15 @@ import {
   Circle,
   Tag,
   Lock,
-  Flame
+  Flame,
+  Edit3
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundEffects } from '../utils/audioFeedback';
 import { useTheme } from '../context/ThemeContext';
 import { formatDateStr } from '../data/initialData';
 import PasswordPromptModal from './PasswordPromptModal';
+import EditTaskModal from './EditTaskModal';
 
 export default function CheckInModal({
   isOpen,
@@ -31,7 +33,9 @@ export default function CheckInModal({
   onToggleTask,
   onDeleteTask,
   onSaveCheckIn,
-  userProfile
+  userProfile,
+  onEditTask,
+  challenges = []
 }) {
   const { theme } = useTheme();
   const todayStr = formatDateStr(new Date());
@@ -40,15 +44,15 @@ export default function CheckInModal({
   const isFuture = dayItem?.date ? dayItem.date > todayStr : false;
   const isToday = dayItem?.date ? dayItem.date === todayStr : false;
 
-  const [status, setStatus] = useState(dayItem?.status || (isPast ? 'pending' : 'completed'));
+  const [status, setStatus] = useState(dayItem?.status || 'pending');
   const [note, setNote] = useState(dayItem?.note || '');
 
-  // Password authorization for past history modification
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  // Single-action password authorization for past history modification (no persistent unlock)
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
 
-  const isLocked = isPast && !isUnlocked;
+  // Task editing state
+  const [editingTask, setEditingTask] = useState(null);
 
   // Form state for adding daily tasks to this day
   const [taskTitle, setTaskTitle] = useState('');
@@ -71,14 +75,40 @@ export default function CheckInModal({
   }, [tasks, challenge, dayItem]);
 
   const completedTasksCount = dayTasks.filter((t) => t.completed).length;
+  const canBeCompleted = dayTasks.length > 0 && dayTasks.every((t) => t.completed);
+
+  // Auto-select completed status when all planned tasks are completed
+  useEffect(() => {
+    if (isFuture) return;
+    if (canBeCompleted) {
+      setStatus('completed');
+    } else if (status === 'completed' && !canBeCompleted) {
+      setStatus('pending');
+    }
+  }, [canBeCompleted, isFuture]);
+
+  // Sync initial dayItem state on open
+  useEffect(() => {
+    if (dayItem) {
+      if (canBeCompleted) {
+        setStatus('completed');
+      } else if (dayItem.status === 'completed' && !canBeCompleted) {
+        setStatus('pending');
+      } else {
+        setStatus(dayItem.status || 'pending');
+      }
+      setNote(dayItem.note || '');
+    }
+  }, [dayItem?.dayNumber, dayItem?.date, dayItem?.status]);
 
   if (!isOpen || !dayItem || !challenge) return null;
 
   const handlePasswordSuccess = () => {
-    setIsUnlocked(true);
+    setIsPasswordModalOpen(false);
     if (pendingAction) {
-      pendingAction();
+      const actionToExecute = pendingAction;
       setPendingAction(null);
+      actionToExecute();
     }
   };
 
@@ -109,23 +139,23 @@ export default function CheckInModal({
     e.preventDefault();
     if (!taskTitle.trim()) return;
 
-    if (isLocked) {
+    const newTaskData = {
+      id: `task-${Date.now()}`,
+      title: taskTitle.trim(),
+      category: challenge.category || 'General',
+      priority: taskPriority,
+      estimatedMinutes: parseInt(taskMinutes, 10) || 30,
+      date: dayItem.date,
+      completed: false,
+      completedAt: null,
+      challengeId: challenge.id || challenge._id,
+      challengeTitle: challenge.title,
+      dayNumber: dayItem.dayNumber
+    };
+
+    if (isPast) {
       setPendingAction(() => () => {
-        if (onAddTask) {
-          onAddTask({
-            id: `task-${Date.now()}`,
-            title: taskTitle.trim(),
-            category: challenge.category || 'General',
-            priority: taskPriority,
-            estimatedMinutes: parseInt(taskMinutes, 10) || 30,
-            date: dayItem.date,
-            completed: false,
-            completedAt: null,
-            challengeId: challenge.id || challenge._id,
-            challengeTitle: challenge.title,
-            dayNumber: dayItem.dayNumber
-          });
-        }
+        if (onAddTask) onAddTask(newTaskData);
         setTaskTitle('');
         soundEffects.playSuccess();
       });
@@ -134,28 +164,17 @@ export default function CheckInModal({
     }
 
     if (onAddTask) {
-      onAddTask({
-        id: `task-${Date.now()}`,
-        title: taskTitle.trim(),
-        category: challenge.category || 'General',
-        priority: taskPriority,
-        estimatedMinutes: parseInt(taskMinutes, 10) || 30,
-        date: dayItem.date,
-        completed: false,
-        completedAt: null,
-        challengeId: challenge.id || challenge._id,
-        challengeTitle: challenge.title,
-        dayNumber: dayItem.dayNumber
-      });
+      onAddTask(newTaskData);
     }
-
     setTaskTitle('');
     soundEffects.playSuccess();
   };
 
   const handleStatusSelect = (selectedStatus) => {
     if (isFuture) return;
-    if (isLocked) {
+    if (selectedStatus === 'completed' && !canBeCompleted) return;
+
+    if (isPast) {
       setPendingAction(() => () => setStatus(selectedStatus));
       setIsPasswordModalOpen(true);
       return;
@@ -164,7 +183,7 @@ export default function CheckInModal({
   };
 
   const handleDayTaskToggle = (taskId) => {
-    if (isLocked) {
+    if (isPast) {
       setPendingAction(() => () => onToggleTask && onToggleTask(taskId));
       setIsPasswordModalOpen(true);
       return;
@@ -173,7 +192,7 @@ export default function CheckInModal({
   };
 
   const handleDayTaskDelete = (taskId) => {
-    if (isLocked) {
+    if (isPast) {
       setPendingAction(() => () => onDeleteTask && onDeleteTask(taskId));
       setIsPasswordModalOpen(true);
       return;
@@ -181,11 +200,32 @@ export default function CheckInModal({
     if (onDeleteTask) onDeleteTask(taskId);
   };
 
+  const handleDayTaskEdit = (task) => {
+    setEditingTask(task);
+  };
+
+  const handleSaveEditedTask = (updatedTask) => {
+    if (isPast) {
+      setPendingAction(() => () => {
+        if (onEditTask) onEditTask(updatedTask);
+        setEditingTask(null);
+      });
+      setIsPasswordModalOpen(true);
+      return;
+    }
+    if (onEditTask) onEditTask(updatedTask);
+    setEditingTask(null);
+  };
+
   const handleSave = (selectedStatus) => {
     if (isFuture) return;
     const finalStatus = selectedStatus || status;
 
-    if (isLocked) {
+    if (finalStatus === 'completed' && !canBeCompleted) {
+      return;
+    }
+
+    if (isPast) {
       setPendingAction(() => () => executeSave(finalStatus));
       setIsPasswordModalOpen(true);
       return;
@@ -202,8 +242,14 @@ export default function CheckInModal({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-github-border bg-[#0d1117] flex-shrink-0">
           <div className="flex items-center gap-2.5">
@@ -243,29 +289,10 @@ export default function CheckInModal({
               </span>
             </div>
             {isPast ? (
-              isUnlocked ? (
-                <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-emerald-950/40 text-emerald-300 border border-emerald-800/40 flex items-center gap-1">
-                  <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
-                  Unlocked with Password
-                </span>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-amber-950/40 text-amber-300 border border-amber-800/40 flex items-center gap-1">
-                    <Lock className="w-2.5 h-2.5" />
-                    History Protected
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPendingAction(null);
-                      setIsPasswordModalOpen(true);
-                    }}
-                    className="text-[10px] px-2 py-0.5 rounded font-medium bg-[#21262d] text-amber-300 hover:text-white border border-amber-800/40 hover:border-amber-600 transition-colors"
-                  >
-                    Unlock with Password
-                  </button>
-                </div>
-              )
+              <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-amber-950/40 text-amber-300 border border-amber-800/40 flex items-center gap-1">
+                <Lock className="w-2.5 h-2.5" />
+                History Protected (Single-Action Password)
+              </span>
             ) : isToday ? (
               <span
                 className="text-[10px] px-2 py-0.5 rounded font-bold border"
@@ -310,17 +337,22 @@ export default function CheckInModal({
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                disabled={isFuture}
+                disabled={isFuture || !canBeCompleted}
                 onClick={() => handleStatusSelect('completed')}
+                title={
+                  !canBeCompleted
+                    ? 'Requires at least 1 planned task, and all tasks must be completed'
+                    : undefined
+                }
                 className={`p-3 rounded-lg border flex flex-col items-center gap-1.5 transition-all text-xs font-medium ${
-                  isFuture
+                  isFuture || !canBeCompleted
                     ? 'opacity-50 cursor-not-allowed bg-[#0d1117] border-github-border text-github-muted'
                     : status === 'completed'
                     ? 'shadow-sm font-semibold'
                     : 'bg-[#0d1117] border-github-border text-github-muted hover:text-white'
                 }`}
                 style={
-                  !isFuture && status === 'completed'
+                  !isFuture && canBeCompleted && status === 'completed'
                     ? {
                         backgroundColor: theme.accentDark,
                         borderColor: theme.accent,
@@ -331,7 +363,7 @@ export default function CheckInModal({
               >
                 <CheckCircle2
                   className="w-5 h-5"
-                  style={{ color: !isFuture && status === 'completed' ? theme.accentLight : undefined }}
+                  style={{ color: !isFuture && canBeCompleted && status === 'completed' ? theme.accentLight : undefined }}
                 />
                 <span>Completed</span>
               </button>
@@ -368,6 +400,18 @@ export default function CheckInModal({
                 <span>Pending</span>
               </button>
             </div>
+
+            {/* Validation Notice for Completion */}
+            {!canBeCompleted && !isFuture && (
+              <div className="mt-2 text-[11px] text-amber-400 bg-amber-950/30 border border-amber-800/40 px-2.5 py-1.5 rounded flex items-center gap-1.5">
+                <CheckSquare className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>
+                  {dayTasks.length === 0
+                    ? 'Add at least 1 task below and complete it to enable "Completed" check-in.'
+                    : `Complete all tasks (${completedTasksCount}/${dayTasks.length} done) to mark this day as completed.`}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Planned Daily Tasks Section for this specific Day */}
@@ -415,7 +459,7 @@ export default function CheckInModal({
                           onClick={() => handleDayTaskToggle(taskId)}
                           className="flex-shrink-0 focus:outline-none"
                           title={
-                            isLocked
+                            isPast
                               ? 'Modifying past task requires password'
                               : task.completed
                               ? 'Mark incomplete'
@@ -425,7 +469,7 @@ export default function CheckInModal({
                           {task.completed ? (
                             <CheckCircle2
                               className="w-4 h-4 transition-colors"
-                              style={{ color: isLocked ? '#f59e0b' : theme.accent }}
+                              style={{ color: isPast ? '#f59e0b' : theme.accent }}
                             />
                           ) : (
                             <Circle className="w-4 h-4 text-github-muted hover:text-white" />
@@ -467,6 +511,18 @@ export default function CheckInModal({
                           <Clock className="w-3 h-3" />
                           {task.estimatedMinutes}m
                         </span>
+
+                        {/* Edit task button */}
+                        <button
+                          type="button"
+                          onClick={() => handleDayTaskEdit(task)}
+                          className="p-1 rounded text-github-muted hover:text-white hover:bg-[#21262d] transition-colors"
+                          title="Edit task"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Delete task button */}
                         {onDeleteTask && (
                           <button
                             type="button"
@@ -485,76 +541,57 @@ export default function CheckInModal({
             )}
 
             {/* Quick Add Form for this day's task */}
-            {!isLocked ? (
-              <form onSubmit={handleCreateDayTask} className="space-y-2 p-3 rounded-lg bg-[#0d1117] border border-github-border">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={taskTitle}
-                    onChange={(e) => setTaskTitle(e.target.value)}
-                    placeholder={`What will you study/do on Day ${dayItem.dayNumber}? (e.g. Read chapter 1, Solve 2 LeetCode problems)`}
-                    className="flex-1 px-3 py-1.5 bg-[#161b22] border border-github-border rounded-lg text-xs text-white placeholder-github-muted outline-none focus:border-white/40"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!taskTitle.trim()}
-                    className="flex items-center gap-1 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{ backgroundColor: theme.accent, color: '#0d1117' }}
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Task</span>
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-github-muted flex-wrap gap-2 pt-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-github-text">Priority:</span>
-                    <select
-                      value={taskPriority}
-                      onChange={(e) => setTaskPriority(e.target.value)}
-                      className="bg-[#161b22] border border-github-border rounded px-2 py-0.5 text-[11px] text-white outline-none cursor-pointer"
-                    >
-                      <option value="High">High</option>
-                      <option value="Medium">Medium</option>
-                      <option value="Low">Low</option>
-                    </select>
-
-                    <span className="font-medium text-github-text ml-1">Est. Duration:</span>
-                    <select
-                      value={taskMinutes}
-                      onChange={(e) => setTaskMinutes(Number(e.target.value))}
-                      className="bg-[#161b22] border border-github-border rounded px-2 py-0.5 text-[11px] text-white outline-none cursor-pointer"
-                    >
-                      <option value={15}>15 mins</option>
-                      <option value={30}>30 mins</option>
-                      <option value={45}>45 mins</option>
-                      <option value={60}>60 mins</option>
-                      <option value={90}>90 mins</option>
-                    </select>
-                  </div>
-                  <span className="text-[10px] text-github-muted italic">
-                    Syncs automatically with Daily Tasks
-                  </span>
-                </div>
-              </form>
-            ) : (
-              <div className="flex items-center justify-between p-3 rounded-lg bg-amber-950/20 border border-amber-800/30 text-xs text-amber-300">
-                <div className="flex items-center gap-2">
-                  <Lock className="w-4 h-4 flex-shrink-0 text-amber-400" />
-                  <span>Past history is protected. Password required to add, edit or delete tasks.</span>
-                </div>
+            <form onSubmit={handleCreateDayTask} className="space-y-2 p-3 rounded-lg bg-[#0d1117] border border-github-border">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={taskTitle}
+                  onChange={(e) => setTaskTitle(e.target.value)}
+                  placeholder={`What will you study/do on Day ${dayItem.dayNumber}? (e.g. Read chapter 1, Solve 2 LeetCode problems)`}
+                  className="flex-1 px-3 py-1.5 bg-[#161b22] border border-github-border rounded-lg text-xs text-white placeholder-github-muted outline-none focus:border-white/40"
+                />
                 <button
-                  type="button"
-                  onClick={() => {
-                    setPendingAction(null);
-                    setIsPasswordModalOpen(true);
-                  }}
-                  className="px-2.5 py-1 rounded bg-[#21262d] text-amber-300 hover:text-white border border-amber-800/40 text-[11px] font-medium whitespace-nowrap ml-2"
+                  type="submit"
+                  disabled={!taskTitle.trim()}
+                  className="flex items-center gap-1 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: theme.accent, color: '#0d1117' }}
                 >
-                  Unlock with Password
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Task</span>
                 </button>
               </div>
-            )}
+
+              <div className="flex items-center justify-between text-[11px] text-github-muted flex-wrap gap-2 pt-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-github-text">Priority:</span>
+                  <select
+                    value={taskPriority}
+                    onChange={(e) => setTaskPriority(e.target.value)}
+                    className="bg-[#161b22] border border-github-border rounded px-2 py-0.5 text-[11px] text-white outline-none cursor-pointer"
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+
+                  <span className="font-medium text-github-text ml-1">Est. Duration:</span>
+                  <select
+                    value={taskMinutes}
+                    onChange={(e) => setTaskMinutes(Number(e.target.value))}
+                    className="bg-[#161b22] border border-github-border rounded px-2 py-0.5 text-[11px] text-white outline-none cursor-pointer"
+                  >
+                    <option value={15}>15 mins</option>
+                    <option value={30}>30 mins</option>
+                    <option value={45}>45 mins</option>
+                    <option value={60}>60 mins</option>
+                    <option value={90}>90 mins</option>
+                  </select>
+                </div>
+                <span className="text-[10px] text-github-muted italic">
+                  {isPast ? 'Adding to past day prompts password' : 'Syncs automatically with Daily Tasks'}
+                </span>
+              </div>
+            </form>
           </div>
 
           {/* Reflection / Daily Note */}
@@ -594,8 +631,18 @@ export default function CheckInModal({
             ) : (
               <button
                 type="button"
+                disabled={status === 'completed' && !canBeCompleted}
                 onClick={() => handleSave()}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold ${theme.primaryBtn} shadow-md transition-all`}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold ${
+                  status === 'completed' && !canBeCompleted
+                    ? 'bg-[#21262d] text-github-muted border border-github-border cursor-not-allowed opacity-60'
+                    : `${theme.primaryBtn} shadow-md`
+                } transition-all`}
+                title={
+                  status === 'completed' && !canBeCompleted
+                    ? 'All tasks must be completed to save as completed'
+                    : undefined
+                }
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Save Check-in</span>
@@ -605,7 +652,16 @@ export default function CheckInModal({
         </div>
       </div>
 
-      {/* Password Prompt Modal for modifying past history */}
+      {/* Edit Task Modal for day's task */}
+      <EditTaskModal
+        isOpen={!!editingTask}
+        onClose={() => setEditingTask(null)}
+        task={editingTask}
+        onSaveTask={handleSaveEditedTask}
+        challenges={challenges}
+      />
+
+      {/* Single-action Password Prompt Modal for modifying past history */}
       <PasswordPromptModal
         isOpen={isPasswordModalOpen}
         onClose={() => {
@@ -615,7 +671,7 @@ export default function CheckInModal({
         onSuccess={handlePasswordSuccess}
         userProfile={userProfile}
         title="Authorize Past History Change"
-        description={`Modifying or deleting Day ${dayItem.dayNumber} (${dayItem.date}) history requires your account password.`}
+        description={`Modifying or saving Day ${dayItem.dayNumber} (${dayItem.date}) history requires your account password for this action.`}
       />
     </div>
   );

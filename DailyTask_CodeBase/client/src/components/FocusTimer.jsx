@@ -16,7 +16,8 @@ import {
   BookOpen,
   Sparkles,
   TrendingUp,
-  X
+  X,
+  Watch
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatDateStr } from '../data/initialData';
@@ -30,6 +31,9 @@ export default function FocusTimer({
 }) {
   const { theme } = useTheme();
 
+  // Mode Selection: 'timer' (countdown) vs 'stopwatch' (count-up)
+  const [timerMode, setTimerMode] = useState('timer');
+
   // Presets in minutes
   const presets = [10, 15, 20, 25, 30, 45, 60];
 
@@ -40,12 +44,17 @@ export default function FocusTimer({
   const [sessionCategory, setSessionCategory] = useState('Study');
   const [sessionLabel, setSessionLabel] = useState('');
 
-  // Running Timer State
+  // Running Timer State (Countdown)
   const [timeLeftSeconds, setTimeLeftSeconds] = useState(25 * 60);
   const [totalSessionSeconds, setTotalSessionSeconds] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [completionAlert, setCompletionAlert] = useState(null);
+
+  // Stopwatch State (Count-up)
+  const [stopwatchSeconds, setStopwatchSeconds] = useState(0);
+  const [isStopwatchRunning, setIsStopwatchRunning] = useState(false);
+  const [isStopwatchPaused, setIsStopwatchPaused] = useState(false);
 
   // Manual Offline Log Modal State
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
@@ -55,8 +64,9 @@ export default function FocusTimer({
   const [manualNote, setManualNote] = useState('');
 
   const timerRef = useRef(null);
+  const stopwatchRef = useRef(null);
 
-  // Update timer remaining when preset or custom duration changes in idle mode
+  // Update countdown timer remaining when preset or custom duration changes in idle mode
   useEffect(() => {
     if (!isActive && !isPaused) {
       const minutes = isCustomMode && parseInt(customMinutes, 10) > 0
@@ -67,7 +77,7 @@ export default function FocusTimer({
     }
   }, [selectedMinutes, customMinutes, isCustomMode, isActive, isPaused]);
 
-  // Timer Tick Interval
+  // Countdown Timer Tick Interval
   useEffect(() => {
     if (isActive && !isPaused) {
       timerRef.current = setInterval(() => {
@@ -89,7 +99,22 @@ export default function FocusTimer({
     };
   }, [isActive, isPaused, totalSessionSeconds, sessionCategory, sessionLabel]);
 
-  // Sound & Celebration on Complete
+  // Stopwatch Tick Interval
+  useEffect(() => {
+    if (isStopwatchRunning && !isStopwatchPaused) {
+      stopwatchRef.current = setInterval(() => {
+        setStopwatchSeconds((prev) => prev + 1);
+      }, 1000);
+    } else {
+      if (stopwatchRef.current) clearInterval(stopwatchRef.current);
+    }
+
+    return () => {
+      if (stopwatchRef.current) clearInterval(stopwatchRef.current);
+    };
+  }, [isStopwatchRunning, isStopwatchPaused]);
+
+  // Sound & Celebration on Countdown Timer Complete
   const handleTimerComplete = () => {
     setIsActive(false);
     setIsPaused(false);
@@ -157,7 +182,7 @@ export default function FocusTimer({
     setTimeLeftSeconds(minutes * 60);
   };
 
-  // Early Finish & Log
+  // Early Finish & Log Countdown Session
   const handleFinishEarly = () => {
     const elapsedSeconds = totalSessionSeconds - timeLeftSeconds;
     const elapsedMinutes = Math.round(elapsedSeconds / 60);
@@ -185,6 +210,66 @@ export default function FocusTimer({
     handleReset();
   };
 
+  // Stopwatch Handlers
+  const handleStartStopwatch = () => {
+    setIsStopwatchRunning(true);
+    setIsStopwatchPaused(false);
+    soundEffects.playSuccess();
+  };
+
+  const handlePauseStopwatch = () => {
+    setIsStopwatchPaused(true);
+  };
+
+  const handleResumeStopwatch = () => {
+    setIsStopwatchPaused(false);
+    soundEffects.playSuccess();
+  };
+
+  const handleResetStopwatch = () => {
+    setIsStopwatchRunning(false);
+    setIsStopwatchPaused(false);
+    if (stopwatchRef.current) clearInterval(stopwatchRef.current);
+    setStopwatchSeconds(0);
+  };
+
+  const handleSaveStopwatchSession = () => {
+    const durationMinutes = Math.round(stopwatchSeconds / 60) || (stopwatchSeconds >= 30 ? 1 : 0);
+
+    if (durationMinutes >= 1) {
+      const newSession = {
+        id: `ts-${Date.now()}`,
+        durationMinutes,
+        date: formatDateStr(new Date()),
+        timestamp: new Date().toISOString(),
+        category: sessionCategory || 'Study',
+        label: sessionLabel.trim() || 'Stopwatch Focus'
+      };
+
+      if (onAddSession) {
+        onAddSession(newSession);
+      }
+
+      soundEffects.playCelebration();
+      try {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.7 },
+          colors: [theme.accent, theme.accentLight, '#ffffff']
+        });
+      } catch (e) {}
+
+      setCompletionAlert({
+        duration: durationMinutes,
+        category: sessionCategory
+      });
+      setTimeout(() => setCompletionAlert(null), 4000);
+    }
+
+    handleResetStopwatch();
+  };
+
   // Manual Session Submission
   const handleManualSubmit = (e) => {
     e.preventDefault();
@@ -208,11 +293,22 @@ export default function FocusTimer({
     setManualNote('');
   };
 
-  // Format MM:SS
+  // Format MM:SS for timer
   const formatTime = (secs) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
+
+  // Format HH:MM:SS or MM:SS for stopwatch
+  const formatStopwatchTime = (totalSeconds) => {
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    if (hrs > 0) {
+      return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
   // Format minutes into clean human string (e.g. "2h 15m" or "45m")
@@ -287,7 +383,7 @@ export default function FocusTimer({
     };
   }, [sessions, todayStr, sevenDaysAgoStr, currentYearMonthStr, currentYearStr]);
 
-  // Calculate Progress Percentage for Circle / Bar
+  // Calculate Progress Percentage for Circle / Bar (Countdown only)
   const progressPercent = totalSessionSeconds > 0
     ? Math.max(0, Math.min(100, Math.round(((totalSessionSeconds - timeLeftSeconds) / totalSessionSeconds) * 100)))
     : 0;
@@ -314,7 +410,7 @@ export default function FocusTimer({
             </span>
           </div>
           <p className="text-xs text-github-muted mt-1">
-            Track customizable study sessions with daily, weekly, monthly, and yearly aggregated records
+            Track customizable study sessions with countdown timer or stopwatch, plus aggregated analytics
           </p>
         </div>
 
@@ -435,207 +531,388 @@ export default function FocusTimer({
         </div>
       </div>
 
-      {/* Main Focus Timer Card */}
+      {/* Main Focus Timer / Stopwatch Card */}
       <div className="bg-[#161b22] border border-github-border rounded-xl p-6 shadow-sm">
-        <div className="max-w-xl mx-auto flex flex-col items-center text-center space-y-6">
-          {/* Preset Buttons */}
-          <div className="w-full">
-            <div className="text-xs font-semibold text-github-muted uppercase tracking-wider mb-2.5">
-              Select Preset Duration (Minutes)
-            </div>
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              {presets.map((min) => {
-                const isSelected = !isCustomMode && selectedMinutes === min;
-                return (
-                  <button
-                    key={min}
-                    type="button"
-                    disabled={isActive}
-                    onClick={() => {
-                      setIsCustomMode(false);
-                      setSelectedMinutes(min);
-                    }}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                      isSelected
-                        ? 'text-white border-white shadow-sm'
-                        : 'bg-[#0d1117] text-github-muted hover:text-white border-github-border'
-                    } ${isActive ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    style={
-                      isSelected
-                        ? {
-                            backgroundColor: theme.accent,
-                            color: '#0d1117',
-                            borderColor: theme.accent
-                          }
-                        : {}
-                    }
-                  >
-                    {min}m
-                  </button>
-                );
-              })}
+        {/* Mode Switcher Tabs */}
+        <div className="flex items-center justify-center p-1 bg-[#0d1117] border border-github-border rounded-xl max-w-xs mx-auto mb-6">
+          <button
+            type="button"
+            onClick={() => setTimerMode('timer')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all ${
+              timerMode === 'timer'
+                ? 'shadow-sm text-white'
+                : 'text-github-muted hover:text-white'
+            }`}
+            style={
+              timerMode === 'timer'
+                ? {
+                    backgroundColor: theme.accentDark,
+                    color: theme.accentLight,
+                    border: `1px solid ${theme.accent}40`
+                  }
+                : {}
+            }
+          >
+            <Timer className="w-3.5 h-3.5" />
+            <span>Countdown Timer</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTimerMode('stopwatch')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all ${
+              timerMode === 'stopwatch'
+                ? 'shadow-sm text-white'
+                : 'text-github-muted hover:text-white'
+            }`}
+            style={
+              timerMode === 'stopwatch'
+                ? {
+                    backgroundColor: theme.accentDark,
+                    color: theme.accentLight,
+                    border: `1px solid ${theme.accent}40`
+                  }
+                : {}
+            }
+          >
+            <Watch className="w-3.5 h-3.5" />
+            <span>Stopwatch</span>
+          </button>
+        </div>
 
-              {/* Custom Input Toggle */}
-              <button
-                type="button"
-                disabled={isActive}
-                onClick={() => setIsCustomMode(true)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                  isCustomMode
-                    ? 'text-white border-white shadow-sm'
-                    : 'bg-[#0d1117] text-github-muted hover:text-white border-github-border'
-                } ${isActive ? 'opacity-50 cursor-not-allowed' : ''}`}
-                style={
-                  isCustomMode
-                    ? {
-                        backgroundColor: theme.accent,
-                        color: '#0d1117',
-                        borderColor: theme.accent
-                      }
-                    : {}
-                }
-              >
-                Custom
-              </button>
-            </div>
-
-            {/* Custom Input Field */}
-            {isCustomMode && !isActive && (
-              <div className="mt-3 flex items-center justify-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  max="180"
-                  value={customMinutes}
-                  onChange={(e) => setCustomMinutes(e.target.value)}
-                  placeholder="e.g. 12"
-                  className="w-28 px-3 py-1.5 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white text-center font-mono outline-none focus:border-olive-500"
-                />
-                <span className="text-xs text-github-muted">minutes</span>
+        {/* Countdown Timer Mode Content */}
+        {timerMode === 'timer' && (
+          <div className="max-w-xl mx-auto flex flex-col items-center text-center space-y-6">
+            {/* Preset Buttons */}
+            <div className="w-full">
+              <div className="text-xs font-semibold text-github-muted uppercase tracking-wider mb-2.5">
+                Select Preset Duration (Minutes)
               </div>
-            )}
-          </div>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {presets.map((min) => {
+                  const isSelected = !isCustomMode && selectedMinutes === min;
+                  return (
+                    <button
+                      key={min}
+                      type="button"
+                      disabled={isActive}
+                      onClick={() => {
+                        setIsCustomMode(false);
+                        setSelectedMinutes(min);
+                      }}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                        isSelected
+                          ? 'text-white border-white shadow-sm'
+                          : 'bg-[#0d1117] text-github-muted hover:text-white border-github-border'
+                      } ${isActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      style={
+                        isSelected
+                          ? {
+                              backgroundColor: theme.accent,
+                              color: '#0d1117',
+                              borderColor: theme.accent
+                            }
+                          : {}
+                      }
+                    >
+                      {min}m
+                    </button>
+                  );
+                })}
 
-          {/* Big Circular Countdown Display */}
-          <div className="relative flex flex-col items-center justify-center my-2">
-            <div
-              className="w-56 h-56 sm:w-64 sm:h-64 rounded-full border-4 flex flex-col items-center justify-center p-6 shadow-2xl transition-all"
-              style={{
-                borderColor: isActive ? theme.accent : '#21262d',
-                backgroundColor: '#0d1117',
-                boxShadow: isActive ? `0 0 35px ${theme.accent}30` : 'none'
-              }}
-            >
-              <span className="text-4xl sm:text-5xl font-mono font-extrabold text-white tracking-wider">
-                {formatTime(timeLeftSeconds)}
-              </span>
-              <span
-                className="text-xs uppercase font-semibold tracking-widest mt-2 px-2.5 py-0.5 rounded-full border"
+                {/* Custom Input Toggle */}
+                <button
+                  type="button"
+                  disabled={isActive}
+                  onClick={() => setIsCustomMode(true)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                    isCustomMode
+                      ? 'text-white border-white shadow-sm'
+                      : 'bg-[#0d1117] text-github-muted hover:text-white border-github-border'
+                  } ${isActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  style={
+                    isCustomMode
+                      ? {
+                          backgroundColor: theme.accent,
+                          color: '#0d1117',
+                          borderColor: theme.accent
+                        }
+                      : {}
+                  }
+                >
+                  Custom
+                </button>
+              </div>
+
+              {/* Custom Input Field */}
+              {isCustomMode && !isActive && (
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="180"
+                    value={customMinutes}
+                    onChange={(e) => setCustomMinutes(e.target.value)}
+                    placeholder="e.g. 12"
+                    className="w-28 px-3 py-1.5 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white text-center font-mono outline-none focus:border-olive-500"
+                  />
+                  <span className="text-xs text-github-muted">minutes</span>
+                </div>
+              )}
+            </div>
+
+            {/* Big Circular Countdown Display */}
+            <div className="relative flex flex-col items-center justify-center my-2">
+              <div
+                className="w-56 h-56 sm:w-64 sm:h-64 rounded-full border-4 flex flex-col items-center justify-center p-6 shadow-2xl transition-all"
                 style={{
-                  backgroundColor: theme.accentDark,
-                  borderColor: theme.accent + '35',
-                  color: theme.accentLight
+                  borderColor: isActive ? theme.accent : '#21262d',
+                  backgroundColor: '#0d1117',
+                  boxShadow: isActive ? `0 0 35px ${theme.accent}30` : 'none'
                 }}
               >
-                {isActive ? (isPaused ? 'Paused' : 'Focus Running') : 'Ready'}
-              </span>
-              <span className="text-[11px] text-github-muted mt-2 font-mono">
-                {progressPercent}% Complete
-              </span>
+                <span className="text-4xl sm:text-5xl font-mono font-extrabold text-white tracking-wider">
+                  {formatTime(timeLeftSeconds)}
+                </span>
+                <span
+                  className="text-xs uppercase font-semibold tracking-widest mt-2 px-2.5 py-0.5 rounded-full border"
+                  style={{
+                    backgroundColor: theme.accentDark,
+                    borderColor: theme.accent + '35',
+                    color: theme.accentLight
+                  }}
+                >
+                  {isActive ? (isPaused ? 'Paused' : 'Focus Running') : 'Ready'}
+                </span>
+                <span className="text-[11px] text-github-muted mt-2 font-mono">
+                  {progressPercent}% Complete
+                </span>
+              </div>
             </div>
-          </div>
 
-          {/* Session Category & Description Fields */}
-          <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
-            <div>
-              <label className="block text-[11px] font-semibold text-github-muted uppercase tracking-wider mb-1">
-                Category
-              </label>
-              <select
-                disabled={isActive}
-                value={sessionCategory}
-                onChange={(e) => setSessionCategory(e.target.value)}
-                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white outline-none cursor-pointer"
-              >
-                <option value="Study">Study</option>
-                <option value="Coding">Coding</option>
-                <option value="Reading">Reading</option>
-                <option value="Deep Work">Deep Work</option>
-                <option value="General">General</option>
-              </select>
+            {/* Session Category & Description Fields */}
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+              <div>
+                <label className="block text-[11px] font-semibold text-github-muted uppercase tracking-wider mb-1">
+                  Category
+                </label>
+                <select
+                  disabled={isActive}
+                  value={sessionCategory}
+                  onChange={(e) => setSessionCategory(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white outline-none cursor-pointer"
+                >
+                  <option value="Study">Study</option>
+                  <option value="Coding">Coding</option>
+                  <option value="Reading">Reading</option>
+                  <option value="Deep Work">Deep Work</option>
+                  <option value="General">General</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-github-muted uppercase tracking-wider mb-1">
+                  Session Topic (Optional)
+                </label>
+                <input
+                  type="text"
+                  disabled={isActive}
+                  value={sessionLabel}
+                  onChange={(e) => setSessionLabel(e.target.value)}
+                  placeholder="e.g. Algorithms Quiz, React Hooks..."
+                  className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted outline-none"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-github-muted uppercase tracking-wider mb-1">
-                Session Topic (Optional)
-              </label>
-              <input
-                type="text"
-                disabled={isActive}
-                value={sessionLabel}
-                onChange={(e) => setSessionLabel(e.target.value)}
-                placeholder="e.g. Algorithms Quiz, React Hooks..."
-                className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted outline-none"
-              />
-            </div>
-          </div>
 
-          {/* Main Action Controls */}
-          <div className="flex items-center gap-3 justify-center w-full flex-wrap pt-2">
-            {!isActive ? (
-              <button
-                type="button"
-                onClick={handleStart}
-                className="flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-sm text-white shadow-lg transition-transform hover:scale-105"
-                style={{ backgroundColor: theme.accent, color: '#0d1117' }}
-              >
-                <Play className="w-4 h-4 fill-current" />
-                <span>Start Focus Session</span>
-              </button>
-            ) : (
-              <>
-                {isPaused ? (
-                  <button
-                    type="button"
-                    onClick={handleResume}
-                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-xs text-white shadow transition-all"
-                    style={{ backgroundColor: theme.accent, color: '#0d1117' }}
-                  >
-                    <Play className="w-4 h-4 fill-current" />
-                    <span>Resume</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handlePause}
-                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all"
-                  >
-                    <Pause className="w-4 h-4" />
-                    <span>Pause</span>
-                  </button>
-                )}
-
+            {/* Countdown Action Controls */}
+            <div className="flex items-center gap-3 justify-center w-full flex-wrap pt-2">
+              {!isActive ? (
                 <button
                   type="button"
-                  onClick={handleFinishEarly}
-                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-xs bg-emerald-950/60 text-emerald-300 border border-emerald-700/50 hover:bg-emerald-900/60 transition-all"
-                  title="Finish session and save completed study minutes"
+                  onClick={handleStart}
+                  className="flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-sm text-white shadow-lg transition-transform hover:scale-105"
+                  style={{ backgroundColor: theme.accent, color: '#0d1117' }}
                 >
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>Finish &amp; Save</span>
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>Start Focus Session</span>
                 </button>
+              ) : (
+                <>
+                  {isPaused ? (
+                    <button
+                      type="button"
+                      onClick={handleResume}
+                      className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-xs text-white shadow transition-all"
+                      style={{ backgroundColor: theme.accent, color: '#0d1117' }}
+                    >
+                      <Play className="w-4 h-4 fill-current" />
+                      <span>Resume</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handlePause}
+                      className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all"
+                    >
+                      <Pause className="w-4 h-4" />
+                      <span>Pause</span>
+                    </button>
+                  )}
 
+                  <button
+                    type="button"
+                    onClick={handleFinishEarly}
+                    className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-xs bg-emerald-950/60 text-emerald-300 border border-emerald-700/50 hover:bg-emerald-900/60 transition-all"
+                    title="Finish session and save completed study minutes"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Finish &amp; Save</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-xs bg-[#0d1117] text-github-muted hover:text-white border border-github-border transition-all"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Reset</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Stopwatch Mode Content */}
+        {timerMode === 'stopwatch' && (
+          <div className="max-w-xl mx-auto flex flex-col items-center text-center space-y-6">
+            <div className="text-xs font-semibold text-github-muted uppercase tracking-wider">
+              Count-Up Stopwatch Mode
+            </div>
+
+            {/* Big Circular Stopwatch Display */}
+            <div className="relative flex flex-col items-center justify-center my-2">
+              <div
+                className="w-56 h-56 sm:w-64 sm:h-64 rounded-full border-4 flex flex-col items-center justify-center p-6 shadow-2xl transition-all"
+                style={{
+                  borderColor: isStopwatchRunning ? theme.accent : '#21262d',
+                  backgroundColor: '#0d1117',
+                  boxShadow: isStopwatchRunning ? `0 0 35px ${theme.accent}30` : 'none'
+                }}
+              >
+                <span className="text-4xl sm:text-5xl font-mono font-extrabold text-white tracking-wider">
+                  {formatStopwatchTime(stopwatchSeconds)}
+                </span>
+                <span
+                  className="text-xs uppercase font-semibold tracking-widest mt-2 px-2.5 py-0.5 rounded-full border"
+                  style={{
+                    backgroundColor: theme.accentDark,
+                    borderColor: theme.accent + '35',
+                    color: theme.accentLight
+                  }}
+                >
+                  {isStopwatchRunning
+                    ? (isStopwatchPaused ? 'Paused' : 'Stopwatch Running')
+                    : (stopwatchSeconds > 0 ? 'Stopped' : 'Ready')}
+                </span>
+                <span className="text-[11px] text-github-muted mt-2 font-mono">
+                  {formatDurationDisplay(Math.round(stopwatchSeconds / 60))} Elapsed
+                </span>
+              </div>
+            </div>
+
+            {/* Session Category & Description Fields for Stopwatch */}
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+              <div>
+                <label className="block text-[11px] font-semibold text-github-muted uppercase tracking-wider mb-1">
+                  Category
+                </label>
+                <select
+                  disabled={isStopwatchRunning && !isStopwatchPaused}
+                  value={sessionCategory}
+                  onChange={(e) => setSessionCategory(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white outline-none cursor-pointer"
+                >
+                  <option value="Study">Study</option>
+                  <option value="Coding">Coding</option>
+                  <option value="Reading">Reading</option>
+                  <option value="Deep Work">Deep Work</option>
+                  <option value="General">General</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-github-muted uppercase tracking-wider mb-1">
+                  Session Topic (Optional)
+                </label>
+                <input
+                  type="text"
+                  disabled={isStopwatchRunning && !isStopwatchPaused}
+                  value={sessionLabel}
+                  onChange={(e) => setSessionLabel(e.target.value)}
+                  placeholder="e.g. Freeform Reading, Problem Solving..."
+                  className="w-full px-3 py-2 bg-[#0d1117] border border-github-border rounded-lg text-xs text-white placeholder-github-muted outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Stopwatch Action Controls */}
+            <div className="flex items-center gap-3 justify-center w-full flex-wrap pt-2">
+              {!isStopwatchRunning && stopwatchSeconds === 0 ? (
                 <button
                   type="button"
-                  onClick={handleReset}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-xs bg-[#0d1117] text-github-muted hover:text-white border border-github-border transition-all"
+                  onClick={handleStartStopwatch}
+                  className="flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-sm text-white shadow-lg transition-transform hover:scale-105"
+                  style={{ backgroundColor: theme.accent, color: '#0d1117' }}
                 >
-                  <RotateCcw className="w-4 h-4" />
-                  <span>Reset</span>
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>Start Stopwatch</span>
                 </button>
-              </>
-            )}
+              ) : (
+                <>
+                  {isStopwatchRunning && !isStopwatchPaused ? (
+                    <button
+                      type="button"
+                      onClick={handlePauseStopwatch}
+                      className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all"
+                    >
+                      <Pause className="w-4 h-4" />
+                      <span>Pause</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={isStopwatchRunning ? handleResumeStopwatch : handleStartStopwatch}
+                      className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-xs text-white shadow transition-all"
+                      style={{ backgroundColor: theme.accent, color: '#0d1117' }}
+                    >
+                      <Play className="w-4 h-4 fill-current" />
+                      <span>{isStopwatchRunning ? 'Resume' : 'Start'}</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleSaveStopwatchSession}
+                    disabled={stopwatchSeconds < 30}
+                    className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-xs bg-emerald-950/60 text-emerald-300 border border-emerald-700/50 hover:bg-emerald-900/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={stopwatchSeconds < 30 ? 'Run for at least 30 seconds to record' : 'Save stopwatch session to dashboard'}
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Save Session</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleResetStopwatch}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-xs bg-[#0d1117] text-github-muted hover:text-white border border-github-border transition-all"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Reset</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* History Log Table */}
@@ -659,7 +936,7 @@ export default function FocusTimer({
           <div className="py-8 text-center text-github-muted text-xs">
             <Clock className="w-8 h-8 mx-auto mb-2 opacity-40" />
             <p>No study sessions recorded yet.</p>
-            <p className="text-[11px] mt-0.5">Start a timer above or log an offline study session!</p>
+            <p className="text-[11px] mt-0.5">Start a timer or stopwatch above or log an offline study session!</p>
           </div>
         ) : (
           <div className="space-y-2">

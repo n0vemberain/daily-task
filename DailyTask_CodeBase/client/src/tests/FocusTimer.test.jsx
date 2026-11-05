@@ -111,4 +111,35 @@ describe('FocusTimer Component', () => {
       })
     );
   });
+
+  it('switches between countdown timer and stopwatch modes', () => {
+    render(
+      <ThemeProvider>
+        <FocusTimer sessions={sampleSessions} onAddSession={vi.fn()} onDeleteSession={vi.fn()} />
+      </ThemeProvider>
+    );
+
+    // Initial mode is Countdown Timer
+    expect(screen.getByText('Select Preset Duration (Minutes)')).toBeInTheDocument();
+    expect(screen.getByText('25:00')).toBeInTheDocument();
+
+    // Click Stopwatch tab
+    const stopwatchTab = screen.getByRole('button', { name: /Stopwatch/i });
+    fireEvent.click(stopwatchTab);
+
+    // Stopwatch mode active
+    expect(screen.getByText('Count-Up Stopwatch Mode')).toBeInTheDocument();
+    expect(screen.getByText('00:00')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Start Stopwatch/i })).toBeInTheDocument();
+
+    // Click Start Stopwatch
+    fireEvent.click(screen.getByRole('button', { name: /Start Stopwatch/i }));
+    expect(screen.getByRole('button', { name: /Pause/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Save Session/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Reset/i })).toBeInTheDocument();
+
+    // Reset Stopwatch
+    fireEvent.click(screen.getByRole('button', { name: /Reset/i }));
+    expect(screen.getByRole('button', { name: /Start Stopwatch/i })).toBeInTheDocument();
+  });
 });

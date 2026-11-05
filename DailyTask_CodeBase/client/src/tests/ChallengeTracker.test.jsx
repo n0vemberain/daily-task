@@ -129,4 +129,66 @@ describe('ChallengeTracker Component', () => {
 
     expect(handleDeleteChallenge).toHaveBeenCalledWith('ch-1');
   });
+
+  it('toggles collapse and expand to minimize/maximize challenge card', () => {
+    render(
+      <ChallengeTracker
+        challenges={mockChallenges}
+        onCreateChallenge={vi.fn()}
+        onCheckIn={vi.fn()}
+        onDeleteChallenge={vi.fn()}
+      />
+    );
+
+    // Initial state: Day-by-Day Grid is visible
+    expect(screen.getByText('Day-by-Day Check-in Grid')).toBeInTheDocument();
+
+    // Click Minimize button
+    const minimizeBtn = screen.getByTitle('Minimize Challenge Grid');
+    fireEvent.click(minimizeBtn);
+
+    // Grid is hidden, Minimized summary is shown
+    expect(screen.queryByText('Day-by-Day Check-in Grid')).not.toBeInTheDocument();
+
+    // Click Expand button
+    const expandBtn = screen.getByTitle('Maximize Challenge Grid');
+    fireEvent.click(expandBtn);
+
+    // Grid is back
+    expect(screen.getByText('Day-by-Day Check-in Grid')).toBeInTheDocument();
+  });
+
+  it('reorders challenges using Move Down and Move Up buttons', () => {
+    const handleReorder = vi.fn();
+    const twoChallenges = [
+      mockChallenges[0],
+      {
+        id: 'ch-2',
+        title: '60-Day Fitness Challenge',
+        category: 'Fitness',
+        durationDays: 60,
+        startDate: '2026-10-01',
+        endDate: '2026-11-30',
+        status: 'active',
+        checkIns: []
+      }
+    ];
+
+    render(
+      <ChallengeTracker
+        challenges={twoChallenges}
+        onReorderChallenges={handleReorder}
+        onCreateChallenge={vi.fn()}
+        onCheckIn={vi.fn()}
+        onDeleteChallenge={vi.fn()}
+      />
+    );
+
+    // Click Move Down on first challenge
+    const moveDownBtns = screen.getAllByTitle('Move Challenge Down');
+    fireEvent.click(moveDownBtns[0]);
+
+    expect(handleReorder).toHaveBeenCalledTimes(1);
+    expect(handleReorder).toHaveBeenCalledWith([twoChallenges[1], twoChallenges[0]]);
+  });
 });
