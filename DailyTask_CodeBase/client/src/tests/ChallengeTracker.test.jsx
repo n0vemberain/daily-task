@@ -46,6 +46,10 @@ describe('ChallengeTracker Component', () => {
       />
     );
 
+    // Challenges start minimized; click header/expand to open
+    const expandBtn = screen.getByTitle('Maximize Challenge Grid');
+    fireEvent.click(expandBtn);
+
     expect(screen.getByText('Day-by-Day Check-in Grid')).toBeInTheDocument();
     expect(screen.getByText('1')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
@@ -76,6 +80,10 @@ describe('ChallengeTracker Component', () => {
         onDeleteChallenge={vi.fn()}
       />
     );
+
+    // Expand the challenge first
+    const expandBtn = screen.getByTitle('Maximize Challenge Grid');
+    fireEvent.click(expandBtn);
 
     // Indicator 0/1 on day 3 button
     expect(screen.getByText('0/1')).toBeInTheDocument();
@@ -140,22 +148,22 @@ describe('ChallengeTracker Component', () => {
       />
     );
 
-    // Initial state: Day-by-Day Grid is visible
-    expect(screen.getByText('Day-by-Day Check-in Grid')).toBeInTheDocument();
-
-    // Click Minimize button
-    const minimizeBtn = screen.getByTitle('Minimize Challenge Grid');
-    fireEvent.click(minimizeBtn);
-
-    // Grid is hidden, Minimized summary is shown
+    // Initial state: starts minimized, Grid is hidden
     expect(screen.queryByText('Day-by-Day Check-in Grid')).not.toBeInTheDocument();
 
     // Click Expand button
     const expandBtn = screen.getByTitle('Maximize Challenge Grid');
     fireEvent.click(expandBtn);
 
-    // Grid is back
+    // Grid is now visible
     expect(screen.getByText('Day-by-Day Check-in Grid')).toBeInTheDocument();
+
+    // Click Minimize button
+    const minimizeBtn = screen.getByTitle('Minimize Challenge Grid');
+    fireEvent.click(minimizeBtn);
+
+    // Grid is hidden again
+    expect(screen.queryByText('Day-by-Day Check-in Grid')).not.toBeInTheDocument();
   });
 
   it('computes dynamic day status and summary counts for on-time, late, incomplete, and skipped days', () => {
@@ -199,6 +207,10 @@ describe('ChallengeTracker Component', () => {
         onDeleteChallenge={vi.fn()}
       />
     );
+
+    // Expand the challenge first to view the grid and breakdown
+    const expandBtn = screen.getByTitle('Maximize Challenge Grid');
+    fireEvent.click(expandBtn);
 
     // Summary bar verifies breakdown
     expect(screen.getByText(/1 On Time/i)).toBeInTheDocument();

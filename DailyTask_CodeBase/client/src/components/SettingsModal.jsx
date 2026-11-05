@@ -308,14 +308,15 @@ export default function SettingsModal({
   ];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
-      onClick={onClose}
-    >
+    <>
       <div
-        className="bg-[#161b22] border border-github-border rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[88vh]"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
+        onClick={onClose}
       >
+        <div
+          className="bg-[#161b22] border border-github-border rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[88vh]"
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Modal Header */}
         <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-github-border bg-[#0d1117] flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -1012,8 +1013,9 @@ export default function SettingsModal({
           </button>
         </div>
       </div>
+    </div>
 
-      {/* 30-Day Recycle Bin Modal Dialog */}
+    {/* 30-Day Recycle Bin Modal Dialog */}
       <RecycleBinModal
         isOpen={isRecycleBinOpen}
         onClose={() => setIsRecycleBinOpen(false)}
@@ -1023,6 +1025,6 @@ export default function SettingsModal({
         onEmptyBin={onEmptyBin}
         userProfile={userProfile}
       />
-    </div>
+    </>
   );
 }

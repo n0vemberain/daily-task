@@ -387,12 +387,25 @@ export default function App() {
   };
 
   // Individual Task Edit Handler
-  const handleEditTask = async (taskId, updatedFields) => {
+  const handleEditTask = async (taskIdOrTask, maybeFields) => {
+    let targetId;
+    let updatedFields;
+
+    if (typeof taskIdOrTask === 'object' && taskIdOrTask !== null) {
+      targetId = taskIdOrTask.id || taskIdOrTask._id;
+      updatedFields = maybeFields ? { ...taskIdOrTask, ...maybeFields } : taskIdOrTask;
+    } else {
+      targetId = taskIdOrTask;
+      updatedFields = maybeFields || {};
+    }
+
+    if (!targetId) return;
+
     const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
     const updated = tasks.map((t) => {
-      if (t.id === taskId || t._id === taskId) {
+      if (t.id === targetId || t._id === targetId) {
         const patched = { ...t, ...updatedFields };
-        apiService.updateTask(taskId, patched);
+        apiService.updateTask(targetId, patched);
         return patched;
       }
       return t;
@@ -810,6 +823,7 @@ export default function App() {
 
         {activeTab === 'challenges' && (
           <ChallengeTracker
+            activeTab={activeTab}
             challenges={challenges}
             tasks={tasks}
             onAddTask={handleAddTask}

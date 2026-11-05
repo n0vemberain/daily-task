@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Flame,
   Plus,
@@ -32,7 +32,8 @@ export default function ChallengeTracker({
   onCheckIn,
   onDeleteChallenge,
   onEditChallenge,
-  userProfile
+  userProfile,
+  activeTab
 }) {
   const { theme } = useTheme();
   const [filter, setFilter] = useState('active'); // 'active', 'completed', 'all'
@@ -40,12 +41,17 @@ export default function ChallengeTracker({
   const [selectedDayCheckIn, setSelectedDayCheckIn] = useState(null); // { challenge, dayItem }
   const [editingChallenge, setEditingChallenge] = useState(null);
   const [challengeToDelete, setChallengeToDelete] = useState(null);
-  const [collapsedChallengeIds, setCollapsedChallengeIds] = useState(new Set());
+  const [expandedChallengeIds, setExpandedChallengeIds] = useState(new Set());
+
+  // Automatically reset all challenges to minimized whenever switching tabs
+  useEffect(() => {
+    setExpandedChallengeIds(new Set());
+  }, [activeTab]);
 
   const todayStr = formatDateStr(new Date());
 
-  const toggleCollapse = (id) => {
-    setCollapsedChallengeIds((prev) => {
+  const toggleExpand = (id) => {
+    setExpandedChallengeIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -202,7 +208,7 @@ export default function ChallengeTracker({
             const checkIns = challenge.checkIns || [];
             const challengeId = challenge.id || challenge._id;
             const totalDays = challenge.durationDays || checkIns.length;
-            const isCollapsed = collapsedChallengeIds.has(challengeId);
+            const isCollapsed = !expandedChallengeIds.has(challengeId);
 
             // Compute dynamic day statuses for this challenge
             let onTimeDaysCount = 0;
@@ -278,8 +284,14 @@ export default function ChallengeTracker({
                 key={challengeId}
                 className="bg-[#161b22] border rounded-xl p-4 sm:p-5 shadow-sm transition-all hover:border-white/20 border-github-border"
               >
-                {/* Challenge Header */}
-                <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${isCollapsed ? '' : 'pb-4 border-b border-github-border'}`}>
+                {/* Challenge Header - Clickable anywhere on header to expand/collapse */}
+                <div
+                  onClick={() => toggleExpand(challengeId)}
+                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 cursor-pointer select-none group/header hover:bg-[#21262d]/30 rounded-lg p-1.5 -m-1.5 transition-colors ${
+                    isCollapsed ? '' : 'pb-4 border-b border-github-border'
+                  }`}
+                  title={isCollapsed ? 'Click header to expand challenge details and grid' : 'Click top area to minimize challenge'}
+                >
                   <div className="flex items-start gap-2.5 flex-1 min-w-0">
                     <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -318,7 +330,10 @@ export default function ChallengeTracker({
                   </div>
 
                   {/* Actions & Dates */}
-                  <div className="flex items-center gap-2 self-end sm:self-auto text-xs text-github-muted flex-shrink-0">
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-2 self-end sm:self-auto text-xs text-github-muted flex-shrink-0"
+                  >
                     <span className="font-mono text-[11px]">
                       {challenge.startDate} → {challenge.endDate}
                     </span>
@@ -326,7 +341,10 @@ export default function ChallengeTracker({
                     {/* Minimize / Maximize toggle */}
                     <button
                       type="button"
-                      onClick={() => toggleCollapse(challengeId)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleExpand(challengeId);
+                      }}
                       className="px-2 py-1 rounded-md text-github-muted hover:text-white hover:bg-[#21262d] transition-colors flex items-center gap-1 text-xs border border-github-border"
                       title={isCollapsed ? 'Maximize Challenge Grid' : 'Minimize Challenge Grid'}
                     >
@@ -337,7 +355,10 @@ export default function ChallengeTracker({
                     {/* Edit Challenge */}
                     <button
                       type="button"
-                      onClick={() => setEditingChallenge(challenge)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingChallenge(challenge);
+                      }}
                       className="p-1.5 rounded-md text-github-muted hover:text-white hover:bg-[#21262d] transition-colors"
                       title="Edit Challenge"
                     >
@@ -347,7 +368,10 @@ export default function ChallengeTracker({
                     {/* Delete Challenge */}
                     <button
                       type="button"
-                      onClick={() => handleDeleteClick(challenge)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(challenge);
+                      }}
                       className="p-1.5 rounded-md text-github-muted hover:text-red-400 hover:bg-[#21262d] transition-colors"
                       title="Delete Challenge (Requires password)"
                     >

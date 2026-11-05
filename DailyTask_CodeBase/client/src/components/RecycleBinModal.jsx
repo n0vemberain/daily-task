@@ -102,14 +102,15 @@ export default function RecycleBinModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
-      onClick={onClose}
-    >
+    <>
       <div
-        className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
+        onClick={onClose}
       >
+        <div
+          className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-github-border bg-[#0d1117] flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -346,8 +347,9 @@ export default function RecycleBinModal({
           </button>
         </div>
       </div>
+    </div>
 
-      {/* Password Prompt Modal for Permanent Deletions */}
+    {/* Password Prompt Modal for Permanent Deletions */}
       <PasswordPromptModal
         isOpen={isPasswordModalOpen}
         onClose={() => {
@@ -359,6 +361,6 @@ export default function RecycleBinModal({
         title={passwordPromptInfo.title}
         description={passwordPromptInfo.description}
       />
-    </div>
+    </>
   );
 }

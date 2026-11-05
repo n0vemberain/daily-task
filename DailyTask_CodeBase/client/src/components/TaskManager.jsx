@@ -575,25 +575,6 @@ export default function TaskManager({
                 Today ({todayTasks.length})
               </button>
               <button
-                onClick={() => setFilter('pending')}
-                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap border ${
-                  filter === 'pending'
-                    ? 'text-white shadow-sm'
-                    : 'border-transparent text-github-muted hover:text-white'
-                }`}
-                style={
-                  filter === 'pending'
-                    ? {
-                        backgroundColor: theme.accentDark,
-                        color: theme.accent,
-                        borderColor: theme.accent + '40'
-                      }
-                    : {}
-                }
-              >
-                Pending ({tasks.filter((t) => !t.completed).length})
-              </button>
-              <button
                 onClick={() => setFilter('due')}
                 className={`px-3 py-1 rounded-md font-medium whitespace-nowrap border ${
                   filter === 'due'
@@ -611,6 +592,25 @@ export default function TaskManager({
                 }
               >
                 Due ({dueTasks.length})
+              </button>
+              <button
+                onClick={() => setFilter('pending')}
+                className={`px-3 py-1 rounded-md font-medium whitespace-nowrap border ${
+                  filter === 'pending'
+                    ? 'text-white shadow-sm'
+                    : 'border-transparent text-github-muted hover:text-white'
+                }`}
+                style={
+                  filter === 'pending'
+                    ? {
+                        backgroundColor: theme.accentDark,
+                        color: theme.accent,
+                        borderColor: theme.accent + '40'
+                      }
+                    : {}
+                }
+              >
+                Pending ({tasks.filter((t) => !t.completed).length})
               </button>
               <button
                 onClick={() => setFilter('completed')}

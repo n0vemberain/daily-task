@@ -214,15 +214,23 @@ export default function CheckInModal({
     setEditingTask(task);
   };
 
-  const handleSaveEditedTask = (updatedTask) => {
+  const handleSaveEditedTask = (taskIdOrTask, maybeFields) => {
+    const taskId = typeof taskIdOrTask === 'string' ? taskIdOrTask : taskIdOrTask?.id || taskIdOrTask?._id;
+    const fields =
+      maybeFields && typeof maybeFields === 'object'
+        ? maybeFields
+        : typeof taskIdOrTask === 'object'
+        ? taskIdOrTask
+        : {};
+
     if (isPast) {
       triggerPastAuth(() => {
-        if (onEditTask) onEditTask(updatedTask);
+        if (onEditTask) onEditTask(taskId, fields);
         setEditingTask(null);
       });
       return;
     }
-    if (onEditTask) onEditTask(updatedTask);
+    if (onEditTask) onEditTask(taskId, fields);
     setEditingTask(null);
   };
 
@@ -250,14 +258,15 @@ export default function CheckInModal({
   });
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150"
-      onClick={onClose}
-    >
+    <>
       <div
-        className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150"
+        onClick={onClose}
       >
+        <div
+          className="bg-[#161b22] border border-github-border rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-github-border bg-[#0d1117] flex-shrink-0">
           <div className="flex items-center gap-2.5">
@@ -659,10 +668,11 @@ export default function CheckInModal({
           </div>
         </div>
       </div>
+    </div>
 
-      {/* Edit Task Modal for day's task */}
+    {/* Edit Task Modal for day's task */}
       <EditTaskModal
-        isOpen={!!editingTask}
+        isOpen={Boolean(editingTask)}
         onClose={() => setEditingTask(null)}
         task={editingTask}
         onSaveTask={handleSaveEditedTask}
@@ -684,6 +694,6 @@ export default function CheckInModal({
           `Modifying or saving Day ${dayItem.dayNumber} (${dayItem.date}) history requires your account password for this action.`
         }
       />
-    </div>
+    </>
   );
 }

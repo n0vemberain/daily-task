@@ -260,35 +260,6 @@ export default function ContributionHeatmap({
     }
   }, [timeRange]);
 
-  // Click outside listener: when any box is selected, clicking anywhere other than the heatmap cells unselects it
-  useEffect(() => {
-    const handleGlobalClick = (e) => {
-      // If clicking inside a heatmap cell, let handleCellClick handle selection/toggle
-      if (e.target.closest('.heatmap-cell') || e.target.closest('[data-heatmap-cell="true"]')) {
-        return;
-      }
-
-      // If clicking inside the active mobile drawer (e.g. interacting with drawer), do not auto-unselect
-      if (e.target.closest('[data-heatmap-drawer="true"]')) {
-        return;
-      }
-
-      // If user clicks anywhere else on the page or outside, unselect the active box
-      if (selectedDate || mobileSelectedDay) {
-        if (onSelectDate) {
-          onSelectDate(null);
-        }
-        setMobileSelectedDay(null);
-        setHoveredDay(null);
-      }
-    };
-
-    document.addEventListener('pointerdown', handleGlobalClick);
-    return () => {
-      document.removeEventListener('pointerdown', handleGlobalClick);
-    };
-  }, [selectedDate, mobileSelectedDay, onSelectDate]);
-
   // Color resolver based on completed task count and current theme
   const getThemeLevelClass = (count, isFuture, isSelected) => {
     if (isFuture) {
