@@ -23,16 +23,19 @@ import confetti from 'canvas-confetti';
 import { formatDateStr } from '../data/initialData';
 import { soundEffects } from '../utils/audioFeedback';
 import { useTheme } from '../context/ThemeContext';
+import PasswordPromptModal from './PasswordPromptModal';
 
 export default function FocusTimer({
   sessions = [],
   onAddSession,
-  onDeleteSession
+  onDeleteSession,
+  userProfile
 }) {
   const { theme } = useTheme();
 
   // Mode Selection: 'timer' (countdown) vs 'stopwatch' (count-up)
   const [timerMode, setTimerMode] = useState('timer');
+  const [sessionToDelete, setSessionToDelete] = useState(null);
 
   // Presets in minutes
   const presets = [10, 15, 20, 25, 30, 45, 60];
@@ -978,9 +981,9 @@ export default function FocusTimer({
                     {onDeleteSession && (
                       <button
                         type="button"
-                        onClick={() => onDeleteSession(sId)}
+                        onClick={() => setSessionToDelete(session)}
                         className="p-1 text-github-muted hover:text-red-400 rounded transition-colors"
-                        title="Delete session"
+                        title="Delete session (Requires password)"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1090,6 +1093,20 @@ export default function FocusTimer({
           </div>
         </div>
       )}
+      {/* Password Prompt Modal for deleting study session */}
+      <PasswordPromptModal
+        isOpen={Boolean(sessionToDelete)}
+        onClose={() => setSessionToDelete(null)}
+        onSuccess={() => {
+          if (sessionToDelete && onDeleteSession) {
+            onDeleteSession(sessionToDelete.id);
+            setSessionToDelete(null);
+          }
+        }}
+        userProfile={userProfile}
+        title="Authorize Session Deletion"
+        description={`Deleting study session "${sessionToDelete?.label || 'Focus Session'}" (${sessionToDelete?.durationMinutes}m) requires your account password.`}
+      />
     </div>
   );
 }

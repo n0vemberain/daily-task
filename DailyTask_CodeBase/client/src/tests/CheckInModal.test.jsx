@@ -122,7 +122,7 @@ describe('CheckInModal Component', () => {
   });
 
   it('triggers onToggleTask and onDeleteTask when interacting with day tasks', () => {
-    const handleToggle = vi.fn();
+    const handleToggleTask = vi.fn();
     const handleDelete = vi.fn();
 
     render(
@@ -131,7 +131,8 @@ describe('CheckInModal Component', () => {
         challenge={mockChallenge}
         dayItem={mockDayItemToday}
         tasks={mockTasks}
-        onToggleTask={handleToggle}
+        userProfile={mockProfile}
+        onToggleTask={handleToggleTask}
         onDeleteTask={handleDelete}
         onClose={vi.fn()}
         onSaveCheckIn={vi.fn()}
@@ -141,11 +142,15 @@ describe('CheckInModal Component', () => {
     // Toggle button on uncompleted task
     const markDoneBtn = screen.getByTitle('Mark completed');
     fireEvent.click(markDoneBtn);
-    expect(handleToggle).toHaveBeenCalledWith('task-101');
+    expect(handleToggleTask).toHaveBeenCalledWith('task-101');
 
-    // Delete button
+    // Delete button requires universal password verification
     const deleteBtns = screen.getAllByTitle('Delete task');
     fireEvent.click(deleteBtns[0]);
+    expect(screen.getByText('Authorize Deletion')).toBeInTheDocument();
+    const pwdInput = screen.getByPlaceholderText('Enter your account password...');
+    fireEvent.change(pwdInput, { target: { value: 'Password123!' } });
+    fireEvent.click(screen.getByRole('button', { name: /Authorize & Proceed/i }));
     expect(handleDelete).toHaveBeenCalledWith('task-101');
   });
 

@@ -12,9 +12,6 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
-  GripVertical,
-  ArrowUp,
-  ArrowDown,
   Edit3
 } from 'lucide-react';
 import ChallengeModal from './ChallengeModal';
@@ -25,7 +22,7 @@ import { formatDateStr } from '../data/initialData';
 import { useTheme } from '../context/ThemeContext';
 
 export default function ChallengeTracker({
-  challenges,
+  challenges = [],
   tasks = [],
   onAddTask,
   onToggleTask,
@@ -35,7 +32,6 @@ export default function ChallengeTracker({
   onCheckIn,
   onDeleteChallenge,
   onEditChallenge,
-  onReorderChallenges,
   userProfile
 }) {
   const { theme } = useTheme();
@@ -45,7 +41,6 @@ export default function ChallengeTracker({
   const [editingChallenge, setEditingChallenge] = useState(null);
   const [challengeToDelete, setChallengeToDelete] = useState(null);
   const [collapsedChallengeIds, setCollapsedChallengeIds] = useState(new Set());
-  const [draggedId, setDraggedId] = useState(null);
 
   const todayStr = formatDateStr(new Date());
 
@@ -56,39 +51,6 @@ export default function ChallengeTracker({
       else next.add(id);
       return next;
     });
-  };
-
-  const handleMove = (fromIndex, toIndex) => {
-    if (toIndex < 0 || toIndex >= challenges.length) return;
-    const updated = [...challenges];
-    const [moved] = updated.splice(fromIndex, 1);
-    updated.splice(toIndex, 0, moved);
-    if (onReorderChallenges) {
-      onReorderChallenges(updated);
-    }
-  };
-
-  const handleDragStart = (e, challenge) => {
-    setDraggedId(challenge.id || challenge._id);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', challenge.id || challenge._id);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = (e, targetChallenge) => {
-    e.preventDefault();
-    const targetId = targetChallenge.id || targetChallenge._id;
-    if (!draggedId || draggedId === targetId) return;
-    const fromIndex = challenges.findIndex((c) => (c.id || c._id) === draggedId);
-    const toIndex = challenges.findIndex((c) => (c.id || c._id) === targetId);
-    if (fromIndex !== -1 && toIndex !== -1) {
-      handleMove(fromIndex, toIndex);
-    }
-    setDraggedId(null);
   };
 
   const handleDeleteClick = (challenge) => {
@@ -238,57 +200,87 @@ export default function ChallengeTracker({
         <div className="space-y-6">
           {filteredChallenges.map((challenge) => {
             const checkIns = challenge.checkIns || [];
-            const completedCount = checkIns.filter((c) => c.status === 'completed').length;
-            const skippedCount = checkIns.filter((c) => c.status === 'skipped').length;
-            const totalDays = challenge.durationDays || checkIns.length;
-            const progressPercent = totalDays > 0 ? Math.round((completedCount / totalDays) * 100) : 0;
-            const isCompleted = challenge.status === 'completed' || completedCount === totalDays;
             const challengeId = challenge.id || challenge._id;
+            const totalDays = challenge.durationDays || checkIns.length;
             const isCollapsed = collapsedChallengeIds.has(challengeId);
-            const globalIndex = challenges.findIndex((c) => (c.id || c._id) === challengeId);
+
+            // Compute dynamic day statuses for this challenge
+            let onTimeDaysCount = 0;
+            let lateDaysCount = 0;
+            let incompleteDaysCount = 0;
+            let skippedCount = 0;
+
+            const computedCheckIns = checkIns.map((dayItem) => {
+              const isToday = dayItem.date === todayStr;
+              const isPast = dayItem.date < todayStr;
+              const isFuture = dayItem.date > todayStr;
+
+              const dayTasks = tasks.filter(
+                (t) =>
+                  (t.challengeId === challengeId && t.dayNumber === dayItem.dayNumber) ||
+                  (t.challengeId === challengeId && t.date === dayItem.date)
+              );
+
+              const allTasksCompleted = dayTasks.length > 0 && dayTasks.every((t) => t.completed);
+              const hasLateCompletion = dayTasks.some(
+                (t) => t.hasRolledOver || t.completedLate || (t.completedAt && t.completedAt.slice(0, 10) > dayItem.date)
+              );
+
+              let status = dayItem.status || 'pending';
+              if (dayItem.status === 'skipped') {
+                status = 'skipped';
+                skippedCount += 1;
+              } else if (dayTasks.length > 0) {
+                if (allTasksCompleted) {
+                  if (hasLateCompletion) {
+                    status = 'completed-late';
+                    lateDaysCount += 1;
+                  } else {
+                    status = 'completed';
+                    onTimeDaysCount += 1;
+                  }
+                } else if (isPast) {
+                  status = 'incomplete';
+                  incompleteDaysCount += 1;
+                }
+              } else {
+                if (dayItem.status === 'completed') {
+                  const isLate = dayItem.completedAt && dayItem.completedAt.slice(0, 10) > dayItem.date;
+                  if (isLate) {
+                    status = 'completed-late';
+                    lateDaysCount += 1;
+                  } else {
+                    status = 'completed';
+                    onTimeDaysCount += 1;
+                  }
+                } else if (isPast) {
+                  status = 'incomplete';
+                  incompleteDaysCount += 1;
+                }
+              }
+
+              return {
+                ...dayItem,
+                status,
+                dayTasks,
+                isToday,
+                isPast,
+                isFuture
+              };
+            });
+
+            const completedTotal = onTimeDaysCount + lateDaysCount;
+            const progressPercent = totalDays > 0 ? Math.round((completedTotal / totalDays) * 100) : 0;
+            const isCompleted = challenge.status === 'completed' || completedTotal === totalDays;
 
             return (
               <div
                 key={challengeId}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, challenge)}
-                className={`bg-[#161b22] border rounded-xl p-4 sm:p-5 shadow-sm transition-all hover:border-white/20 ${
-                  draggedId === challengeId ? 'opacity-40 border-dashed border-amber-500' : 'border-github-border'
-                }`}
+                className="bg-[#161b22] border rounded-xl p-4 sm:p-5 shadow-sm transition-all hover:border-white/20 border-github-border"
               >
                 {/* Challenge Header */}
                 <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${isCollapsed ? '' : 'pb-4 border-b border-github-border'}`}>
                   <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                    {/* Drag Handle & Move Buttons */}
-                    <div className="flex items-center gap-0.5 pt-0.5 flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleMove(globalIndex, globalIndex - 1)}
-                        disabled={globalIndex <= 0}
-                        className="p-1 rounded text-github-muted hover:text-white disabled:opacity-20 disabled:hover:text-github-muted transition-colors"
-                        title="Move Challenge Up"
-                      >
-                        <ArrowUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMove(globalIndex, globalIndex + 1)}
-                        disabled={globalIndex >= challenges.length - 1}
-                        className="p-1 rounded text-github-muted hover:text-white disabled:opacity-20 disabled:hover:text-github-muted transition-colors"
-                        title="Move Challenge Down"
-                      >
-                        <ArrowDown className="w-3.5 h-3.5" />
-                      </button>
-                      <div
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, challenge)}
-                        className="cursor-grab active:cursor-grabbing p-1 rounded text-github-muted hover:text-white hover:bg-[#21262d] transition-colors"
-                        title="Drag to reorder"
-                      >
-                        <GripVertical className="w-4 h-4" />
-                      </div>
-                    </div>
-
                     <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-base font-bold text-white tracking-tight truncate">
@@ -315,7 +307,7 @@ export default function ChallengeTracker({
                         )}
                         {isCollapsed && (
                           <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-[#0d1117] text-white border border-github-border">
-                            {completedCount}/{totalDays} ({progressPercent}%)
+                            {completedTotal}/{totalDays} ({progressPercent}%)
                           </span>
                         )}
                       </div>
@@ -372,9 +364,9 @@ export default function ChallengeTracker({
                         <span className="text-github-muted">
                           Progress:{' '}
                           <strong className="text-white font-mono">
-                            {completedCount} / {totalDays}
+                            {completedTotal} / {totalDays}
                           </strong>{' '}
-                          days checked in
+                          days achieved
                         </span>
                         <span className="font-mono font-bold" style={{ color: theme.accent }}>
                           {progressPercent}%
@@ -393,22 +385,34 @@ export default function ChallengeTracker({
                       </div>
 
                       <div className="flex items-center justify-between text-[11px] text-github-muted pt-1 flex-wrap gap-2">
-                        <div className="flex items-center gap-4">
-                          <span className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <span className="flex items-center gap-1.5 text-emerald-300">
                             <span
                               className="w-2 h-2 rounded-full"
                               style={{ backgroundColor: theme.accent }}
                             />
-                            {completedCount} Completed
+                            {onTimeDaysCount} On Time
                           </span>
+                          {lateDaysCount > 0 && (
+                            <span className="flex items-center gap-1.5 text-yellow-300 font-medium">
+                              <span className="w-2 h-2 rounded-full bg-yellow-400" />
+                              {lateDaysCount} Late / Rollover Done
+                            </span>
+                          )}
+                          {incompleteDaysCount > 0 && (
+                            <span className="flex items-center gap-1.5 text-rose-300">
+                              <span className="w-2 h-2 rounded-full bg-rose-500" />
+                              {incompleteDaysCount} Incomplete
+                            </span>
+                          )}
                           {skippedCount > 0 && (
-                            <span className="flex items-center gap-1.5">
+                            <span className="flex items-center gap-1.5 text-amber-300">
                               <span className="w-2 h-2 rounded-full bg-amber-500" />
                               {skippedCount} Skipped
                             </span>
                           )}
                           <span>
-                            {Math.max(0, totalDays - completedCount - skippedCount)} Days Remaining
+                            {Math.max(0, totalDays - completedTotal - skippedCount)} Days Remaining
                           </span>
                         </div>
                         <span className="italic text-[10px]">Click any day square to check-in or edit</span>
@@ -417,32 +421,56 @@ export default function ChallengeTracker({
 
                     {/* The Interactive Day-by-Day Challenge Grid */}
                     <div className="pt-4">
-                      <div className="text-xs font-semibold text-github-text uppercase tracking-wider mb-2.5 flex items-center justify-between">
+                      <div className="text-xs font-semibold text-github-text uppercase tracking-wider mb-2.5 flex items-center justify-between flex-wrap gap-1">
                         <span>Day-by-Day Check-in Grid</span>
                         <span className="text-[11px] text-github-muted normal-case font-normal">
-                          Completed • Orange = Skipped • Ring = Today
+                          Green = On Time • Yellow = Late Done • Red = Incomplete • Orange = Skipped • Ring = Today
                         </span>
                       </div>
 
                       <div className="grid grid-cols-7 sm:grid-cols-10 md:grid-cols-14 lg:grid-cols-15 gap-1.5 sm:gap-2">
-                        {checkIns.map((dayItem) => {
-                          const isToday = dayItem.date === todayStr;
-                          const isDone = dayItem.status === 'completed';
+                        {computedCheckIns.map((dayItem) => {
+                          const isDoneOnTime = dayItem.status === 'completed';
+                          const isDoneLate = dayItem.status === 'completed-late';
                           const isSkipped = dayItem.status === 'skipped';
-                          const challengeId = challenge.id || challenge._id;
-                          const dayTasks = tasks.filter(
-                            (t) =>
-                              (t.challengeId === challengeId && t.dayNumber === dayItem.dayNumber) ||
-                              (t.challengeId === challengeId && t.date === dayItem.date)
-                          );
+                          const isIncomplete = dayItem.status === 'incomplete';
+                          const isToday = dayItem.isToday;
+                          const dayTasks = dayItem.dayTasks || [];
 
                           let cellStyle = 'bg-[#0d1117] border-github-border text-github-muted hover:border-white/30';
-                          if (isDone) {
-                            cellStyle = 'border-white/30 text-white shadow-sm';
+                          let inlineStyle = {};
+
+                          if (isDoneOnTime) {
+                            cellStyle = 'border-emerald-500/80 text-white shadow-sm';
+                            inlineStyle = {
+                              backgroundColor: theme.hexLevels[3] || '#238636',
+                              borderColor: theme.accent
+                            };
+                          } else if (isDoneLate) {
+                            cellStyle = 'border-yellow-500/80 text-yellow-200 shadow-sm';
+                            inlineStyle = {
+                              backgroundColor: 'rgba(234, 179, 8, 0.25)',
+                              borderColor: '#eab308'
+                            };
                           } else if (isSkipped) {
-                            cellStyle = 'bg-amber-950/40 border-amber-600/50 text-amber-300 hover:border-amber-500';
+                            cellStyle = 'border-amber-600/70 text-amber-300';
+                            inlineStyle = {
+                              backgroundColor: 'rgba(217, 119, 6, 0.25)',
+                              borderColor: '#d97706'
+                            };
+                          } else if (isIncomplete) {
+                            cellStyle = 'border-rose-600/80 text-rose-300';
+                            inlineStyle = {
+                              backgroundColor: 'rgba(225, 29, 72, 0.22)',
+                              borderColor: '#e11d48'
+                            };
                           } else if (isToday) {
                             cellStyle = 'ring-2 font-bold animate-pulse text-white';
+                            inlineStyle = {
+                              borderColor: theme.accent,
+                              boxShadow: `0 0 0 2px ${theme.accent}60`,
+                              backgroundColor: theme.accentDark
+                            };
                           }
 
                           return (
@@ -450,20 +478,7 @@ export default function ChallengeTracker({
                               key={dayItem.dayNumber}
                               onClick={() => setSelectedDayCheckIn({ challenge, dayItem })}
                               className={`aspect-square min-h-[36px] rounded-lg border p-1 flex flex-col items-center justify-center relative transition-all group ${cellStyle}`}
-                              style={
-                                isDone
-                                  ? {
-                                      backgroundColor: theme.hexLevels[3],
-                                      borderColor: theme.accent + '80'
-                                    }
-                                  : isToday
-                                  ? {
-                                      borderColor: theme.accent,
-                                      boxShadow: `0 0 0 2px ${theme.accent}60`,
-                                      backgroundColor: theme.accentDark
-                                    }
-                                  : {}
-                              }
+                              style={inlineStyle}
                               title={`Day ${dayItem.dayNumber} (${dayItem.date}): ${dayItem.status}${
                                 dayItem.note ? ` - "${dayItem.note}"` : ''
                               }${dayTasks.length > 0 ? ` • ${dayTasks.length} task(s)` : ''}`}
@@ -471,13 +486,21 @@ export default function ChallengeTracker({
                               <span className="text-[11px] font-mono leading-none">
                                 {dayItem.dayNumber}
                               </span>
-                              {isDone ? (
+                              {isDoneOnTime ? (
                                 <CheckCircle2
                                   className="w-3.5 h-3.5 mt-1"
                                   style={{ color: '#ffffff' }}
                                 />
+                              ) : isDoneLate ? (
+                                <CheckCircle2
+                                  className="w-3.5 h-3.5 mt-1 text-yellow-400"
+                                />
                               ) : isSkipped ? (
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1" />
+                              ) : isIncomplete ? (
+                                <span className="text-[9px] font-mono leading-none px-1 rounded bg-rose-950 text-rose-300 border border-rose-800/60 mt-1">
+                                  {dayTasks.filter((t) => t.completed).length}/{dayTasks.length}
+                                </span>
                               ) : isToday ? (
                                 <span
                                   className="w-1.5 h-1.5 rounded-full mt-1"

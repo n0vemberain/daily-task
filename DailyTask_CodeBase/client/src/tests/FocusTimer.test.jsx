@@ -142,4 +142,41 @@ describe('FocusTimer Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Reset/i }));
     expect(screen.getByRole('button', { name: /Start Stopwatch/i })).toBeInTheDocument();
   });
+
+  it('requires password authorization when deleting a study session', () => {
+    const handleDelete = vi.fn();
+    const mockProfile = {
+      username: 'timeruser',
+      password: 'TimerSecret123!'
+    };
+
+    render(
+      <ThemeProvider>
+        <FocusTimer
+          sessions={sampleSessions}
+          onAddSession={vi.fn()}
+          onDeleteSession={handleDelete}
+          userProfile={mockProfile}
+        />
+      </ThemeProvider>
+    );
+
+    const deleteBtns = screen.getAllByTitle('Delete session (Requires password)');
+    fireEvent.click(deleteBtns[0]);
+
+    // Password prompt opens
+    expect(screen.getByText('Authorize Session Deletion')).toBeInTheDocument();
+    const pwdInput = screen.getByPlaceholderText('Enter your account password...');
+
+    // Enter wrong password
+    fireEvent.change(pwdInput, { target: { value: 'WrongPass' } });
+    fireEvent.click(screen.getByRole('button', { name: /Authorize & Proceed/i }));
+    expect(screen.getByText(/Incorrect password\. Authorization failed\./i)).toBeInTheDocument();
+    expect(handleDelete).not.toHaveBeenCalled();
+
+    // Enter correct password
+    fireEvent.change(pwdInput, { target: { value: 'TimerSecret123!' } });
+    fireEvent.click(screen.getByRole('button', { name: /Authorize & Proceed/i }));
+    expect(handleDelete).toHaveBeenCalledWith('s-1');
+  });
 });

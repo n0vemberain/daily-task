@@ -44,6 +44,7 @@ export default function App() {
   const [tasks, setTasks] = useState(() => storageService.getTasks(storageService.getCurrentUser()?.username));
   const [challenges, setChallenges] = useState(() => storageService.getChallenges(storageService.getCurrentUser()?.username));
   const [timerSessions, setTimerSessions] = useState(() => storageService.getTimerSessions(storageService.getCurrentUser()?.username));
+  const [recycleBin, setRecycleBin] = useState(() => storageService.getRecycleBin(storageService.getCurrentUser()?.username));
 
   // Authentication State: MUST be explicitly true to access the dashboard
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -238,9 +239,11 @@ export default function App() {
     const userTasks = storageService.getTasks(uname);
     const userChallenges = storageService.getChallenges(uname);
     const userSessions = storageService.getTimerSessions(uname);
+    const userBin = storageService.getRecycleBin(uname);
     setTasks(userTasks);
     setChallenges(userChallenges);
     setTimerSessions(userSessions);
+    setRecycleBin(userBin);
 
     apiService
       .getFullData(uname, activeUser.sessionVersion)
@@ -282,6 +285,7 @@ export default function App() {
     setTasks([]);
     setChallenges([]);
     setTimerSessions([]);
+    setRecycleBin([]);
   };
 
   // Handlers for User Profile
@@ -310,17 +314,56 @@ export default function App() {
     await apiService.createTask(taskWithUser);
   };
 
+  // Helper to trace all rollover tasks connected in the same chain
+  const findRelatedRolloverTaskIds = (allTasks, targetTaskId) => {
+    const targetTask = allTasks.find((t) => t.id === targetTaskId || t._id === targetTaskId);
+    if (!targetTask) return new Set([targetTaskId]);
+
+    let rootId = targetTask.id || targetTask._id;
+    let current = targetTask;
+    const visited = new Set([rootId]);
+    while (current?.rolledOverFrom?.originalTaskId) {
+      const parentId = current.rolledOverFrom.originalTaskId;
+      if (visited.has(parentId)) break;
+      visited.add(parentId);
+      rootId = parentId;
+      current = allTasks.find((t) => t.id === parentId || t._id === parentId);
+    }
+
+    const familyIds = new Set([rootId]);
+    let added = true;
+    while (added) {
+      added = false;
+      allTasks.forEach((t) => {
+        const tid = t.id || t._id;
+        if (!familyIds.has(tid) && t.rolledOverFrom?.originalTaskId && familyIds.has(t.rolledOverFrom.originalTaskId)) {
+          familyIds.add(tid);
+          added = true;
+        }
+      });
+    }
+
+    return familyIds;
+  };
+
   const handleToggleTask = async (taskId) => {
     const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+    const targetTask = tasks.find((t) => t.id === taskId || t._id === taskId);
+    if (!targetTask) return;
+
+    const nextCompleted = !targetTask.completed;
+    const completedAtTimestamp = nextCompleted ? new Date().toISOString() : null;
+    const relatedIds = findRelatedRolloverTaskIds(tasks, taskId);
+
     const updated = tasks.map((t) => {
-      if (t.id === taskId || t._id === taskId) {
-        const nextCompleted = !t.completed;
+      const tid = t.id || t._id;
+      if (relatedIds.has(tid)) {
         const patched = {
           ...t,
           completed: nextCompleted,
-          completedAt: nextCompleted ? new Date().toISOString() : null
+          completedAt: completedAtTimestamp
         };
-        apiService.updateTask(taskId, patched);
+        apiService.updateTask(tid, patched);
         return patched;
       }
       return t;
@@ -332,6 +375,11 @@ export default function App() {
 
   const handleDeleteTask = async (taskId) => {
     const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+    const taskToDelete = tasks.find((t) => t.id === taskId || t._id === taskId);
+    if (taskToDelete) {
+      const updatedBin = storageService.addToRecycleBin('task', taskToDelete, [], uname);
+      setRecycleBin(updatedBin);
+    }
     const updated = tasks.filter((t) => t.id !== taskId && t._id !== taskId);
     setTasks(updated);
     storageService.saveTasks(updated, uname);
@@ -423,9 +471,32 @@ export default function App() {
   };
 
   const handleDeleteChallenge = async (challengeId) => {
-    const updated = challenges.filter((c) => c.id !== challengeId && c._id !== challengeId);
-    setChallenges(updated);
-    storageService.saveChallenges(updated);
+    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+    const challengeToDelete = challenges.find((c) => c.id === challengeId || c._id === challengeId);
+    const cascadeTasks = tasks.filter(
+      (t) => t.challengeId === challengeId || (challengeToDelete && t.challengeId === challengeToDelete.id)
+    );
+
+    if (challengeToDelete) {
+      const updatedBin = storageService.addToRecycleBin('challenge', challengeToDelete, cascadeTasks, uname);
+      setRecycleBin(updatedBin);
+    }
+
+    const updatedChallenges = challenges.filter((c) => c.id !== challengeId && c._id !== challengeId);
+    setChallenges(updatedChallenges);
+    storageService.saveChallenges(updatedChallenges, uname);
+
+    if (cascadeTasks.length > 0) {
+      const remainingTasks = tasks.filter(
+        (t) => t.challengeId !== challengeId && (!challengeToDelete || t.challengeId !== challengeToDelete.id)
+      );
+      setTasks(remainingTasks);
+      storageService.saveTasks(remainingTasks, uname);
+      for (const ct of cascadeTasks) {
+        apiService.deleteTask(ct.id || ct._id);
+      }
+    }
+
     await apiService.deleteChallenge(challengeId);
   };
 
@@ -502,13 +573,6 @@ export default function App() {
     performSync({ user: userProfile, tasks: updatedTasks, challenges: updated });
   };
 
-  const handleReorderChallenges = (reordered) => {
-    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
-    setChallenges(reordered);
-    storageService.saveChallenges(reordered, uname);
-    performSync({ user: userProfile, tasks, challenges: reordered, username: uname });
-  };
-
   // Focus Timer Session Handlers
   const handleAddTimerSession = (session) => {
     const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
@@ -519,9 +583,70 @@ export default function App() {
 
   const handleDeleteTimerSession = (sessionId) => {
     const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+    const sessionToDelete = timerSessions.find((s) => s.id === sessionId);
+    if (sessionToDelete) {
+      const updatedBin = storageService.addToRecycleBin('session', sessionToDelete, [], uname);
+      setRecycleBin(updatedBin);
+    }
     const updated = timerSessions.filter((s) => s.id !== sessionId);
     setTimerSessions(updated);
     storageService.saveTimerSessions(updated, uname);
+  };
+
+  // Recycle Bin Handlers
+  const handleRestoreFromBin = async (binItem) => {
+    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+    if (!binItem) return;
+
+    if (binItem.type === 'task' && binItem.item) {
+      const restoredTask = binItem.item;
+      const exists = tasks.some((t) => t.id === restoredTask.id || (restoredTask._id && t._id === restoredTask._id));
+      const updatedTasks = exists ? tasks : [restoredTask, ...tasks];
+      setTasks(updatedTasks);
+      storageService.saveTasks(updatedTasks, uname);
+      apiService.createTask(restoredTask);
+    } else if (binItem.type === 'challenge' && binItem.item) {
+      const restoredChallenge = binItem.item;
+      const exists = challenges.some((c) => c.id === restoredChallenge.id || (restoredChallenge._id && c._id === restoredChallenge._id));
+      const updatedChallenges = exists ? challenges : [restoredChallenge, ...challenges];
+      setChallenges(updatedChallenges);
+      storageService.saveChallenges(updatedChallenges, uname);
+      apiService.createChallenge(restoredChallenge);
+
+      if (Array.isArray(binItem.cascadeTasks) && binItem.cascadeTasks.length > 0) {
+        const existingTaskIds = new Set(tasks.map((t) => t.id || t._id));
+        const tasksToRestore = binItem.cascadeTasks.filter((t) => !existingTaskIds.has(t.id || t._id));
+        if (tasksToRestore.length > 0) {
+          const mergedTasks = [...tasksToRestore, ...tasks];
+          setTasks(mergedTasks);
+          storageService.saveTasks(mergedTasks, uname);
+          for (const ct of tasksToRestore) {
+            apiService.createTask(ct);
+          }
+        }
+      }
+    } else if (binItem.type === 'session' && binItem.item) {
+      const restoredSession = binItem.item;
+      const exists = timerSessions.some((s) => s.id === restoredSession.id);
+      const updatedSessions = exists ? timerSessions : [restoredSession, ...timerSessions];
+      setTimerSessions(updatedSessions);
+      storageService.saveTimerSessions(updatedSessions, uname);
+    }
+
+    const updatedBin = storageService.removeFromRecycleBin(binItem.recycleBinId, uname);
+    setRecycleBin(updatedBin);
+  };
+
+  const handlePermanentDeleteFromBin = (recycleBinId) => {
+    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+    const updatedBin = storageService.removeFromRecycleBin(recycleBinId, uname);
+    setRecycleBin(updatedBin);
+  };
+
+  const handleEmptyBin = () => {
+    const uname = (storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+    const updatedBin = storageService.clearRecycleBin(uname);
+    setRecycleBin(updatedBin);
   };
 
   // Data Clean Handlers
@@ -695,7 +820,6 @@ export default function App() {
             onDeleteChallenge={handleDeleteChallenge}
             onEditChallenge={handleEditChallenge}
             onEditTask={handleEditTask}
-            onReorderChallenges={handleReorderChallenges}
             userProfile={userProfile}
           />
         )}
@@ -719,6 +843,7 @@ export default function App() {
             sessions={timerSessions}
             onAddSession={handleAddTimerSession}
             onDeleteSession={handleDeleteTimerSession}
+            userProfile={userProfile}
           />
         )}
 
@@ -757,6 +882,10 @@ export default function App() {
         userProfile={userProfile}
         currentUser={currentUser}
         onSaveProfile={handleSaveProfile}
+        recycleBin={recycleBin}
+        onRestoreFromBin={handleRestoreFromBin}
+        onPermanentDeleteFromBin={handlePermanentDeleteFromBin}
+        onEmptyBin={handleEmptyBin}
       />
 
       {/* Personal Profile Modal (Avatar, Name, User ID, Password, Field of Study Only) */}

@@ -8,6 +8,7 @@ const KEYS = {
   TASKS: 'daily_task_tasks_v1',
   CHALLENGES: 'daily_task_challenges_v1',
   TIMER_SESSIONS: 'daily_task_timer_sessions_v1',
+  RECYCLE_BIN: 'daily_task_recycle_bin_v1',
   LAST_SYNC: 'daily_task_last_sync_v1'
 };
 
@@ -203,6 +204,84 @@ export const storageService = {
       console.error('Error saving timer sessions to localStorage', e);
       return false;
     }
+  },
+
+  // Recycle Bin (Trash) with automatic 30-day retention purge
+  getRecycleBin: (username = null) => {
+    try {
+      const targetUser = (username || storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+      const userKey = targetUser === 'n0vemberain' ? KEYS.RECYCLE_BIN : `daily_task_recycle_bin_${targetUser}`;
+      const data = localStorage.getItem(userKey);
+      if (!data) return [];
+
+      const parsed = JSON.parse(data);
+      if (!Array.isArray(parsed)) return [];
+
+      // Auto purge items older than 30 days
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      const validItems = parsed.filter((item) => {
+        if (!item || !item.deletedAt) return false;
+        const deletedTime = new Date(item.deletedAt).getTime();
+        return now - deletedTime <= thirtyDaysMs;
+      });
+
+      if (validItems.length !== parsed.length) {
+        localStorage.setItem(userKey, JSON.stringify(validItems));
+      }
+
+      return validItems;
+    } catch (e) {
+      console.error('Error reading recycle bin from localStorage', e);
+      return [];
+    }
+  },
+
+  saveRecycleBin: (items, username = null) => {
+    try {
+      const targetUser = (username || storageService.getCurrentUser()?.username || 'n0vemberain').toLowerCase();
+      const userKey = targetUser === 'n0vemberain' ? KEYS.RECYCLE_BIN : `daily_task_recycle_bin_${targetUser}`;
+      localStorage.setItem(userKey, JSON.stringify(items));
+      return true;
+    } catch (e) {
+      console.error('Error saving recycle bin to localStorage', e);
+      return false;
+    }
+  },
+
+  addToRecycleBin: (type, item, cascadeTasks = [], username = null) => {
+    try {
+      const currentBin = storageService.getRecycleBin(username);
+      const newEntry = {
+        id: `rb-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        type, // 'task' | 'challenge' | 'session'
+        deletedAt: new Date().toISOString(),
+        item,
+        cascadeTasks: Array.isArray(cascadeTasks) ? cascadeTasks : []
+      };
+      const updatedBin = [newEntry, ...currentBin];
+      storageService.saveRecycleBin(updatedBin, username);
+      return newEntry;
+    } catch (e) {
+      console.error('Error adding item to recycle bin', e);
+      return null;
+    }
+  },
+
+  removeFromRecycleBin: (recycleBinId, username = null) => {
+    try {
+      const currentBin = storageService.getRecycleBin(username);
+      const updatedBin = currentBin.filter((entry) => entry.id !== recycleBinId);
+      storageService.saveRecycleBin(updatedBin, username);
+      return true;
+    } catch (e) {
+      console.error('Error removing item from recycle bin', e);
+      return false;
+    }
+  },
+
+  clearRecycleBin: (username = null) => {
+    return storageService.saveRecycleBin([], username);
   },
 
   getLastSync: () => {

@@ -60,7 +60,7 @@ describe('ChallengeTracker Component', () => {
         challengeId: 'ch-1',
         dayNumber: 3,
         date: '2026-10-03',
-        completed: true
+        completed: false
       }
     ];
 
@@ -77,8 +77,8 @@ describe('ChallengeTracker Component', () => {
       />
     );
 
-    // Indicator 1/1 on day 3 button
-    expect(screen.getByText('1/1')).toBeInTheDocument();
+    // Indicator 0/1 on day 3 button
+    expect(screen.getByText('0/1')).toBeInTheDocument();
 
     // Click Day 3 square
     const day3Btn = screen.getByText('3').closest('button');
@@ -158,37 +158,59 @@ describe('ChallengeTracker Component', () => {
     expect(screen.getByText('Day-by-Day Check-in Grid')).toBeInTheDocument();
   });
 
-  it('reorders challenges using Move Down and Move Up buttons', () => {
-    const handleReorder = vi.fn();
-    const twoChallenges = [
-      mockChallenges[0],
+  it('computes dynamic day status and summary counts for on-time, late, incomplete, and skipped days', () => {
+    const dynamicChallenge = [
       {
-        id: 'ch-2',
-        title: '60-Day Fitness Challenge',
-        category: 'Fitness',
-        durationDays: 60,
+        id: 'ch-dynamic',
+        title: 'Status Color Verification Challenge',
+        category: 'Productivity',
+        durationDays: 4,
         startDate: '2026-10-01',
-        endDate: '2026-11-30',
+        endDate: '2026-10-04',
         status: 'active',
-        checkIns: []
+        checkIns: [
+          { dayNumber: 1, date: '2026-10-01', status: 'completed', note: 'Done' },
+          { dayNumber: 2, date: '2026-10-02', status: 'skipped', note: '' },
+          { dayNumber: 3, date: '2026-10-03', status: 'pending', note: '' },
+          { dayNumber: 4, date: '2026-10-04', status: 'pending', note: '' }
+        ]
+      }
+    ];
+
+    const dynamicTasks = [
+      // Day 4 has a task that completed late (completedAt > date)
+      {
+        id: 'task-late',
+        title: 'Late Rollover Task',
+        challengeId: 'ch-dynamic',
+        dayNumber: 4,
+        date: '2026-10-04',
+        completed: true,
+        completedAt: '2026-10-05T12:00:00.000Z'
       }
     ];
 
     render(
       <ChallengeTracker
-        challenges={twoChallenges}
-        onReorderChallenges={handleReorder}
+        challenges={dynamicChallenge}
+        tasks={dynamicTasks}
         onCreateChallenge={vi.fn()}
         onCheckIn={vi.fn()}
         onDeleteChallenge={vi.fn()}
       />
     );
 
-    // Click Move Down on first challenge
-    const moveDownBtns = screen.getAllByTitle('Move Challenge Down');
-    fireEvent.click(moveDownBtns[0]);
+    // Summary bar verifies breakdown
+    expect(screen.getByText(/1 On Time/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 Late \/ Rollover Done/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 Skipped/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 Incomplete/i)).toBeInTheDocument();
 
-    expect(handleReorder).toHaveBeenCalledTimes(1);
-    expect(handleReorder).toHaveBeenCalledWith([twoChallenges[1], twoChallenges[0]]);
+    // Verify Legend text is displayed
+    expect(
+      screen.getByText(
+        /Green = On Time • Yellow = Late Done • Red = Incomplete • Orange = Skipped • Ring = Today/i
+      )
+    ).toBeInTheDocument();
   });
 });

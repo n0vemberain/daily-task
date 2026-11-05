@@ -471,4 +471,35 @@ describe('TaskManager Component', () => {
 
     expect(screen.getByText(/Completed:/i)).toBeInTheDocument();
   });
+
+  it('requires password authorization when deleting any task (including today tasks)', () => {
+    const onDeleteTask = vi.fn();
+    const mockProfile = {
+      username: 'taskuser',
+      password: 'TaskPassword999!'
+    };
+
+    render(
+      <ThemeProvider>
+        <TaskManager
+          tasks={sampleTasks}
+          onAddTask={vi.fn()}
+          onToggleTask={vi.fn()}
+          onDeleteTask={onDeleteTask}
+          onEditTask={vi.fn()}
+          userProfile={mockProfile}
+        />
+      </ThemeProvider>
+    );
+
+    const deleteBtns = screen.getAllByTitle('Delete task (Requires password)');
+    fireEvent.click(deleteBtns[0]);
+
+    expect(screen.getByText('Authorize Task Deletion')).toBeInTheDocument();
+    const passwordInput = screen.getByPlaceholderText('Enter your account password...');
+    fireEvent.change(passwordInput, { target: { value: 'TaskPassword999!' } });
+    fireEvent.click(screen.getByRole('button', { name: /Authorize & Proceed/i }));
+
+    expect(onDeleteTask).toHaveBeenCalledWith(sampleTasks[0].id);
+  });
 });

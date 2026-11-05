@@ -156,16 +156,12 @@ export default function TaskManager({
 
   const handleTaskDeleteClick = (task) => {
     const taskId = task.id || task._id;
-    if (task.date < todayStr) {
-      setPasswordPromptInfo({
-        title: 'Authorize Task Deletion',
-        description: `Deleting historical task record "${task.title}" (${task.date}) requires your account password.`
-      });
-      setPendingHistoryAction(() => () => onDeleteTask(taskId));
-      setIsPasswordModalOpen(true);
-      return;
-    }
-    onDeleteTask(taskId);
+    setPasswordPromptInfo({
+      title: 'Authorize Task Deletion',
+      description: `Deleting task "${task.title}" requires your account password.`
+    });
+    setPendingHistoryAction(() => () => onDeleteTask(taskId));
+    setIsPasswordModalOpen(true);
   };
 
   const handleTaskEditClick = (task) => {
@@ -896,7 +892,7 @@ export default function TaskManager({
                   <button
                     onClick={() => handleTaskDeleteClick(task)}
                     className="p-1 rounded-md text-github-muted hover:text-red-400 hover:bg-[#21262d] transition-colors"
-                    title={isPast ? 'Delete past task (Requires password)' : 'Delete task'}
+                    title={isPast ? 'Delete past task (Requires password)' : 'Delete task (Requires password)'}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

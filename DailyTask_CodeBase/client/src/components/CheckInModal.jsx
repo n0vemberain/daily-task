@@ -47,9 +47,22 @@ export default function CheckInModal({
   const [status, setStatus] = useState(dayItem?.status || 'pending');
   const [note, setNote] = useState(dayItem?.note || '');
 
-  // Single-action password authorization for past history modification (no persistent unlock)
+  // Single-action password authorization (no persistent unlock)
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
+  const [passwordModalConfig, setPasswordModalConfig] = useState({
+    title: 'Authorize Past History Change',
+    description: ''
+  });
+
+  const triggerPastAuth = (action) => {
+    setPasswordModalConfig({
+      title: 'Authorize Past History Change',
+      description: `Modifying or saving Day ${dayItem.dayNumber} (${dayItem.date}) history requires your account password for this action.`
+    });
+    setPendingAction(() => action);
+    setIsPasswordModalOpen(true);
+  };
 
   // Task editing state
   const [editingTask, setEditingTask] = useState(null);
@@ -154,12 +167,11 @@ export default function CheckInModal({
     };
 
     if (isPast) {
-      setPendingAction(() => () => {
+      triggerPastAuth(() => {
         if (onAddTask) onAddTask(newTaskData);
         setTaskTitle('');
         soundEffects.playSuccess();
       });
-      setIsPasswordModalOpen(true);
       return;
     }
 
@@ -175,8 +187,7 @@ export default function CheckInModal({
     if (selectedStatus === 'completed' && !canBeCompleted) return;
 
     if (isPast) {
-      setPendingAction(() => () => setStatus(selectedStatus));
-      setIsPasswordModalOpen(true);
+      triggerPastAuth(() => setStatus(selectedStatus));
       return;
     }
     setStatus(selectedStatus);
@@ -184,20 +195,19 @@ export default function CheckInModal({
 
   const handleDayTaskToggle = (taskId) => {
     if (isPast) {
-      setPendingAction(() => () => onToggleTask && onToggleTask(taskId));
-      setIsPasswordModalOpen(true);
+      triggerPastAuth(() => onToggleTask && onToggleTask(taskId));
       return;
     }
     if (onToggleTask) onToggleTask(taskId);
   };
 
   const handleDayTaskDelete = (taskId) => {
-    if (isPast) {
-      setPendingAction(() => () => onDeleteTask && onDeleteTask(taskId));
-      setIsPasswordModalOpen(true);
-      return;
-    }
-    if (onDeleteTask) onDeleteTask(taskId);
+    setPasswordModalConfig({
+      title: 'Authorize Deletion',
+      description: 'Deleting a day task requires your account password.'
+    });
+    setPendingAction(() => () => onDeleteTask && onDeleteTask(taskId));
+    setIsPasswordModalOpen(true);
   };
 
   const handleDayTaskEdit = (task) => {
@@ -206,11 +216,10 @@ export default function CheckInModal({
 
   const handleSaveEditedTask = (updatedTask) => {
     if (isPast) {
-      setPendingAction(() => () => {
+      triggerPastAuth(() => {
         if (onEditTask) onEditTask(updatedTask);
         setEditingTask(null);
       });
-      setIsPasswordModalOpen(true);
       return;
     }
     if (onEditTask) onEditTask(updatedTask);
@@ -226,8 +235,7 @@ export default function CheckInModal({
     }
 
     if (isPast) {
-      setPendingAction(() => () => executeSave(finalStatus));
-      setIsPasswordModalOpen(true);
+      triggerPastAuth(() => executeSave(finalStatus));
       return;
     }
 
@@ -661,7 +669,7 @@ export default function CheckInModal({
         challenges={challenges}
       />
 
-      {/* Single-action Password Prompt Modal for modifying past history */}
+      {/* Single-action Password Prompt Modal */}
       <PasswordPromptModal
         isOpen={isPasswordModalOpen}
         onClose={() => {
@@ -670,8 +678,11 @@ export default function CheckInModal({
         }}
         onSuccess={handlePasswordSuccess}
         userProfile={userProfile}
-        title="Authorize Past History Change"
-        description={`Modifying or saving Day ${dayItem.dayNumber} (${dayItem.date}) history requires your account password for this action.`}
+        title={passwordModalConfig.title}
+        description={
+          passwordModalConfig.description ||
+          `Modifying or saving Day ${dayItem.dayNumber} (${dayItem.date}) history requires your account password for this action.`
+        }
       />
     </div>
   );
