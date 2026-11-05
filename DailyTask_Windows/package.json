@@ -1,7 +1,7 @@
 {
   "name": "daily-task-app",
   "productName": "Daily Task",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "Personal Daily Activity Dashboard & Habit Tracker for Windows and Desktop",
   "main": "electron/main.cjs",
