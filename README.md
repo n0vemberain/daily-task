@@ -4,7 +4,7 @@
 [![macOS DMG Release](https://img.shields.io/badge/Download-macOS%20(.dmg)%20v1.0.3-success?style=for-the-badge&logo=apple)](https://github.com/n0vemberain/daily-task/releases/download/v1.0.3/Daily.Task-1.0.3-arm64.dmg)
 [![Windows Setup Release](https://img.shields.io/badge/Download-Windows%20Setup%20(.exe)%20v1.0.2-0078D6?style=for-the-badge&logo=windows)](https://github.com/n0vemberain/daily-task/releases/download/v1.0.2/Daily.Task.Setup.1.0.2.exe)
 [![CI/CD Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)](https://github.com/n0vemberain/daily-task)
-[![Test Suite](https://img.shields.io/badge/tests-118%2F118%20passing-brightgreen?style=flat-square)](https://github.com/n0vemberain/daily-task)
+[![Test Suite](https://img.shields.io/badge/tests-121%2F121%20passing-brightgreen?style=flat-square)](https://github.com/n0vemberain/daily-task)
 [![React](https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react)](https://react.dev/)
 [![Electron](https://img.shields.io/badge/Electron-45%20Desktop-47848F?style=flat-square&logo=electron)](https://www.electronjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-5-purple?style=flat-square&logo=vite)](https://vitejs.dev/)
